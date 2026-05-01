@@ -19,6 +19,7 @@ let selectedChar = "남자";
 let allPosts = [];
 let currentPage = 1;
 const postsPerPage = 5;
+let isDeleteMode = false; // ✨ 개별 삭제 모드 상태 변수
 
 const stones = ["주변화", "분리", "동화", "통합"];
 const descs = [
@@ -119,27 +120,25 @@ function renderFeed() {
     const start = (currentPage - 1) * postsPerPage;
     const paginated = allPosts.slice(start, start + postsPerPage);
 
+    // ✨ 개별 지우개 버튼 삭제 & 클릭 이벤트(window.selectPost) 추가 ✨
     document.getElementById('feed-list').innerHTML = paginated.map(post => `
-        <div class="post-card">
-            <button class="eraser-btn" onclick="window.delPost('${post.id}')" title="삭제하기">🧽</button>
-            <div class="post-content">
-                ${post.family.map(m => `
-                    <div style="margin-bottom: 25px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 8px; margin-bottom: 15px;">
-                            <span style="font-size: 1.2rem;"><strong>[${m.char}] ${m.name}</strong> ${m.role ? '<span style="font-size:1rem;">('+m.role+')</span>' : ''}</span>
-                            <span style="color:#e91e63; font-size:1.1rem; font-weight:bold;">${m.type}</span>
-                        </div>
-                        <div class="qa-list">
-                            ${m.answers.map((ans, qIdx) => `
-                                <div class="qa-item">
-                                    <span class="q-text">Q${qIdx + 1}. ${questions[qIdx]}</span>
-                                    <span class="a-text">${ans || "작성된 답변이 없습니다."}</span>
-                                </div>
-                            `).join('')}
-                        </div>
+        <div class="post-card" onclick="window.selectPost('${post.id}')">
+            ${post.family.map(m => `
+                <div style="margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 8px; margin-bottom: 15px;">
+                        <span style="font-size: 1.2rem;"><strong>[${m.char}] ${m.name}</strong> ${m.role ? '<span style="font-size:1rem;">('+m.role+')</span>' : ''}</span>
+                        <span style="color:#e91e63; font-size:1.1rem; font-weight:bold;">${m.type}</span>
                     </div>
-                `).join('<hr style="border: 2px dashed #bbb; margin: 30px 0;">')}
-            </div>
+                    <div class="qa-list">
+                        ${m.answers.map((ans, qIdx) => `
+                            <div class="qa-item">
+                                <span class="q-text">Q${qIdx + 1}. ${questions[qIdx]}</span>
+                                <span class="a-text">${ans || "작성된 답변이 없습니다."}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('<hr style="border: 2px dashed #bbb; margin: 30px 0;">')}
         </div>
     `).join('');
     renderPageNav();
@@ -156,27 +155,44 @@ function renderPageNav() {
 
 window.setPage = (p) => { currentPage = p; renderFeed(); window.scrollTo(0, document.getElementById('feed-title').offsetTop); };
 
-window.delPost = async (id) => {
-    const pwInput = document.getElementById('admin-pw').value;
-    if(pwInput === '0530') {
-        if(confirm("삭제하시겠습니까?")) { 
-            await deleteDoc(doc(db, "posts", id)); 
-            alert("삭제되었습니다."); 
-        }
-    } else { 
-        alert("비밀번호를 올바르게 입력해주세요."); // 비밀번호 힌트 절대 노출 안 됨
-    }
+// ✨ 지우개 버튼 클릭 시 모드 발동 ✨
+document.getElementById('delete-mode-btn').onclick = () => {
+    isDeleteMode = true;
+    document.body.classList.add('delete-mode-active');
+    alert("지우고 싶은 게시물을 클릭해주세요.");
 };
 
+// ✨ 게시물 클릭 시 삭제 진행 로직 (비밀번호 입력 팝업) ✨
+window.selectPost = async (id) => {
+    if (!isDeleteMode) return; // 삭제 모드가 아니면 클릭해도 아무 반응 없음
+
+    // 비밀번호 입력 팝업창 (힌트 없음)
+    const pwInput = prompt("이 게시물을 삭제하려면 비밀번호를 입력하세요.");
+
+    if (pwInput === '0530') {
+        await deleteDoc(doc(db, "posts", id));
+        alert("삭제 완료되었습니다.");
+    } else if (pwInput !== null && pwInput !== "") {
+        // 취소를 누르지 않고 틀린 번호를 입력했을 때
+        alert("비밀번호를 올바르게 입력해주세요.");
+    }
+
+    // 성공하든 취소하든 삭제 모드 종료 및 UI 복구
+    isDeleteMode = false;
+    document.body.classList.remove('delete-mode-active');
+};
+
+// 전체 삭제 로직
 document.getElementById('del-all').onclick = async () => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
-        if(confirm("전체 삭제하시겠습니까?")) {
+        if(confirm("전체 삭제하시겠습니까? (복구 불가)")) {
             const s = await getDocs(postsCol);
             s.forEach(async d => await deleteDoc(doc(db, "posts", d.id)));
-            alert("전체 삭제되었습니다.");
+            alert("전체 삭제가 완료되었습니다.");
+            document.getElementById('admin-pw').value = ""; // 비밀번호 칸 비우기
         }
     } else { 
-        alert("비밀번호를 올바르게 입력해주세요."); // 비밀번호 힌트 절대 노출 안 됨
+        alert("비밀번호를 올바르게 입력해주세요."); 
     }
 };
