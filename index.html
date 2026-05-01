@@ -39,10 +39,12 @@
         .page-btn.active { background: #9c27b0; color: white; }
 
         .hidden { display: none !important; }
-        .post-card { border: 3px solid var(--p-border); padding: 25px; margin-bottom: 25px; background: #fff; text-align: left; }
         
-        /* 지우개 겹침 완전 방지 스타일 */
-        .eraser { cursor: pointer; border: none; background: none; font-size: 1.5rem; width: auto; box-shadow: none; padding: 0; margin-left: 15px; }
+        /* 카드 디자인 및 지우개 버튼 독립 배치 */
+        .post-card { border: 3px solid var(--p-border); padding: 25px; margin-bottom: 25px; background: #fff; text-align: left; position: relative; }
+        .eraser-btn { position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 1.6rem; cursor: pointer; z-index: 10; padding: 0; }
+        .post-content { padding-right: 40px; /* 지우개 영역 침범 방지용 여백 */ }
+        
         .qa-item { background: #f9f9f9; padding: 12px; border-left: 5px solid #ff9800; border-radius: 4px; margin-top: 10px; }
         .q-text { display: block; font-weight: bold; color: #444; margin-bottom: 5px; font-size: 0.9rem; }
         .a-text { display: block; color: #111; font-size: 1rem; white-space: pre-wrap; }
@@ -95,15 +97,11 @@
         <div id="feed-list"></div>
         <div class="pagination" id="page-nav"></div>
         
-        <!-- 보안 관리자 패널 -->
         <div style="margin-top:40px; border-top:2px dashed #ccc; padding-top:20px; text-align: center;">
             <input type="password" id="admin-pw" placeholder="비밀번호" style="width:120px; display: inline-block;">
             <button id="del-all" style="width:auto; background:#f44336; color:white; padding:10px; display: inline-block;">전체 삭제</button>
         </div>
     </div>
-
-    <audio id="bgm-player" src="bgm.mp3" loop></audio>
-    <button id="bgm-btn" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; border: 3px solid var(--p-border); background: #fff; font-size: 1.5rem; cursor: pointer; padding: 10px 15px; border-radius: 50%; box-shadow: 4px 4px 0 #333; width: auto;">🔇</button>
 
     <script type="module" src="app.js"></script>
 </body>
