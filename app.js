@@ -15,156 +15,124 @@ const db = getFirestore(app);
 const postsCol = collection(db, "posts");
 
 let members = [];
-let selectedChar = "🧑‍🌾";
-let currentLang = "ko";
+let selectedChar = "남자";
 let allPosts = [];
 let currentPage = 1;
 const postsPerPage = 5;
 
-// 1. 250+ 언어 지원 및 번역 사전
-const i18n = {
-    ko: {
-        title: "문화적응 여정", add: "멤버 추가", start: "START", share: "공유하기", feed: "우리들의 이야기",
-        namePh: "이름", rolePh: "역할 (예: 아들)",
-        stones: ["주변화", "분리", "동화", "통합"],
-        descs: ["주변화: 양쪽 어디에도 속하지 못한 상태", "분리: 고유 문화만 고수", "동화: 새 문화에 맞춤", "통합: 두 문화의 조화"],
-        qs: ["한국에 오게 된 이유", "나를 버티게 해준 것", "가장 힘이 되는 말", "그만두고 싶었던 순간"],
-        opts: [
-            ["가족과 함께하려고", "공부/일을 위해서", "더 나은 환경을 찾아", "새로운 도전"],
-            ["가족의 응원", "고향 친구들", "새로운 취미", "꿈에 대한 희망"],
-            ["할 수 있어", "사랑해/고마워", "함께하자", "오늘도 고생했어"],
-            ["외로울 때", "말이 안 통할 때", "음식이 그리울 때", "차별을 느낄 때"]
-        ]
-    },
-    en: {
-        title: "Cultural Journey", add: "Add Member", start: "START", share: "Share", feed: "Our Stories",
-        namePh: "Name", rolePh: "Role (e.g. Son)",
-        stones: ["Margin", "Separation", "Assimilation", "Integration"],
-        descs: ["Marginalization: Belonging nowhere", "Separation: Roots only", "Assimilation: Fitting in", "Integration: Harmonious balance"],
-        qs: ["Reason for coming", "My support system", "Most helpful words", "Hardest moments"],
-        opts: [
-            ["With Family", "For Study/Work", "Better Environment", "New Challenge"],
-            ["Family Support", "Hometown Friends", "New Hobbies", "Hope for Future"],
-            ["You can do it", "Love/Thank you", "Let's be together", "Good job today"],
-            ["Loneliness", "Language barrier", "Missing food", "Discrimination"]
-        ]
-    },
-    ja: {
-        title: "文化適応の旅", add: "メンバー追加", start: "スタート", share: "共有する", feed: "私たちの物語",
-        namePh: "名前", rolePh: "役割 (例: 息子)",
-        stones: ["周辺化", "分離", "同化", "統合"],
-        descs: ["周辺化: どこにも属さない状態", "分離: 固有文化の固守", "同化: 新しい文化への適応", "統合: 二つの文化の調和"],
-        qs: ["来国の理由", "支えになったもの", "力になる言葉", "辞めたかった瞬間"],
-        opts: [
-            ["家族と一緒に", "勉強/仕事のため", "より良い環境を求めて", "新しい挑戦"],
-            ["家族の応援", "故郷の友人", "新しい趣味", "未来への希望"],
-            ["できるよ", "愛してる/ありがとう", "一緒にいよう", "お疲れ様"],
-            ["孤独な時", "言葉が通じない時", "料理が恋しい時", "差別を感じる時"]
-        ]
-    }
-};
+// 상세한 문화적응 모델 설명
+const stones = ["주변화", "분리", "동화", "통합"];
+const descs = [
+    "주변화(Marginalization): 고유의 문화와 새로운 문화 양쪽 모두에서 소외감을 느끼며, 어디에도 속하지 못해 혼란을 겪는 상태입니다.",
+    "분리(Separation): 자신의 뿌리 문화를 강하게 고수하며, 새로운 사회의 문화와는 의도적으로 거리를 두는 적응 방식입니다.",
+    "동화(Assimilation): 새로운 사회에 완전히 적응하기 위해 자신의 고유 문화를 버리거나 맞추려 노력하는 상태입니다.",
+    "통합(Integration): 자신의 고유한 문화를 소중히 유지하면서도, 새로운 문화의 장점을 조화롭게 받아들인 이상적인 상태입니다."
+];
+const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
 
-// 언어 목록 생성 (Intl API 활용)
-const langCodes = ["ko", "en", "ja", "zh", "vi", "th", "tl", "fr", "es", "ru"];
-const langSelect = document.getElementById('lang-select');
-langCodes.forEach(code => {
-    const opt = document.createElement('option');
-    opt.value = code;
-    opt.textContent = new Intl.DisplayNames([code], {type: 'language'}).of(code);
-    langSelect.appendChild(opt);
-});
-
-function updateUI(lang) {
-    currentLang = lang;
-    const t = i18n[lang] || i18n['en'];
-    document.getElementById('ui-title').innerText = t.title;
-    document.getElementById('add-btn').innerText = t.add;
-    document.getElementById('start-btn').innerText = t.start;
-    document.getElementById('share-btn').innerText = t.share;
-    document.getElementById('ui-feed-title').innerText = t.feed;
-    document.getElementById('user-name').placeholder = t.namePh;
-    document.getElementById('role-in').placeholder = t.rolePh;
-    if(members.length > 0) renderSurvey();
-    renderFeed();
-}
-
-langSelect.addEventListener('change', (e) => updateUI(e.target.value));
-
-// 2. 캐릭터 선택 & 멤버 추가
+// 캐릭터 선택
 document.querySelectorAll('.char-opt').forEach(opt => {
     opt.onclick = (e) => {
         document.querySelectorAll('.char-opt').forEach(o => o.classList.remove('selected'));
         e.target.classList.add('selected');
         selectedChar = e.target.dataset.char;
-        document.getElementById('family-form').classList.toggle('hidden', selectedChar !== "👨‍👩‍👧‍👦");
+        document.getElementById('family-form').classList.toggle('hidden', selectedChar !== "가족");
     };
 });
 
+// 멤버 추가
 document.getElementById('add-btn').onclick = () => {
-    const name = document.getElementById('user-name').value;
-    if(!name) return;
-    const role = document.getElementById('role-in').value || document.getElementById('gender-sel').value;
-    members.push({ name, char: selectedChar, role, typeIdx: 1, ans: [0,0,0,0] });
-    document.getElementById('member-chips').innerHTML = members.map(m => `<span class="chip">${m.char} ${m.name}</span>`).join('');
+    const name = document.getElementById('user-name').value.trim();
+    if(!name) { alert("이름을 입력해주세요."); return; }
+    
+    let role = "";
+    if (selectedChar === "가족") {
+        const gender = document.getElementById('gender-sel').value;
+        const roleInput = document.getElementById('role-in').value.trim();
+        role = `${gender} / ${roleInput}`;
+    }
+
+    members.push({ name, char: selectedChar, role, typeIdx: 1 }); // 기본값 '분리'
+    
+    document.getElementById('member-chips').innerHTML = members.map(m => 
+        `<span style="display:inline-block; padding:5px 10px; background:#eee; border:2px solid #333; margin:5px;">
+            ${m.char} 캐릭터 - <strong>${m.name}</strong> ${m.role ? '('+m.role+')' : ''}
+        </span>`
+    ).join('');
+    
     document.getElementById('start-btn').classList.remove('hidden');
     document.getElementById('user-name').value = "";
+    document.getElementById('role-in').value = "";
 };
 
-// 3. 여정 시작 & 사지선다 렌더링
+// 여정 시작 (직접 입력 창 렌더링)
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('survey-area').classList.remove('hidden');
     renderSurvey();
 };
 
 function renderSurvey() {
-    const t = i18n[currentLang] || i18n['en'];
     document.getElementById('member-cards').innerHTML = members.map((m, mIdx) => `
         <div class="post-card">
-            <h3>${m.char} ${m.name} (${m.role})</h3>
+            <h3>[${m.char}] ${m.name} ${m.role ? '('+m.role+')' : ''}</h3>
+            
             <div class="stones" data-midx="${mIdx}">
-                ${t.stones.map((s, sIdx) => `<div class="stone ${m.typeIdx === sIdx ? 'active' : ''}" data-sidx="${sIdx}">${s}</div>`).join('')}
+                ${stones.map((s, sIdx) => `<div class="stone ${m.typeIdx === sIdx ? 'active' : ''}" data-sidx="${sIdx}">${s}</div>`).join('')}
             </div>
-            <div class="speech-bubble">${t.descs[m.typeIdx]}</div>
-            <div class="quiz-area">
-                ${t.qs.map((q, qIdx) => `
-                    <div class="quiz-card">
-                        <p><strong>Q${qIdx+1}. ${q}</strong></p>
-                        ${t.opts[qIdx].map((opt, oIdx) => `
-                            <button class="option-btn ${m.ans[qIdx] === oIdx ? 'selected' : ''}" 
-                                    onclick="window.setAns(${mIdx}, ${qIdx}, ${oIdx})">${opt}</button>
-                        `).join('')}
-                    </div>
+            <div class="speech-bubble">${descs[m.typeIdx]}</div>
+            
+            <div class="input-area">
+                ${questions.map((q, qIdx) => `
+                    <p><strong>Q${qIdx + 1}. ${q}</strong></p>
+                    <textarea class="ans-box" data-midx="${mIdx}" data-qidx="${qIdx}" placeholder="이곳에 직접 답변을 적어주세요."></textarea>
                 `).join('')}
             </div>
         </div>
     `).join('');
     
+    // 징검다리 클릭 이벤트
     document.querySelectorAll('.stone').forEach(st => {
         st.onclick = (e) => {
-            members[e.target.parentElement.dataset.midx].typeIdx = parseInt(e.target.dataset.sidx);
+            const midx = e.target.parentElement.dataset.midx;
+            members[midx].typeIdx = parseInt(e.target.dataset.sidx);
+            
+            // 답변 내용 백업 (리렌더링 시 날아가는 것 방지)
+            const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
+            const savedAnswers = Array.from(textareas).map(t => t.value);
+            
             renderSurvey();
+            
+            // 답변 내용 복구
+            const newTextareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
+            newTextareas.forEach((t, i) => t.value = savedAnswers[i] || "");
         };
     });
 }
 
-window.setAns = (mIdx, qIdx, oIdx) => {
-    members[mIdx].ans[qIdx] = oIdx;
-    renderSurvey();
-};
-
-// 4. 공유 및 게시판 (페이지네이션 포함)
+// 공유하기 (저장 로직 개선)
 document.getElementById('share-btn').onclick = async () => {
-    await addDoc(postsCol, { family: members, timestamp: new Date() });
-    alert("공유 완료!"); location.reload();
+    try {
+        const finalData = members.map((m, mIdx) => ({
+            name: m.name, char: m.char, role: m.role,
+            type: stones[m.typeIdx],
+            answers: Array.from(document.querySelectorAll(`.ans-box[data-midx="${mIdx}"]`)).map(a => a.value.trim())
+        }));
+        
+        await addDoc(postsCol, { family: finalData, timestamp: new Date() });
+        alert("성공적으로 공유되었습니다! 🎉"); 
+        location.reload(); // 화면 새로고침하여 게시판에 즉시 반영
+    } catch (error) {
+        alert("오류가 발생했습니다. 파이어베이스 규칙을 확인해주세요.");
+    }
 };
 
+// 실시간 게시판 및 블로그형 페이지네이션 렌더링
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
     allPosts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderFeed();
 });
 
 function renderFeed() {
-    const t = i18n[currentLang] || i18n['en'];
     const start = (currentPage - 1) * postsPerPage;
     const paginated = allPosts.slice(start, start + postsPerPage);
 
@@ -172,37 +140,58 @@ function renderFeed() {
         <div class="post-card">
             <button class="eraser" onclick="window.delPost('${post.id}')">🧽</button>
             ${post.family.map(m => `
-                <div>
-                    <strong>${m.char} ${m.name}</strong> (${t.stones[m.typeIdx] || 'Type'})
-                    <p style="font-size:0.85rem; color:#555;">
-                        ${m.ans.map((aIdx, qIdx) => `${t.qs[qIdx]}: ${t.opts[qIdx][aIdx]}`).join(' / ')}
-                    </p>
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 1.1rem; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px;">
+                        <strong>[${m.char}] ${m.name}</strong> ${m.role ? '('+m.role+')' : ''} - <span style="color:#e91e63;">${m.type}</span>
+                    </div>
+                    ${m.answers.map((ans, qIdx) => `
+                        <div class="qa-block">
+                            <strong>Q. ${questions[qIdx]}</strong>
+                            <span>A. ${ans || "답변 없음"}</span>
+                        </div>
+                    `).join('')}
                 </div>
-            `).join('<hr style="border:1px dashed #eee">')}
+            `).join('<hr style="border: 2px dashed #ccc; margin: 20px 0;">')}
         </div>
     `).join('');
+    
     renderPageNav();
 }
 
+// 5개 단위 페이지 번호 생성
 function renderPageNav() {
     const total = Math.ceil(allPosts.length / postsPerPage);
     let html = '';
-    for(let i=1; i<=total; i++) html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="window.setPage(${i})">${i}</button>`;
+    for(let i = 1; i <= total; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="window.setPage(${i})">${i}</button>`;
+    }
     document.getElementById('page-nav').innerHTML = html;
 }
 
-window.setPage = (p) => { currentPage = p; renderFeed(); };
-window.delPost = async (id) => {
-    if(document.getElementById('admin-pw').value === '0530') {
-        if(confirm("지울까요?")) await deleteDoc(doc(db, "posts", id));
-    } else alert("비밀번호가 틀렸습니다.");
+window.setPage = (p) => { 
+    currentPage = p; 
+    renderFeed(); 
+    // 페이지 이동 시 피드 상단으로 스크롤 부드럽게 이동
+    document.getElementById('ui-feed-title').scrollIntoView({ behavior: 'smooth' });
 };
 
-document.getElementById('del-all').onclick = async () => {
+// 개별 삭제 (지우개)
+window.delPost = async (id) => {
     if(document.getElementById('admin-pw').value === '0530') {
-        const s = await getDocs(postsCol);
-        s.forEach(async d => await deleteDoc(doc(db, "posts", d.id)));
+        if(confirm("이 게시글을 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", id));
+    } else {
+        alert("비밀번호(0530)를 먼저 입력해주세요.");
     }
 };
 
-updateUI('ko');
+// 전체 삭제
+document.getElementById('del-all').onclick = async () => {
+    if(document.getElementById('admin-pw').value === '0530') {
+        if(confirm("모든 데이터를 영구적으로 삭제하시겠습니까?")) {
+            const s = await getDocs(postsCol);
+            s.forEach(async d => await deleteDoc(doc(db, "posts", d.id)));
+        }
+    } else {
+        alert("비밀번호(0530)를 먼저 입력해주세요.");
+    }
+};
