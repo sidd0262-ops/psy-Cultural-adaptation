@@ -208,3 +208,19 @@ document.getElementById('del-all').onclick = async () => {
         alert("비밀번호를 입력하세요.");
     }
 };
+
+// 🎵 BGM 컨트롤 로직 (여기에 추가됨!)
+const bgmPlayer = document.getElementById('bgm-player');
+const bgmBtn = document.getElementById('bgm-btn');
+let isPlaying = false;
+
+bgmBtn.onclick = () => {
+    if (isPlaying) {
+        bgmPlayer.pause();
+        bgmBtn.innerText = "🔇";
+    } else {
+        bgmPlayer.play();
+        bgmBtn.innerText = "🔊";
+    }
+    isPlaying = !isPlaying;
+};
