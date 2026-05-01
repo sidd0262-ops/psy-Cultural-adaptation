@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// ✨ 데이터 병합을 위해 where, updateDoc, limit 모듈을 추가로 가져옵니다 ✨
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs, where, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCO9ZM-CM4rDIizZPHxo_Tx0ST89fADrgc",
@@ -16,10 +17,11 @@ const postsCol = collection(db, "posts");
 
 let members = [];
 let selectedChar = "남자";
+let currentFamilyName = ""; // ✨ 입력한 가족 이름을 기억하는 변수
 let allPosts = [];
 let currentPage = 1;
 const postsPerPage = 5;
-let isDeleteMode = false; // ✨ 개별 삭제 모드 상태 변수
+let isDeleteMode = false; 
 
 const stones = ["주변화", "분리", "동화", "통합"];
 const descs = [
@@ -42,18 +44,27 @@ document.querySelectorAll('.char-opt').forEach(opt => {
 document.getElementById('add-btn').onclick = () => {
     const name = document.getElementById('user-name').value.trim();
     if(!name) { alert("이름을 입력해주세요."); return; }
+    
     let role = "";
+    
+    // ✨ 가족을 선택했을 때 필수 정보 체크 ✨
     if (selectedChar === "가족") {
+        const familyNameInput = document.getElementById('family-name-in').value.trim();
+        if (!familyNameInput) { alert("가족 이름을 꼭 입력해주세요! (예: 주호진,차무희네 가족)"); return; }
+        
+        currentFamilyName = familyNameInput; // 가족 이름 저장
         const gender = document.getElementById('gender-sel').value;
         const roleInput = document.getElementById('role-in').value.trim();
         role = `${gender} / ${roleInput}`;
     }
+
     members.push({ name, char: selectedChar, role, typeIdx: 1 });
     document.getElementById('member-chips').innerHTML = members.map(m => 
         `<span style="display:inline-block; padding:8px 12px; background:#eee; border:2px solid #333; margin:5px; border-radius:4px;">
             ${m.char} - <strong>${m.name}</strong> ${m.role ? '('+m.role+')' : ''}
         </span>`
     ).join('');
+    
     document.getElementById('start-btn').classList.remove('hidden');
     document.getElementById('user-name').value = "";
     document.getElementById('role-in').value = "";
@@ -66,7 +77,7 @@ document.getElementById('start-btn').onclick = () => {
 
 function renderSurvey() {
     document.getElementById('member-cards').innerHTML = members.map((m, mIdx) => `
-        <div class="post-card">
+        <div class="post-card" style="cursor:default; border: 3px solid #333;">
             <h3 style="margin-top: 0;">[${m.char}] ${m.name} ${m.role ? '('+m.role+')' : ''}</h3>
             <div class="stones" data-midx="${mIdx}">
                 ${stones.map((s, sIdx) => `<div class="stone ${m.typeIdx === sIdx ? 'active' : ''}" data-sidx="${sIdx}">${s}</div>`).join('')}
@@ -94,6 +105,7 @@ function renderSurvey() {
     });
 }
 
+// ✨ 마법의 병합(묶음) 기능이 들어간 공유하기 로직 ✨
 document.getElementById('share-btn').onclick = async () => {
     try {
         const finalData = members.map((m, mIdx) => ({
@@ -101,10 +113,35 @@ document.getElementById('share-btn').onclick = async () => {
             type: stones[m.typeIdx],
             answers: Array.from(document.querySelectorAll(`.ans-box[data-midx="${mIdx}"]`)).map(a => a.value.trim())
         }));
-        await addDoc(postsCol, { family: finalData, timestamp: new Date() });
+        
+        // 가족 이름이 입력되어 있다면 데이터베이스에서 같은 이름을 검색합니다.
+        if (currentFamilyName !== "") {
+            const q = query(postsCol, where("familyName", "==", currentFamilyName), limit(1));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                // 이미 같은 가족 이름의 게시물이 있다면, 그 안에 멤버를 추가(병합)합니다!
+                const docId = querySnapshot.docs[0].id;
+                const existingFamily = querySnapshot.docs[0].data().family || [];
+                await updateDoc(doc(db, "posts", docId), {
+                    family: [...existingFamily, ...finalData],
+                    timestamp: new Date() // 업데이트 되면서 게시판 맨 위로 올라옵니다.
+                });
+            } else {
+                // 처음 작성하는 가족 이름이면 새로 만듭니다.
+                await addDoc(postsCol, { familyName: currentFamilyName, family: finalData, timestamp: new Date() });
+            }
+        } else {
+            // 개인(남자/여자)으로 작성한 경우
+            await addDoc(postsCol, { familyName: "", family: finalData, timestamp: new Date() });
+        }
+
         alert("성공적으로 공유되었습니다! 🎉"); 
         location.reload();
-    } catch (error) { alert("오류가 발생했습니다."); }
+    } catch (error) { 
+        alert("오류가 발생했습니다."); 
+        console.error(error);
+    }
 };
 
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
@@ -120,9 +157,11 @@ function renderFeed() {
     const start = (currentPage - 1) * postsPerPage;
     const paginated = allPosts.slice(start, start + postsPerPage);
 
-    // ✨ 개별 지우개 버튼 삭제 & 클릭 이벤트(window.selectPost) 추가 ✨
     document.getElementById('feed-list').innerHTML = paginated.map(post => `
         <div class="post-card" onclick="window.selectPost('${post.id}')">
+            <!-- ✨ 가족 이름이 있으면 맨 위에 예쁜 간판처럼 달아줍니다 ✨ -->
+            ${post.familyName ? `<div style="background:#4caf50; color:white; padding:10px 15px; border:3px solid #333; border-radius:8px; margin-bottom:25px; font-weight:bold; font-size:1.1rem; text-align:center; box-shadow: 3px 3px 0px #333;">🏡 ${post.familyName}</div>` : ''}
+            
             ${post.family.map(m => `
                 <div style="margin-bottom: 25px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 8px; margin-bottom: 15px;">
@@ -155,34 +194,28 @@ function renderPageNav() {
 
 window.setPage = (p) => { currentPage = p; renderFeed(); window.scrollTo(0, document.getElementById('feed-title').offsetTop); };
 
-// ✨ 지우개 버튼 클릭 시 모드 발동 ✨
 document.getElementById('delete-mode-btn').onclick = () => {
     isDeleteMode = true;
     document.body.classList.add('delete-mode-active');
     alert("지우고 싶은 게시물을 클릭해주세요.");
 };
 
-// ✨ 게시물 클릭 시 삭제 진행 로직 (비밀번호 입력 팝업) ✨
 window.selectPost = async (id) => {
-    if (!isDeleteMode) return; // 삭제 모드가 아니면 클릭해도 아무 반응 없음
+    if (!isDeleteMode) return; 
 
-    // 비밀번호 입력 팝업창 (힌트 없음)
     const pwInput = prompt("이 게시물을 삭제하려면 비밀번호를 입력하세요.");
 
     if (pwInput === '0530') {
         await deleteDoc(doc(db, "posts", id));
         alert("삭제 완료되었습니다.");
     } else if (pwInput !== null && pwInput !== "") {
-        // 취소를 누르지 않고 틀린 번호를 입력했을 때
         alert("비밀번호를 올바르게 입력해주세요.");
     }
 
-    // 성공하든 취소하든 삭제 모드 종료 및 UI 복구
     isDeleteMode = false;
     document.body.classList.remove('delete-mode-active');
 };
 
-// 전체 삭제 로직
 document.getElementById('del-all').onclick = async () => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
@@ -190,7 +223,7 @@ document.getElementById('del-all').onclick = async () => {
             const s = await getDocs(postsCol);
             s.forEach(async d => await deleteDoc(doc(db, "posts", d.id)));
             alert("전체 삭제가 완료되었습니다.");
-            document.getElementById('admin-pw').value = ""; // 비밀번호 칸 비우기
+            document.getElementById('admin-pw').value = ""; 
         }
     } else { 
         alert("비밀번호를 올바르게 입력해주세요."); 
