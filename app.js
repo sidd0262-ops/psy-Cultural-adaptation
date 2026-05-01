@@ -1,11 +1,4 @@
-// ======================================================
-// 1. 설정 (Configuration) - 선생님의 열쇠들을 꽂는 곳
-// ======================================================
-
-// [필독] Gemini API 키 (이미 입력됨)
-const GEMINI_API_KEY = "AIzaSyCO9ZM-CM4rDIizZPHxo_Tx0ST89fADrgc";
-
-// [필독] Firebase 설정 (선생님의 창고 주소)
+// [1] Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyCO9ZM-CM4rDIizZPHxo_Tx0ST89fADrgc",
   authDomain: "maum-project-f249b.firebaseapp.com",
@@ -16,187 +9,120 @@ const firebaseConfig = {
   measurementId: "G-QWLY7S3MK0"
 };
 
-// ======================================================
-// 2. 외부 라이브러리 및 시스템 초기화
-// ======================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const postsCollection = collection(db, "posts");
 
-// 전역 상태 변수
 let members = [];
-let currentEmoji = "👨🏽";
-let currentLang = "ko";
+let currentAvatar = "👨";
 
-// ======================================================
-// 3. 다국어 텍스트 데이터 (말풍선 설명 포함)
-// ======================================================
-const translations = {
-    ko: {
-        m: "주변화: 어디에도 속하지 못한 '외딴섬'. 양쪽 모두에서 소외된 상태입니다.",
-        s: "분리: 익숙함이 편안한 '우리만의 울타리'. 한국 문화는 피하고 고향 방식만 고집합니다.",
-        a: "동화: 한국식에 맞추려는 '열심 모드'. 한국 사회에 섞이기 위해 최선을 다합니다.",
-        i: "통합: 두 문화가 어우러진 '반반 치킨'. 뿌리를 유지하며 조화롭게 적응했습니다.",
-        q1: "한국에 오게 된 이유",
-        q2: "나를 버티게 해준 것",
-        q3: "나에게 힘이 되는 말",
-        q4: "모두 그만두고 싶었던 순간",
-        shareBtn: "우리들의 이야기 공유하기",
-        deleteConfirm: "정말 모두 삭제하시겠습니까?"
-    },
-    en: {
-        m: "Marginalization: A lonely island. Feeling isolated from both cultures.",
-        s: "Separation: A comfortable fence. Sticking only to the original culture.",
-        a: "Assimilation: Hardworking mode. Trying best to blend into Korean society.",
-        i: "Integration: Perfect harmony. Maintaining roots while adapting well.",
-        q1: "Reason for coming to Korea",
-        q2: "What keeps me going",
-        q3: "Words that give me strength",
-        q4: "Moments I wanted to quit",
-        shareBtn: "Share Our Stories",
-        deleteConfirm: "Are you sure you want to delete all?"
-    }
+// [2] 문화적응 유형 설명 (요청하신 순서: 주변화 -> 분리 -> 동화 -> 통합)
+const typesDesc = {
+    m: "주변화(Marginalization): 양쪽 문화 모두에서 소외감을 느끼며 어디에도 속하지 못한 상태입니다.",
+    s: "분리(Separation): 자신의 뿌리 문화를 고수하며 새로운 문화와는 거리를 두는 방식입니다.",
+    a: "동화(Assimilation): 새로운 사회에 적응하기 위해 자신의 문화를 맞추거나 변화시키려 노력합니다.",
+    i: "통합(Integration): 고유의 문화를 유지하면서도 새로운 문화의 장점을 조화롭게 받아들인 상태입니다."
 };
 
-// ======================================================
-// 4. 주요 기능 로직 (이벤트 리스너)
-// ======================================================
-
-// (1) 이모지 선택 효과
+// [3] 아바타 선택 및 상세 입력 제어
 document.querySelectorAll('.emoji-opt').forEach(el => {
     el.addEventListener('click', (e) => {
         document.querySelectorAll('.emoji-opt').forEach(opt => opt.classList.remove('selected'));
         e.target.classList.add('selected');
-        currentEmoji = e.target.dataset.emoji;
+        currentAvatar = e.target.dataset.emoji;
+        
+        // 가족 아이콘(👨‍👩‍👧‍👦) 선택 시에만 성별/역할 입력창 노출
+        const detailArea = document.getElementById('family-detail-area');
+        detailArea.style.display = (currentAvatar === "👨‍👩‍👧‍👦") ? "block" : "none";
     });
 });
 
-// (2) 멤버 추가 버튼
+// [4] 멤버 추가
 document.getElementById('add-member-btn').addEventListener('click', () => {
-    const nameInput = document.getElementById('new-name');
-    const name = nameInput.value.trim();
-    if(!name) return;
+    const name = document.getElementById('new-name').value.trim();
+    const gender = document.getElementById('gender-select').value;
+    const role = document.getElementById('role-input').value.trim(); // 아들, 딸, 몇째 자녀 등
 
-    members.push({ name, emoji: currentEmoji });
-    renderMemberChips();
-    nameInput.value = "";
-    document.getElementById('start-btn').classList.remove('hidden');
+    if(!name) return alert("이름을 입력해주세요.");
+
+    let displayRole = (currentAvatar === "👨‍👩‍👧‍👦") ? `${gender} / ${role}` : gender;
+    
+    members.push({ name, avatar: currentAvatar, role: displayRole });
+    renderChips();
+    
+    document.getElementById('new-name').value = "";
+    document.getElementById('role-input').value = "";
 });
 
-function renderMemberChips() {
+function renderChips() {
     const container = document.getElementById('member-chips');
-    container.innerHTML = members.map(m => `<span class="chip">${m.emoji} ${m.name}</span>`).join('');
+    container.innerHTML = members.map(m => `
+        <div class="chip"><strong>${m.avatar} ${m.name}</strong> (${m.role})</div>
+    `).join('');
+    if(members.length > 0) document.getElementById('start-btn').classList.remove('hidden');
 }
 
-// (3) 여정 시작 (동적 카드 생성)
+// [5] 스펙트럼 슬라이더 (순서 반영: 0~25 주변화 / 26~50 분리 / 51~75 동화 / 76~100 통합)
 document.getElementById('start-btn').addEventListener('click', () => {
-    currentLang = document.getElementById('lang-select').value;
     document.getElementById('question-section').classList.remove('hidden');
-    
     const container = document.getElementById('dynamic-cards');
-    const t = translations[currentLang];
 
     container.innerHTML = members.map((m, idx) => `
         <div class="member-card">
-            <h3>${m.emoji} ${m.name}'s Spectrum</h3>
+            <h3>${m.avatar} ${m.name} (${m.role})님의 스펙트럼</h3>
             <input type="range" class="spectrum-slider" data-idx="${idx}" min="0" max="100" value="50">
-            <div class="speech-bubble" id="bubble-${idx}">${t.s}</div>
+            <div class="speech-bubble" id="bubble-${idx}">${typesDesc.s}</div>
             <div class="input-area">
-                <textarea class="ans-box" data-idx="${idx}" data-q="1" placeholder="${t.q1}"></textarea>
-                <textarea class="ans-box" data-idx="${idx}" data-q="2" placeholder="${t.q2}"></textarea>
-                <textarea class="ans-box" data-idx="${idx}" data-q="3" placeholder="${t.q3}"></textarea>
-                <textarea class="ans-box" data-idx="${idx}" data-q="4" placeholder="${t.q4}"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" placeholder="한국에 오게 된 이유"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" placeholder="나를 버티게 해준 것"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" placeholder="나에게 힘이 되는 말"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" placeholder="그만두고 싶었던 순간"></textarea>
             </div>
         </div>
     `).join('');
 
-    // 슬라이더 변경 이벤트 연결
     document.querySelectorAll('.spectrum-slider').forEach(slider => {
         slider.addEventListener('input', (e) => {
             const val = e.target.value;
             const bubble = document.getElementById(`bubble-${e.target.dataset.idx}`);
-            const text = translations[currentLang];
-            if(val <= 25) bubble.innerText = text.m;
-            else if(val <= 50) bubble.innerText = text.s;
-            else if(val <= 75) bubble.innerText = text.a;
-            else bubble.innerText = text.i;
+            if(val <= 25) bubble.innerText = typesDesc.m;
+            else if(val <= 50) bubble.innerText = typesDesc.s;
+            else if(val <= 75) bubble.innerText = typesDesc.a;
+            else bubble.innerText = typesDesc.i;
         });
     });
 });
 
-// (4) 데이터 공유하기 (Firebase 저장)
+// [6] 데이터 저장 및 실시간 게시판
 document.getElementById('share-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('share-btn');
-    btn.disabled = true;
-    btn.innerText = "Sharing...";
-
     try {
-        const postData = {
-            timestamp: new Date(),
-            lang: currentLang,
-            family: members.map((m, idx) => {
-                const bubbleText = document.getElementById(`bubble-${idx}`).innerText;
-                const answers = Array.from(document.querySelectorAll(`.ans-box[data-idx="${idx}"]`)).map(a => a.value);
-                return {
-                    name: m.name,
-                    emoji: m.emoji,
-                    type: bubbleText,
-                    answers: answers
-                };
-            })
-        };
-
-        await addDoc(postsCollection, postData);
-        alert("Success! 🎉");
-        location.reload(); // 등록 후 페이지 리셋
+        const familyData = members.map((m, idx) => ({
+            name: m.name, avatar: m.avatar, role: m.role,
+            type: document.getElementById(`bubble-${idx}`).innerText,
+            answers: Array.from(document.querySelectorAll(`.ans-box[data-idx="${idx}"]`)).map(a => a.value)
+        }));
+        await addDoc(postsCollection, { timestamp: new Date(), family: familyData });
+        alert("공유되었습니다! 🎉");
+        location.reload();
     } catch (e) {
-        console.error(e);
-        alert("Error saving data.");
-        btn.disabled = false;
+        alert("저장 실패! 파이어베이스 규칙 게시 버튼을 눌렀는지 확인하세요.");
     }
 });
 
-// (5) 관리자 리셋 기능 (0530)
-document.getElementById('admin-lock').addEventListener('click', () => {
-    document.getElementById('admin-modal').classList.remove('hidden');
-});
-
-document.getElementById('close-admin').addEventListener('click', () => {
-    document.getElementById('admin-modal').classList.add('hidden');
-});
-
-document.getElementById('del-all-btn').addEventListener('click', async () => {
-    const pw = document.getElementById('admin-pw').value;
-    if(pw === '0530') {
-        if(confirm(translations[currentLang].deleteConfirm)) {
-            const snapshot = await getDocs(postsCollection);
-            const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, "posts", d.id)));
-            await Promise.all(deletePromises);
-            alert("Deleted All.");
-            location.reload();
-        }
-    } else {
-        alert("Wrong Password.");
-    }
-});
-
-// (6) 게시판 실시간 렌더링 (Feed)
-const q = query(postsCollection, orderBy("timestamp", "desc"));
-onSnapshot(q, (snapshot) => {
+onSnapshot(query(postsCollection, orderBy("timestamp", "desc")), (snapshot) => {
     const feed = document.getElementById('feed-container');
     feed.innerHTML = snapshot.docs.map(doc => {
         const data = doc.data();
-        return data.family.map(m => `
-            <div class="post-card">
-                <div class="post-header">
-                    <span>${m.emoji} <strong>${m.name}</strong></span>
-                    <span class="type-tag">${m.type.split(':')[0]}</span>
+        return `<div class="post-group">
+            ${data.family.map(m => `
+                <div class="post-card">
+                    <strong>${m.avatar} ${m.name}</strong> (${m.role}) | <small>${m.type}</small>
+                    <p>${m.answers.filter(a => a).join(' / ')}</p>
                 </div>
-                <p class="post-content">${m.answers.join(' / ')}</p>
-            </div>
-        `).join('');
-    }).join('<hr>');
+            `).join('')}
+        </div><hr>`;
+    }).join('');
 });
