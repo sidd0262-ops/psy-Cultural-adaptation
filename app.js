@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs, where, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCO9ZM-CM4rDIizZPHxo_Tx0ST89fADrgc",
@@ -21,10 +21,9 @@ let allPosts = [];
 let currentPage = 1;
 const postsPerPage = 5;
 
-// ✨ 모드 관리를 위한 변수들 ✨
 let isDeleteMode = false; 
 let isEditMode = false;
-let editingPostId = null; // 현재 수정 중인 게시물 ID 기억
+let editingPostId = null;
 
 const stones = ["주변화", "분리", "동화", "통합"];
 const descs = [
@@ -34,6 +33,20 @@ const descs = [
     "통합(Integration): 자신의 고유한 문화를 소중히 유지하면서도, 새로운 문화의 장점을 조화롭게 받아들인 이상적인 상태입니다."
 ];
 const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
+
+// ✨ 똑똑한 가족 병합 알고리즘 ✨
+// 띄어쓰기, 특수문자, '네', '가족' 등의 단어를 제거하고 핵심 이름 부분이 겹치는지 확인합니다.
+function isSameFamily(name1, name2) {
+    if (!name1 || !name2) return false;
+    const clean1 = name1.replace(/[\s,\.\/\-_네가족]/g, '');
+    const clean2 = name2.replace(/[\s,\.\/\-_네가족]/g, '');
+    
+    // 핵심 이름 부분이 2글자 이상이고, 서로 포함 관계에 있으면 같은 가족으로 인식!
+    if (clean1.length >= 2 && clean2.length >= 2) {
+        return clean1.includes(clean2) || clean2.includes(clean1);
+    }
+    return false;
+}
 
 document.querySelectorAll('.char-opt').forEach(opt => {
     opt.onclick = (e) => {
@@ -77,9 +90,26 @@ document.getElementById('start-btn').onclick = () => {
 };
 
 function renderSurvey() {
-    document.getElementById('member-cards').innerHTML = members.map((m, mIdx) => `
+    let html = '';
+    
+    // ✨ 가족 이름 수정 창 (수정 모드 또는 가족 작성 시) ✨
+    if (currentFamilyName !== "") {
+        html += `
+        <div style="margin-bottom:15px; background:#e8f5e9; padding:15px; border:3px solid #4caf50; border-radius:8px;">
+            <label style="font-weight:bold; color:#2e7d32;">🏡 가족 그룹 이름:</label>
+            <input type="text" id="edit-family-name" value="${currentFamilyName}" style="width:calc(100% - 24px); margin-top:5px; border:2px solid #4caf50;">
+        </div>`;
+    }
+
+    html += members.map((m, mIdx) => `
         <div class="post-card" style="cursor:default; border: 3px solid #333;">
-            <h3 style="margin-top: 0;">[${m.char}] ${m.name} ${m.role ? '('+m.role+')' : ''}</h3>
+            <div style="margin-bottom: 15px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#f5f5f5; padding:10px; border-radius:8px;">
+                <span style="font-size:1.2rem; font-weight:bold;">[${m.char}]</span>
+                <!-- ✨ 이름, 역할 수정 가능 인풋 ✨ -->
+                <input type="text" class="edit-name-box" data-midx="${mIdx}" value="${m.name}" placeholder="이름" style="width:120px; margin:0; padding:5px; border:2px solid #ccc;">
+                ${m.char === '가족' ? `<input type="text" class="edit-role-box" data-midx="${mIdx}" value="${m.role || ''}" placeholder="역할 (여성/첫째딸 등)" style="width:180px; margin:0; padding:5px; border:2px solid #ccc;">` : ''}
+            </div>
+            
             <div class="stones" data-midx="${mIdx}">
                 ${stones.map((s, sIdx) => `<div class="stone ${m.typeIdx === sIdx ? 'active' : ''}" data-sidx="${sIdx}">${s}</div>`).join('')}
             </div>
@@ -87,19 +117,30 @@ function renderSurvey() {
             <div class="input-area">
                 ${questions.map((q, qIdx) => `
                     <p style="font-weight:bold; margin:15px 0 5px;">Q${qIdx + 1}. ${q}</p>
-                    <!-- ✨ 불러온 기존 답변이 있다면 미리 채워넣습니다 ✨ -->
                     <textarea class="ans-box" data-midx="${mIdx}" data-qidx="${qIdx}" placeholder="이곳에 솔직한 마음을 적어주세요.">${m.tempAnswers && m.tempAnswers[qIdx] ? m.tempAnswers[qIdx] : ""}</textarea>
                 `).join('')}
             </div>
         </div>
     `).join('');
     
+    document.getElementById('member-cards').innerHTML = html;
+    
+    // 데이터 보존 이벤트
     document.querySelectorAll('.stone').forEach(st => {
         st.onclick = (e) => {
             const midx = e.target.parentElement.dataset.midx;
             members[midx].typeIdx = parseInt(e.target.dataset.sidx);
+            
+            // 입력 중이던 값들 임시 저장 (렌더링 시 날아감 방지)
             const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
-            members[midx].tempAnswers = Array.from(textareas).map(t => t.value); // 입력 중이던 텍스트 백업
+            members[midx].tempAnswers = Array.from(textareas).map(t => t.value);
+            members[midx].name = document.querySelector(`.edit-name-box[data-midx="${midx}"]`).value;
+            const roleBox = document.querySelector(`.edit-role-box[data-midx="${midx}"]`);
+            if (roleBox) members[midx].role = roleBox.value;
+            
+            const famNameBox = document.getElementById('edit-family-name');
+            if (famNameBox) currentFamilyName = famNameBox.value;
+
             renderSurvey();
         };
     });
@@ -107,13 +148,25 @@ function renderSurvey() {
 
 document.getElementById('share-btn').onclick = async () => {
     try {
-        const finalData = members.map((m, mIdx) => ({
-            name: m.name, char: m.char, role: m.role,
-            type: stones[m.typeIdx],
-            answers: Array.from(document.querySelectorAll(`.ans-box[data-midx="${mIdx}"]`)).map(a => a.value.trim())
-        }));
+        const famNameBox = document.getElementById('edit-family-name');
+        if (famNameBox) currentFamilyName = famNameBox.value.trim();
+
+        // 입력창에서 최종 수정된 이름, 역할 긁어오기
+        const finalData = members.map((m, mIdx) => {
+            const finalName = document.querySelector(`.edit-name-box[data-midx="${mIdx}"]`).value.trim();
+            const roleBox = document.querySelector(`.edit-role-box[data-midx="${mIdx}"]`);
+            const finalRole = roleBox ? roleBox.value.trim() : m.role;
+            
+            return {
+                name: finalName || m.name,
+                char: m.char, 
+                role: finalRole,
+                type: stones[m.typeIdx],
+                answers: Array.from(document.querySelectorAll(`.ans-box[data-midx="${mIdx}"]`)).map(a => a.value.trim())
+            };
+        });
         
-        // ✨ 수정 모드일 때: 기존 문서 업데이트 ✨
+        // 1. 단순 수정 완료
         if (editingPostId) {
             await updateDoc(doc(db, "posts", editingPostId), {
                 family: finalData,
@@ -125,22 +178,26 @@ document.getElementById('share-btn').onclick = async () => {
             return;
         }
         
-        // 신규 작성 모드일 때 (가족 병합 포함)
+        // 2. 신규 작성 (가족 스마트 병합)
         if (currentFamilyName !== "") {
-            const q = query(postsCol, where("familyName", "==", currentFamilyName), limit(1));
-            const querySnapshot = await getDocs(q);
+            // 전체 게시물 중 이름 패턴이 겹치는 가족을 찾아냅니다.
+            const matchedPost = allPosts.find(p => p.familyName && isSameFamily(p.familyName, currentFamilyName));
             
-            if (!querySnapshot.empty) {
-                const docId = querySnapshot.docs[0].id;
-                const existingFamily = querySnapshot.docs[0].data().family || [];
+            if (matchedPost) {
+                // 병합 처리 (기존 가족 + 새로 입력한 가족)
+                const docId = matchedPost.id;
+                const existingFamily = matchedPost.family || [];
                 await updateDoc(doc(db, "posts", docId), {
                     family: [...existingFamily, ...finalData],
+                    familyName: matchedPost.familyName, // 기존 대표 이름 유지
                     timestamp: new Date() 
                 });
             } else {
+                // 완전 새로운 가족 그룹 생성
                 await addDoc(postsCol, { familyName: currentFamilyName, family: finalData, timestamp: new Date() });
             }
         } else {
+            // 개인 작성
             await addDoc(postsCol, { familyName: "", family: finalData, timestamp: new Date() });
         }
 
@@ -201,7 +258,6 @@ function renderPageNav() {
 
 window.setPage = (p) => { currentPage = p; renderFeed(); window.scrollTo(0, document.getElementById('feed-title').offsetTop); };
 
-// ✨ 삭제 모드 버튼 로직 ✨
 document.getElementById('delete-mode-btn').onclick = () => {
     isDeleteMode = true;
     isEditMode = false;
@@ -210,19 +266,16 @@ document.getElementById('delete-mode-btn').onclick = () => {
     alert("지우고 싶은 게시물을 클릭해주세요. (비밀번호 필요)");
 };
 
-// ✨ 수정 모드 버튼 로직 ✨
 document.getElementById('edit-mode-btn').onclick = () => {
     isEditMode = true;
     isDeleteMode = false;
     document.body.classList.add('edit-mode-active');
     document.body.classList.remove('delete-mode-active');
-    alert("수정하고 싶은 게시물을 클릭해주세요. (비밀번호 불필요)");
+    alert("수정하고 싶은 게시물을 클릭해주세요. (비밀번호 없이 즉시 캔버스로 불러옵니다)");
 };
 
-// ✨ 게시물 클릭 시 로직 처리 ✨
 window.selectPost = async (id) => {
     if (isDeleteMode) {
-        // 지우개 모드
         const pwInput = prompt("이 게시물을 삭제하려면 비밀번호를 입력하세요.");
         if (pwInput === '0530') {
             await deleteDoc(doc(db, "posts", id));
@@ -234,13 +287,11 @@ window.selectPost = async (id) => {
         document.body.classList.remove('delete-mode-active');
         
     } else if (isEditMode) {
-        // 연필(수정) 모드
         const postToEdit = allPosts.find(p => p.id === id);
         if (postToEdit) {
-            editingPostId = id; // 수정 중인 문서 ID 기억
+            editingPostId = id; 
             currentFamilyName = postToEdit.familyName || "";
             
-            // 기존 데이터를 members 배열로 복구
             members = postToEdit.family.map(m => ({
                 name: m.name,
                 char: m.char,
@@ -249,17 +300,13 @@ window.selectPost = async (id) => {
                 tempAnswers: m.answers || []
             }));
 
-            // UI 변경 (가족 이름, 공유 버튼 텍스트/색상)
-            document.getElementById('family-name-in').value = currentFamilyName;
             document.getElementById('survey-area').classList.remove('hidden');
             
             const shareBtn = document.getElementById('share-btn');
             shareBtn.innerText = "우리들의 이야기 수정 완료하기";
-            shareBtn.style.background = "#2196F3"; // 눈에 띄게 파란색으로 변경
+            shareBtn.style.background = "#2196F3"; 
 
             renderSurvey();
-            
-            // 맨 위(입력창)로 화면 자동 스크롤
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         isEditMode = false;
