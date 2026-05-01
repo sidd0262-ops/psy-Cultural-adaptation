@@ -40,14 +40,15 @@
 
         .hidden { display: none !important; }
         
-        /* 카드 디자인 및 지우개 버튼 독립 배치 */
-        .post-card { border: 3px solid var(--p-border); padding: 25px; margin-bottom: 25px; background: #fff; text-align: left; position: relative; }
-        .eraser-btn { position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 1.6rem; cursor: pointer; z-index: 10; padding: 0; }
-        .post-content { padding-right: 40px; /* 지우개 영역 침범 방지용 여백 */ }
-        
+        /* 게시물 기본 디자인 */
+        .post-card { border: 3px solid var(--p-border); padding: 25px; margin-bottom: 25px; background: #fff; text-align: left; transition: 0.2s; }
         .qa-item { background: #f9f9f9; padding: 12px; border-left: 5px solid #ff9800; border-radius: 4px; margin-top: 10px; }
         .q-text { display: block; font-weight: bold; color: #444; margin-bottom: 5px; font-size: 0.9rem; }
         .a-text { display: block; color: #111; font-size: 1rem; white-space: pre-wrap; }
+
+        /* ✨ 지우개 모드가 켜졌을 때 게시물 스타일 ✨ */
+        .delete-mode-active .post-card { border: 4px dashed #f44336; cursor: pointer; }
+        .delete-mode-active .post-card:hover { background-color: #ffebee; transform: translateY(-5px); box-shadow: 0 10px 0 rgba(244, 67, 54, 0.2); }
     </style>
 </head>
 <body>
@@ -97,9 +98,11 @@
         <div id="feed-list"></div>
         <div class="pagination" id="page-nav"></div>
         
-        <div style="margin-top:40px; border-top:2px dashed #ccc; padding-top:20px; text-align: center;">
-            <input type="password" id="admin-pw" placeholder="비밀번호" style="width:120px; display: inline-block;">
-            <button id="del-all" style="width:auto; background:#f44336; color:white; padding:10px; display: inline-block;">전체 삭제</button>
+        <!-- ✨ 관리자 패널: 지우개, 비밀번호, 전체삭제 나란히 배치 ✨ -->
+        <div style="margin-top:40px; border-top:2px dashed #ccc; padding-top:20px; display:flex; justify-content:center; align-items:center; gap:10px;">
+            <button id="delete-mode-btn" style="background:none; border:none; font-size:2rem; cursor:pointer; padding:0; box-shadow:none; width:auto;" title="개별 게시물 지우기">🧽</button>
+            <input type="password" id="admin-pw" placeholder="비밀번호" style="width:120px; margin:0;">
+            <button id="del-all" style="width:auto; background:#f44336; color:white; padding:12px; margin:0;">전체 삭제</button>
         </div>
     </div>
 
