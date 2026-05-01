@@ -31,7 +31,7 @@
         .speech-bubble::after { content: ''; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); border-width: 0 10px 10px 10px; border-style: solid; border-color: transparent transparent var(--p-border) transparent; }
 
         .ans-box { width: calc(100% - 24px); height: 60px; font-family: inherit; padding: 10px; border: 3px solid var(--p-border); margin-bottom: 5px; resize: none; font-size: 1rem; }
-        input, select { font-family: inherit; padding: 10px; border: 3px solid var(--p-border); margin: 10px 0; width: calc(100% - 26px); font-size: 1rem; }
+        input, select { font-family: inherit; padding: 10px; border: 3px solid var(--p-border); margin: 10px 0; width: calc(100% - 26px); font-size: 1rem; box-sizing: border-box; }
         button { font-family: inherit; border: 3px solid var(--p-border); padding: 12px; cursor: pointer; box-shadow: 4px 4px 0 var(--p-border); width: 100%; font-size: 1.1rem; }
         
         .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 30px; }
@@ -70,26 +70,29 @@
     <div class="container">
         <h1 style="text-align: center; color: #4a148c; text-shadow: 2px 2px #fff;">문화적응 여정</h1>
         
-        <div class="char-grid">
-            <img src="pixel_man.png" alt="남자" class="char-opt selected" data-char="남자">
-            <img src="pixel_woman.png" alt="여자" class="char-opt" data-char="여자">
-            <img src="pixel_family.png" alt="가족" class="char-opt" data-char="가족">
-        </div>
+        <!-- ✨ 헷갈림 방지를 위해 초기 입력폼을 하나의 그룹으로 묶었습니다 ✨ -->
+        <div id="top-input-section">
+            <div class="char-grid">
+                <img src="pixel_man.png" alt="남자" class="char-opt selected" data-char="남자">
+                <img src="pixel_woman.png" alt="여자" class="char-opt" data-char="여자">
+                <img src="pixel_family.png" alt="가족" class="char-opt" data-char="가족">
+            </div>
 
-        <input type="text" id="user-name" placeholder="이름을 입력하세요">
-        
-        <div id="family-form" class="hidden">
-            <input type="text" id="family-name-in" placeholder="우리 가족 이름 (예: 주호진,차무희네 가족)" style="border-color: #4caf50; background-color: #f1f8e9;">
-            <select id="gender-sel">
-                <option value="남성">남성</option>
-                <option value="여성">여성</option>
-            </select>
-            <input type="text" id="role-in" placeholder="가족 내 역할 (예: 첫째 딸)">
-        </div>
+            <input type="text" id="user-name" placeholder="이름을 입력하세요">
+            
+            <div id="family-form" class="hidden">
+                <input type="text" id="family-name-in" placeholder="우리 가족 이름 (예: 주호진,차무희네 가족)" style="border-color: #4caf50; background-color: #f1f8e9;">
+                <select id="gender-sel">
+                    <option value="남성">남성</option>
+                    <option value="여성">여성</option>
+                </select>
+                <input type="text" id="role-in" placeholder="가족 내 역할 (예: 첫째 딸)">
+            </div>
 
-        <button id="add-btn" style="background: #e0e0e0;">멤버 추가</button>
-        <div id="member-chips" style="margin-top: 15px;"></div>
-        <button id="start-btn" class="hidden" style="background:#ff9800; color:white; margin-top: 15px;">여정 시작 (START)</button>
+            <button id="add-btn" style="background: #e0e0e0;">멤버 추가</button>
+            <div id="member-chips" style="margin-top: 15px;"></div>
+            <button id="start-btn" class="hidden" style="background:#ff9800; color:white; margin-top: 15px;">여정 시작 (START)</button>
+        </div>
 
         <div id="survey-area" class="hidden">
             <div id="member-cards"></div>
