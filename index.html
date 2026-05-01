@@ -40,13 +40,11 @@
 
         .hidden { display: none !important; }
         
-        /* 게시물 기본 디자인 */
         .post-card { border: 3px solid var(--p-border); padding: 25px; margin-bottom: 25px; background: #fff; text-align: left; transition: 0.2s; }
         .qa-item { background: #f9f9f9; padding: 12px; border-left: 5px solid #ff9800; border-radius: 4px; margin-top: 10px; }
         .q-text { display: block; font-weight: bold; color: #444; margin-bottom: 5px; font-size: 0.9rem; }
         .a-text { display: block; color: #111; font-size: 1rem; white-space: pre-wrap; }
 
-        /* ✨ 지우개 모드가 켜졌을 때 게시물 스타일 ✨ */
         .delete-mode-active .post-card { border: 4px dashed #f44336; cursor: pointer; }
         .delete-mode-active .post-card:hover { background-color: #ffebee; transform: translateY(-5px); box-shadow: 0 10px 0 rgba(244, 67, 54, 0.2); }
     </style>
@@ -76,13 +74,17 @@
         </div>
 
         <input type="text" id="user-name" placeholder="이름을 입력하세요">
+        
+        <!-- ✨ 가족 선택 시 표시되는 확장 폼 ✨ -->
         <div id="family-form" class="hidden">
+            <input type="text" id="family-name-in" placeholder="우리 가족 이름 (예: 주호진,차무희네 가족)" style="border-color: #4caf50; background-color: #f1f8e9;">
             <select id="gender-sel">
                 <option value="남성">남성</option>
                 <option value="여성">여성</option>
             </select>
             <input type="text" id="role-in" placeholder="가족 내 역할 (예: 첫째 딸)">
         </div>
+
         <button id="add-btn" style="background: #e0e0e0;">멤버 추가</button>
         <div id="member-chips" style="margin-top: 15px;"></div>
         <button id="start-btn" class="hidden" style="background:#ff9800; color:white; margin-top: 15px;">여정 시작 (START)</button>
@@ -98,7 +100,7 @@
         <div id="feed-list"></div>
         <div class="pagination" id="page-nav"></div>
         
-        <!-- ✨ 관리자 패널: 지우개, 비밀번호, 전체삭제 나란히 배치 ✨ -->
+        <!-- 관리자 패널 -->
         <div style="margin-top:40px; border-top:2px dashed #ccc; padding-top:20px; display:flex; justify-content:center; align-items:center; gap:10px;">
             <button id="delete-mode-btn" style="background:none; border:none; font-size:2rem; cursor:pointer; padding:0; box-shadow:none; width:auto;" title="개별 게시물 지우기">🧽</button>
             <input type="password" id="admin-pw" placeholder="비밀번호" style="width:120px; margin:0;">
