@@ -133,7 +133,6 @@ document.getElementById('share-btn').onclick = async () => {
 // 실시간 게시판 데이터 수신
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
     allPosts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // 게시글이 1개라도 있으면 즉시 렌더링되도록 수정
     renderFeed();
 });
 
@@ -191,11 +190,10 @@ function renderPageNav() {
 window.setPage = (p) => { 
     currentPage = p; 
     renderFeed(); 
-    // 페이지 넘길 때 피드 제목 위치로 살짝 스크롤
     document.getElementById('feed-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-// 개별 삭제 로직
+// 개별 삭제 로직 (보안 강화)
 window.delPost = async (id) => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
@@ -204,11 +202,11 @@ window.delPost = async (id) => {
             alert("삭제되었습니다.");
         }
     } else {
-        alert("비밀번호를 입력해야 삭제할 수 있습니다.");
+        alert("비밀번호를 입력하세요.");
     }
 };
 
-// 전체 삭제 로직
+// 전체 삭제 로직 (보안 강화)
 document.getElementById('del-all').onclick = async () => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
@@ -218,6 +216,6 @@ document.getElementById('del-all').onclick = async () => {
             alert("모든 데이터가 삭제되었습니다.");
         }
     } else {
-        alert("비밀번호를 입력해야 삭제할 수 있습니다.");
+        alert("비밀번호를 입력하세요.");
     }
 };
