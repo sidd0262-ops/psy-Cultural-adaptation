@@ -29,28 +29,6 @@ const descs = [
 ];
 const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
 
-// 🎵 BGM 안전 재생 함수
-const bgmPlayer = document.getElementById('bgm-player');
-const bgmBtn = document.getElementById('bgm-btn');
-let isPlaying = false;
-
-function playAudioSafely() {
-    if (!isPlaying) {
-        bgmPlayer.play().then(() => {
-            bgmBtn.innerText = "🔊";
-            isPlaying = true;
-        }).catch(() => { /* 자동재생 방지 에러 무시 */ });
-    }
-}
-
-bgmBtn.onclick = () => {
-    if (isPlaying) { bgmPlayer.pause(); bgmBtn.innerText = "🔇"; } 
-    else { bgmPlayer.play(); bgmBtn.innerText = "🔊"; }
-    isPlaying = !isPlaying;
-};
-
-
-// 캐릭터 선택 로직
 document.querySelectorAll('.char-opt').forEach(opt => {
     opt.onclick = (e) => {
         document.querySelectorAll('.char-opt').forEach(o => o.classList.remove('selected'));
@@ -60,10 +38,7 @@ document.querySelectorAll('.char-opt').forEach(opt => {
     };
 });
 
-// 멤버 추가 (음악 재생 트리거 포함)
 document.getElementById('add-btn').onclick = () => {
-    playAudioSafely(); // 버튼 클릭 시 음악 재생 시도
-
     const name = document.getElementById('user-name').value.trim();
     if(!name) { alert("이름을 입력해주세요."); return; }
     let role = "";
@@ -84,7 +59,6 @@ document.getElementById('add-btn').onclick = () => {
 };
 
 document.getElementById('start-btn').onclick = () => {
-    playAudioSafely(); // 버튼 클릭 시 음악 재생 시도
     document.getElementById('survey-area').classList.remove('hidden');
     renderSurvey();
 };
@@ -145,30 +119,27 @@ function renderFeed() {
     const start = (currentPage - 1) * postsPerPage;
     const paginated = allPosts.slice(start, start + postsPerPage);
 
-    // 지우개 겹침 문제를 완벽하게 해결한 레이아웃
     document.getElementById('feed-list').innerHTML = paginated.map(post => `
         <div class="post-card">
-            ${post.family.map(m => `
-                <div style="margin-bottom: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 10px; margin-bottom: 15px;">
-                        <div style="font-size: 1.2rem;">
-                            <strong>[${m.char}] ${m.name}</strong> ${m.role ? '<span style="font-size:1rem;">('+m.role+')</span>' : ''}
-                        </div>
-                        <div style="display: flex; align-items: center;">
+            <button class="eraser-btn" onclick="window.delPost('${post.id}')" title="삭제하기">🧽</button>
+            <div class="post-content">
+                ${post.family.map(m => `
+                    <div style="margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 8px; margin-bottom: 15px;">
+                            <span style="font-size: 1.2rem;"><strong>[${m.char}] ${m.name}</strong> ${m.role ? '<span style="font-size:1rem;">('+m.role+')</span>' : ''}</span>
                             <span style="color:#e91e63; font-size:1.1rem; font-weight:bold;">${m.type}</span>
-                            <button class="eraser" onclick="window.delPost('${post.id}')" title="삭제하기">🧽</button>
+                        </div>
+                        <div class="qa-list">
+                            ${m.answers.map((ans, qIdx) => `
+                                <div class="qa-item">
+                                    <span class="q-text">Q${qIdx + 1}. ${questions[qIdx]}</span>
+                                    <span class="a-text">${ans || "작성된 답변이 없습니다."}</span>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
-                    <div class="qa-list">
-                        ${m.answers.map((ans, qIdx) => `
-                            <div class="qa-item">
-                                <span class="q-text">Q${qIdx + 1}. ${questions[qIdx]}</span>
-                                <span class="a-text">${ans || "작성된 답변이 없습니다."}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('<hr style="border: 2px dashed #bbb; margin: 30px 0;">')}
+                `).join('<hr style="border: 2px dashed #bbb; margin: 30px 0;">')}
+            </div>
         </div>
     `).join('');
     renderPageNav();
@@ -185,28 +156,27 @@ function renderPageNav() {
 
 window.setPage = (p) => { currentPage = p; renderFeed(); window.scrollTo(0, document.getElementById('feed-title').offsetTop); };
 
-// 보안 철저 유지 (알림창에서 0530 절대 미노출)
 window.delPost = async (id) => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
-        if(confirm("이 게시글을 삭제하시겠습니까?")) { 
+        if(confirm("삭제하시겠습니까?")) { 
             await deleteDoc(doc(db, "posts", id)); 
-            alert("삭제 완료되었습니다."); 
+            alert("삭제되었습니다."); 
         }
     } else { 
-        alert("비밀번호를 올바르게 입력하세요."); 
+        alert("비밀번호를 올바르게 입력해주세요."); // 비밀번호 힌트 절대 노출 안 됨
     }
 };
 
 document.getElementById('del-all').onclick = async () => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
-        if(confirm("전체 삭제하시겠습니까? (복구 불가)")) {
+        if(confirm("전체 삭제하시겠습니까?")) {
             const s = await getDocs(postsCol);
             s.forEach(async d => await deleteDoc(doc(db, "posts", d.id)));
-            alert("전체 삭제가 완료되었습니다.");
+            alert("전체 삭제되었습니다.");
         }
     } else { 
-        alert("비밀번호를 올바르게 입력하세요."); 
+        alert("비밀번호를 올바르게 입력해주세요."); // 비밀번호 힌트 절대 노출 안 됨
     }
 };
