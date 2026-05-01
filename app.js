@@ -34,18 +34,22 @@ const descs = [
 ];
 const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
 
-// ✨ 핵심 매칭 알고리즘: 띄어쓰기, '네', '가족' 무시하고 겹치는 핵심 단어로 가족 판별 ✨
+// ✨ 초강력 1글자 매칭 알고리즘 ✨
 function isSameFamily(name1, name2) {
     if (!name1 || !name2) return false;
-    // 의미 없는 단어와 기호, 공백을 모두 제거합니다.
-    const regex = /[\s,\.\/\-_네가족구팀부]/g;
-    const clean1 = name1.replace(regex, '');
-    const clean2 = name2.replace(regex, '');
     
-    // 제거하고 남은 핵심 이름이 서로 포함되어 있다면 같은 가족으로 묶습니다!
-    if (clean1.length >= 2 && clean2.length >= 2) {
-        return clean1.includes(clean2) || clean2.includes(clean1);
+    // 1. 의미 없는 단어, 기호, 띄어쓰기를 모두 제거합니다.
+    const regex = /가족|식구|부부|그룹|팀|네|과|와|\s|[,\.\/\-_]/g;
+    let clean1 = name1.replace(regex, '');
+    let clean2 = name2.replace(regex, '');
+
+    // 2. 남은 글자 중 '단 한 글자'라도 겹치면 같은 가족으로 묶습니다!
+    for (let char of clean1) {
+        if (clean2.includes(char)) {
+            return true;
+        }
     }
+    
     return false;
 }
 
@@ -86,7 +90,6 @@ document.getElementById('add-btn').onclick = () => {
 };
 
 document.getElementById('start-btn').onclick = () => {
-    // 설문 시작 시 상단 입력폼을 숨겨 헷갈리지 않게 합니다.
     document.getElementById('top-input-section').classList.add('hidden');
     document.getElementById('survey-area').classList.remove('hidden');
     renderSurvey();
@@ -100,16 +103,15 @@ function renderSurvey() {
         <div style="margin-bottom:20px; background:#e8f5e9; padding:15px; border:3px solid #4caf50; border-radius:8px;">
             <label style="font-weight:bold; color:#2e7d32;">🏡 우리 가족 이름 (수정 가능):</label>
             <input type="text" id="edit-family-name" value="${currentFamilyName}" placeholder="예: 차무희네 가족" style="width:100%; margin-top:10px; border:2px solid #4caf50;">
+            <p style="font-size:0.8rem; color:#666; margin:5px 0 0 0;">* 이전에 등록한 가족 이름과 비슷하면 자동으로 하나로 합쳐집니다!</p>
         </div>`;
     }
 
     html += members.map((m, mIdx) => {
-        // ✨ 선택했던 아바타 이미지를 그대로 불러옵니다 ✨
         let imgSrc = m.char === '남자' ? 'pixel_man.png' : (m.char === '여자' ? 'pixel_woman.png' : 'pixel_family.png');
         
         return `
         <div class="post-card" style="cursor:default; border: 3px solid #333;">
-            <!-- ✨ 아이콘 옆에서 이름과 역할을 바로 수정할 수 있는 직관적 UI ✨ -->
             <div style="display:flex; align-items:center; gap:15px; background:#f5f5f5; padding:15px; border-radius:8px; margin-bottom:20px; border: 2px solid #ddd;">
                 <img src="${imgSrc}" style="width:70px; height:70px; object-fit:cover; image-rendering:pixelated; border:2px solid #333; background:#fff; border-radius:8px;">
                 <div style="flex-grow:1; display:flex; flex-direction:column; gap:8px;">
@@ -139,7 +141,6 @@ function renderSurvey() {
             const midx = e.target.parentElement.dataset.midx;
             members[midx].typeIdx = parseInt(e.target.dataset.sidx);
             
-            // 렌더링 시 작성 중이던 텍스트 유지
             const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
             members[midx].tempAnswers = Array.from(textareas).map(t => t.value);
             
@@ -174,39 +175,57 @@ document.getElementById('share-btn').onclick = async () => {
             };
         });
         
-        // 1. 기존 게시물 수정 시
+        let targetDocId = null;
+        let existingFamily = [];
+        let matchedFamilyName = currentFamilyName; 
+
+        if (currentFamilyName !== "") {
+            const matchedPost = allPosts.find(p => p.familyName && p.id !== editingPostId && isSameFamily(p.familyName, currentFamilyName));
+            
+            if (matchedPost) {
+                targetDocId = matchedPost.id;
+                existingFamily = matchedPost.family || [];
+                matchedFamilyName = matchedPost.familyName; 
+            }
+        }
+        
         if (editingPostId) {
-            await updateDoc(doc(db, "posts", editingPostId), {
-                family: finalData,
-                familyName: currentFamilyName,
-                timestamp: new Date()
-            });
-            alert("수정이 완벽하게 적용되었습니다! ✏️");
+            if (targetDocId) {
+                await updateDoc(doc(db, "posts", targetDocId), {
+                    family: [...existingFamily, ...finalData],
+                    timestamp: new Date()
+                });
+                await deleteDoc(doc(db, "posts", editingPostId)); 
+                alert("다른 가족 그룹과 성공적으로 병합되었습니다! 🏡");
+            } else {
+                await updateDoc(doc(db, "posts", editingPostId), {
+                    family: finalData,
+                    familyName: currentFamilyName,
+                    timestamp: new Date()
+                });
+                alert("수정이 완벽하게 적용되었습니다! ✏️");
+            }
             location.reload();
             return;
         }
         
-        // 2. 신규 등록 (스마트 병합 로직 적용)
         if (currentFamilyName !== "") {
-            // 전체 게시물 중 이름 패턴이 겹치는 가족 탐색
-            const matchedPost = allPosts.find(p => p.familyName && isSameFamily(p.familyName, currentFamilyName));
-            
-            if (matchedPost) {
-                const docId = matchedPost.id;
-                const existingFamily = matchedPost.family || [];
-                await updateDoc(doc(db, "posts", docId), {
+            if (targetDocId) {
+                await updateDoc(doc(db, "posts", targetDocId), {
                     family: [...existingFamily, ...finalData],
-                    familyName: matchedPost.familyName, // 병합될 땐 기존 방장의 이름을 따름
+                    familyName: matchedFamilyName, 
                     timestamp: new Date() 
                 });
+                alert("기존 가족 그룹에 합류했습니다! 🏡");
             } else {
                 await addDoc(postsCol, { familyName: currentFamilyName, family: finalData, timestamp: new Date() });
+                alert("성공적으로 공유되었습니다! 🎉"); 
             }
         } else {
             await addDoc(postsCol, { familyName: "", family: finalData, timestamp: new Date() });
+            alert("성공적으로 공유되었습니다! 🎉"); 
         }
 
-        alert("성공적으로 공유되었습니다! 🎉"); 
         location.reload();
     } catch (error) { 
         alert("오류가 발생했습니다."); 
@@ -305,7 +324,6 @@ window.selectPost = async (id) => {
                 tempAnswers: m.answers || []
             }));
 
-            // 헷갈리는 최상단 입력폼을 아예 감춰버립니다.
             document.getElementById('top-input-section').classList.add('hidden');
             document.getElementById('survey-area').classList.remove('hidden');
             
