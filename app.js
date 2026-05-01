@@ -34,14 +34,15 @@ const descs = [
 ];
 const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
 
-// ✨ 똑똑한 가족 병합 알고리즘 ✨
-// 띄어쓰기, 특수문자, '네', '가족' 등의 단어를 제거하고 핵심 이름 부분이 겹치는지 확인합니다.
+// ✨ 핵심 매칭 알고리즘: 띄어쓰기, '네', '가족' 무시하고 겹치는 핵심 단어로 가족 판별 ✨
 function isSameFamily(name1, name2) {
     if (!name1 || !name2) return false;
-    const clean1 = name1.replace(/[\s,\.\/\-_네가족]/g, '');
-    const clean2 = name2.replace(/[\s,\.\/\-_네가족]/g, '');
+    // 의미 없는 단어와 기호, 공백을 모두 제거합니다.
+    const regex = /[\s,\.\/\-_네가족구팀부]/g;
+    const clean1 = name1.replace(regex, '');
+    const clean2 = name2.replace(regex, '');
     
-    // 핵심 이름 부분이 2글자 이상이고, 서로 포함 관계에 있으면 같은 가족으로 인식!
+    // 제거하고 남은 핵심 이름이 서로 포함되어 있다면 같은 가족으로 묶습니다!
     if (clean1.length >= 2 && clean2.length >= 2) {
         return clean1.includes(clean2) || clean2.includes(clean1);
     }
@@ -85,6 +86,8 @@ document.getElementById('add-btn').onclick = () => {
 };
 
 document.getElementById('start-btn').onclick = () => {
+    // 설문 시작 시 상단 입력폼을 숨겨 헷갈리지 않게 합니다.
+    document.getElementById('top-input-section').classList.add('hidden');
     document.getElementById('survey-area').classList.remove('hidden');
     renderSurvey();
 };
@@ -92,22 +95,27 @@ document.getElementById('start-btn').onclick = () => {
 function renderSurvey() {
     let html = '';
     
-    // ✨ 가족 이름 수정 창 (수정 모드 또는 가족 작성 시) ✨
     if (currentFamilyName !== "") {
         html += `
-        <div style="margin-bottom:15px; background:#e8f5e9; padding:15px; border:3px solid #4caf50; border-radius:8px;">
-            <label style="font-weight:bold; color:#2e7d32;">🏡 가족 그룹 이름:</label>
-            <input type="text" id="edit-family-name" value="${currentFamilyName}" style="width:calc(100% - 24px); margin-top:5px; border:2px solid #4caf50;">
+        <div style="margin-bottom:20px; background:#e8f5e9; padding:15px; border:3px solid #4caf50; border-radius:8px;">
+            <label style="font-weight:bold; color:#2e7d32;">🏡 우리 가족 이름 (수정 가능):</label>
+            <input type="text" id="edit-family-name" value="${currentFamilyName}" placeholder="예: 차무희네 가족" style="width:100%; margin-top:10px; border:2px solid #4caf50;">
         </div>`;
     }
 
-    html += members.map((m, mIdx) => `
+    html += members.map((m, mIdx) => {
+        // ✨ 선택했던 아바타 이미지를 그대로 불러옵니다 ✨
+        let imgSrc = m.char === '남자' ? 'pixel_man.png' : (m.char === '여자' ? 'pixel_woman.png' : 'pixel_family.png');
+        
+        return `
         <div class="post-card" style="cursor:default; border: 3px solid #333;">
-            <div style="margin-bottom: 15px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#f5f5f5; padding:10px; border-radius:8px;">
-                <span style="font-size:1.2rem; font-weight:bold;">[${m.char}]</span>
-                <!-- ✨ 이름, 역할 수정 가능 인풋 ✨ -->
-                <input type="text" class="edit-name-box" data-midx="${mIdx}" value="${m.name}" placeholder="이름" style="width:120px; margin:0; padding:5px; border:2px solid #ccc;">
-                ${m.char === '가족' ? `<input type="text" class="edit-role-box" data-midx="${mIdx}" value="${m.role || ''}" placeholder="역할 (여성/첫째딸 등)" style="width:180px; margin:0; padding:5px; border:2px solid #ccc;">` : ''}
+            <!-- ✨ 아이콘 옆에서 이름과 역할을 바로 수정할 수 있는 직관적 UI ✨ -->
+            <div style="display:flex; align-items:center; gap:15px; background:#f5f5f5; padding:15px; border-radius:8px; margin-bottom:20px; border: 2px solid #ddd;">
+                <img src="${imgSrc}" style="width:70px; height:70px; object-fit:cover; image-rendering:pixelated; border:2px solid #333; background:#fff; border-radius:8px;">
+                <div style="flex-grow:1; display:flex; flex-direction:column; gap:8px;">
+                    <input type="text" class="edit-name-box" data-midx="${mIdx}" value="${m.name}" placeholder="이름" style="width:100%; margin:0; padding:8px; border:2px solid #ccc;">
+                    ${m.char === '가족' ? `<input type="text" class="edit-role-box" data-midx="${mIdx}" value="${m.role || ''}" placeholder="역할 (여성/아내 등)" style="width:100%; margin:0; padding:8px; border:2px solid #ccc;">` : ''}
+                </div>
             </div>
             
             <div class="stones" data-midx="${mIdx}">
@@ -121,19 +129,20 @@ function renderSurvey() {
                 `).join('')}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
     
     document.getElementById('member-cards').innerHTML = html;
     
-    // 데이터 보존 이벤트
     document.querySelectorAll('.stone').forEach(st => {
         st.onclick = (e) => {
             const midx = e.target.parentElement.dataset.midx;
             members[midx].typeIdx = parseInt(e.target.dataset.sidx);
             
-            // 입력 중이던 값들 임시 저장 (렌더링 시 날아감 방지)
+            // 렌더링 시 작성 중이던 텍스트 유지
             const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
             members[midx].tempAnswers = Array.from(textareas).map(t => t.value);
+            
             members[midx].name = document.querySelector(`.edit-name-box[data-midx="${midx}"]`).value;
             const roleBox = document.querySelector(`.edit-role-box[data-midx="${midx}"]`);
             if (roleBox) members[midx].role = roleBox.value;
@@ -151,7 +160,6 @@ document.getElementById('share-btn').onclick = async () => {
         const famNameBox = document.getElementById('edit-family-name');
         if (famNameBox) currentFamilyName = famNameBox.value.trim();
 
-        // 입력창에서 최종 수정된 이름, 역할 긁어오기
         const finalData = members.map((m, mIdx) => {
             const finalName = document.querySelector(`.edit-name-box[data-midx="${mIdx}"]`).value.trim();
             const roleBox = document.querySelector(`.edit-role-box[data-midx="${mIdx}"]`);
@@ -166,7 +174,7 @@ document.getElementById('share-btn').onclick = async () => {
             };
         });
         
-        // 1. 단순 수정 완료
+        // 1. 기존 게시물 수정 시
         if (editingPostId) {
             await updateDoc(doc(db, "posts", editingPostId), {
                 family: finalData,
@@ -178,26 +186,23 @@ document.getElementById('share-btn').onclick = async () => {
             return;
         }
         
-        // 2. 신규 작성 (가족 스마트 병합)
+        // 2. 신규 등록 (스마트 병합 로직 적용)
         if (currentFamilyName !== "") {
-            // 전체 게시물 중 이름 패턴이 겹치는 가족을 찾아냅니다.
+            // 전체 게시물 중 이름 패턴이 겹치는 가족 탐색
             const matchedPost = allPosts.find(p => p.familyName && isSameFamily(p.familyName, currentFamilyName));
             
             if (matchedPost) {
-                // 병합 처리 (기존 가족 + 새로 입력한 가족)
                 const docId = matchedPost.id;
                 const existingFamily = matchedPost.family || [];
                 await updateDoc(doc(db, "posts", docId), {
                     family: [...existingFamily, ...finalData],
-                    familyName: matchedPost.familyName, // 기존 대표 이름 유지
+                    familyName: matchedPost.familyName, // 병합될 땐 기존 방장의 이름을 따름
                     timestamp: new Date() 
                 });
             } else {
-                // 완전 새로운 가족 그룹 생성
                 await addDoc(postsCol, { familyName: currentFamilyName, family: finalData, timestamp: new Date() });
             }
         } else {
-            // 개인 작성
             await addDoc(postsCol, { familyName: "", family: finalData, timestamp: new Date() });
         }
 
@@ -300,6 +305,8 @@ window.selectPost = async (id) => {
                 tempAnswers: m.answers || []
             }));
 
+            // 헷갈리는 최상단 입력폼을 아예 감춰버립니다.
+            document.getElementById('top-input-section').classList.add('hidden');
             document.getElementById('survey-area').classList.remove('hidden');
             
             const shareBtn = document.getElementById('share-btn');
