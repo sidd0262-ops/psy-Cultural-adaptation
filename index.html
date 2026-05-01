@@ -45,7 +45,6 @@
         .q-text { display: block; font-weight: bold; color: #444; margin-bottom: 5px; font-size: 0.9rem; }
         .a-text { display: block; color: #111; font-size: 1rem; white-space: pre-wrap; }
 
-        /* ✨ 삭제/수정 모드 활성화 시 게시물 테두리 애니메이션 ✨ */
         .delete-mode-active .post-card { border: 4px dashed #f44336; cursor: pointer; }
         .delete-mode-active .post-card:hover { background-color: #ffebee; transform: translateY(-5px); box-shadow: 0 10px 0 rgba(244, 67, 54, 0.2); }
         
@@ -103,7 +102,6 @@
         <div id="feed-list"></div>
         <div class="pagination" id="page-nav"></div>
         
-        <!-- ✨ 관리자 패널: 연필(수정), 지우개(삭제), 비밀번호, 전체삭제 ✨ -->
         <div style="margin-top:40px; border-top:2px dashed #ccc; padding-top:20px; display:flex; justify-content:center; align-items:center; gap:10px;">
             <button id="edit-mode-btn" style="background:none; border:none; font-size:2rem; cursor:pointer; padding:0; box-shadow:none; width:auto;" title="게시물 수정하기">✏️</button>
             <button id="delete-mode-btn" style="background:none; border:none; font-size:2rem; cursor:pointer; padding:0; box-shadow:none; width:auto;" title="개별 게시물 지우기">🧽</button>
