@@ -1,23 +1,24 @@
-// ==========================================
-// 1. 설정 (Configuration)
-// ==========================================
+// ======================================================
+// 1. 설정 (Configuration) - 선생님의 열쇠들을 꽂는 곳
+// ======================================================
 
-// TODO: 아래 YOUR_GEMINI_API_KEY 부분에 발급받은 Gemini API 키를 넣으세요.
-const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
+// [필독] Gemini API 키 (이미 입력됨)
+const GEMINI_API_KEY = "AIzaSyCO9ZM-CM4rDIizZPHxo_Tx0ST89fADrgc";
 
-// TODO: Firebase 콘솔에서 프로젝트 설정 -> 웹 앱 추가 후 아래 정보를 덮어쓰세요.
+// [필독] Firebase 설정 (선생님의 창고 주소)
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCO9ZM-CM4rDIizZPHxo_Tx0ST89fADrgc",
+  authDomain: "maum-project-f249b.firebaseapp.com",
+  projectId: "maum-project-f249b",
+  storageBucket: "maum-project-f249b.firebasestorage.app",
+  messagingSenderId: "638023840601",
+  appId: "1:638023840601:web:c55ce7b2a80e6d6018d248",
+  measurementId: "G-QWLY7S3MK0"
 };
 
-// ==========================================
-// 2. Firebase 초기화 및 모듈 로드
-// ==========================================
+// ======================================================
+// 2. 외부 라이브러리 및 시스템 초기화
+// ======================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -25,180 +26,177 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const postsCollection = collection(db, "posts");
 
-// 전역 상태
-let currentUser = { name: "", avatar: "😊" };
+// 전역 상태 변수
+let members = [];
+let currentEmoji = "👨🏽";
+let currentLang = "ko";
 
-// ==========================================
-// 3. UI 로직 (온보딩 및 스펙트럼)
-// ==========================================
+// ======================================================
+// 3. 다국어 텍스트 데이터 (말풍선 설명 포함)
+// ======================================================
+const translations = {
+    ko: {
+        m: "주변화: 어디에도 속하지 못한 '외딴섬'. 양쪽 모두에서 소외된 상태입니다.",
+        s: "분리: 익숙함이 편안한 '우리만의 울타리'. 한국 문화는 피하고 고향 방식만 고집합니다.",
+        a: "동화: 한국식에 맞추려는 '열심 모드'. 한국 사회에 섞이기 위해 최선을 다합니다.",
+        i: "통합: 두 문화가 어우러진 '반반 치킨'. 뿌리를 유지하며 조화롭게 적응했습니다.",
+        q1: "한국에 오게 된 이유",
+        q2: "나를 버티게 해준 것",
+        q3: "나에게 힘이 되는 말",
+        q4: "모두 그만두고 싶었던 순간",
+        shareBtn: "우리들의 이야기 공유하기",
+        deleteConfirm: "정말 모두 삭제하시겠습니까?"
+    },
+    en: {
+        m: "Marginalization: A lonely island. Feeling isolated from both cultures.",
+        s: "Separation: A comfortable fence. Sticking only to the original culture.",
+        a: "Assimilation: Hardworking mode. Trying best to blend into Korean society.",
+        i: "Integration: Perfect harmony. Maintaining roots while adapting well.",
+        q1: "Reason for coming to Korea",
+        q2: "What keeps me going",
+        q3: "Words that give me strength",
+        q4: "Moments I wanted to quit",
+        shareBtn: "Share Our Stories",
+        deleteConfirm: "Are you sure you want to delete all?"
+    }
+};
 
-// 이모지 선택 로직
-document.querySelectorAll('.emoji').forEach(el => {
+// ======================================================
+// 4. 주요 기능 로직 (이벤트 리스너)
+// ======================================================
+
+// (1) 이모지 선택 효과
+document.querySelectorAll('.emoji-opt').forEach(el => {
     el.addEventListener('click', (e) => {
-        document.querySelectorAll('.emoji').forEach(em => em.classList.remove('selected'));
+        document.querySelectorAll('.emoji-opt').forEach(opt => opt.classList.remove('selected'));
         e.target.classList.add('selected');
-        currentUser.avatar = e.target.textContent;
+        currentEmoji = e.target.dataset.emoji;
     });
 });
 
-// 시작하기 버튼 로직
-document.getElementById('start-btn').addEventListener('click', () => {
-    const nameInput = document.getElementById('nickname-input').value.trim();
-    if (!nameInput) {
-        alert("닉네임을 입력해주세요! (Please enter a nickname)");
-        return;
-    }
-    currentUser.name = nameInput;
-    document.getElementById('user-avatar').textContent = currentUser.avatar;
-    document.getElementById('user-name').textContent = currentUser.name;
-    
-    // 화면 전환
-    document.getElementById('onboarding-screen').classList.remove('active');
-    document.getElementById('main-screen').classList.add('active');
-    document.getElementById('main-screen').classList.remove('hidden');
+// (2) 멤버 추가 버튼
+document.getElementById('add-member-btn').addEventListener('click', () => {
+    const nameInput = document.getElementById('new-name');
+    const name = nameInput.value.trim();
+    if(!name) return;
+
+    members.push({ name, emoji: currentEmoji });
+    renderMemberChips();
+    nameInput.value = "";
+    document.getElementById('start-btn').classList.remove('hidden');
 });
 
-// 스펙트럼 슬라이더 위치 계산
-const slider = document.getElementById('acculturation-slider');
-const stageDisplay = document.getElementById('current-stage-display');
-
-function getStageText(value) {
-    if (value <= 25) return "Marginalization (주변화)";
-    if (value <= 50) return "Separation (분리)";
-    if (value <= 75) return "Assimilation (동화)";
-    return "Integration (통합)";
+function renderMemberChips() {
+    const container = document.getElementById('member-chips');
+    container.innerHTML = members.map(m => `<span class="chip">${m.emoji} ${m.name}</span>`).join('');
 }
 
-slider.addEventListener('input', (e) => {
-    stageDisplay.innerHTML = `현재 위치: <strong>${getStageText(e.target.value)}</strong> 구간 즈음`;
-});
+// (3) 여정 시작 (동적 카드 생성)
+document.getElementById('start-btn').addEventListener('click', () => {
+    currentLang = document.getElementById('lang-select').value;
+    document.getElementById('question-section').classList.remove('hidden');
+    
+    const container = document.getElementById('dynamic-cards');
+    const t = translations[currentLang];
 
-// ==========================================
-// 4. 데이터 공유 (Firebase 연동)
-// ==========================================
+    container.innerHTML = members.map((m, idx) => `
+        <div class="member-card">
+            <h3>${m.emoji} ${m.name}'s Spectrum</h3>
+            <input type="range" class="spectrum-slider" data-idx="${idx}" min="0" max="100" value="50">
+            <div class="speech-bubble" id="bubble-${idx}">${t.s}</div>
+            <div class="input-area">
+                <textarea class="ans-box" data-idx="${idx}" data-q="1" placeholder="${t.q1}"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" data-q="2" placeholder="${t.q2}"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" data-q="3" placeholder="${t.q3}"></textarea>
+                <textarea class="ans-box" data-idx="${idx}" data-q="4" placeholder="${t.q4}"></textarea>
+            </div>
+        </div>
+    `).join('');
 
-document.getElementById('share-btn').addEventListener('click', async () => {
-    const q1 = document.getElementById('q1').value.trim();
-    const q2 = document.getElementById('q2').value.trim();
-    const q3 = document.getElementById('q3').value.trim();
-    const q4 = document.getElementById('q4').value.trim();
-
-    if (!q1 && !q2 && !q3 && !q4) {
-        alert("하나 이상의 경험을 입력해주세요!");
-        return;
-    }
-
-    try {
-        await addDoc(postsCollection, {
-            author: currentUser.name,
-            avatar: currentUser.avatar,
-            stage: getStageText(slider.value),
-            answers: { q1, q2, q3, q4 },
-            timestamp: new Date().getTime()
+    // 슬라이더 변경 이벤트 연결
+    document.querySelectorAll('.spectrum-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const bubble = document.getElementById(`bubble-${e.target.dataset.idx}`);
+            const text = translations[currentLang];
+            if(val <= 25) bubble.innerText = text.m;
+            else if(val <= 50) bubble.innerText = text.s;
+            else if(val <= 75) bubble.innerText = text.a;
+            else bubble.innerText = text.i;
         });
-
-        // 폼 초기화
-        ['q1', 'q2', 'q3', 'q4'].forEach(id => document.getElementById(id).value = '');
-        alert("소중한 경험이 공유되었습니다. 💖");
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        alert("업로드 중 오류가 발생했습니다.");
-    }
-});
-
-// 피드 실시간 렌더링
-const feedContainer = document.getElementById('feed-container');
-const q = query(postsCollection, orderBy("timestamp", "desc"));
-
-onSnapshot(q, (snapshot) => {
-    feedContainer.innerHTML = '';
-    snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const docId = docSnap.id;
-        
-        const card = document.createElement('div');
-        card.className = 'post-card';
-        
-        // 본인 글인 경우 삭제 버튼 활성화
-        const deleteBtnHTML = data.author === currentUser.name 
-            ? `<button class="action-btn delete-btn" onclick="deletePost('${docId}')"><i class="fas fa-trash"></i> 삭제</button>` 
-            : '';
-
-        card.innerHTML = `
-            <div class="post-header">
-                <div><span>${data.avatar}</span> ${data.author}</div>
-                <div class="post-stage">${data.stage}</div>
-            </div>
-            <div class="post-body" id="body-${docId}">
-                ${data.answers.q1 ? `<p><strong>오게 된 이유:</strong> ${data.answers.q1}</p>` : ''}
-                ${data.answers.q2 ? `<p><strong>버티게 해준 것:</strong> ${data.answers.q2}</p>` : ''}
-                ${data.answers.q3 ? `<p><strong>힘이 되는 말:</strong> ${data.answers.q3}</p>` : ''}
-                ${data.answers.q4 ? `<p><strong>그만두고 싶었던 순간:</strong> ${data.answers.q4}</p>` : ''}
-            </div>
-            <div class="post-actions">
-                <button class="action-btn translate-btn" onclick="translatePost('${docId}')"><i class="fas fa-language"></i> 번역 (Translate)</button>
-                ${deleteBtnHTML}
-            </div>
-        `;
-        feedContainer.appendChild(card);
     });
 });
 
-// 게시글 삭제 함수 (전역 스코프 노출)
-window.deletePost = async (docId) => {
-    if(confirm("정말 이 글을 삭제하시겠습니까?")) {
-        await deleteDoc(doc(db, "posts", docId));
-    }
-};
-
-// ==========================================
-// 5. 다국어 번역 (Gemini API 연동)
-// ==========================================
-
-window.translatePost = async (docId) => {
-    const bodyElement = document.getElementById(`body-${docId}`);
-    const originalText = bodyElement.innerText;
-    
-    // 사용자 브라우저 언어 감지
-    const targetLang = navigator.language.startsWith('ko') ? 'Korean' : 'English';
-    
-    bodyElement.innerHTML = `<p style="color:#888;">Translating... ⏳</p>`;
+// (4) 데이터 공유하기 (Firebase 저장)
+document.getElementById('share-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('share-btn');
+    btn.disabled = true;
+    btn.innerText = "Sharing...";
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: `Translate the following text to ${targetLang} naturally. Only provide the translated text without extra comments.\n\nText:\n${originalText}` }]
-                }]
+        const postData = {
+            timestamp: new Date(),
+            lang: currentLang,
+            family: members.map((m, idx) => {
+                const bubbleText = document.getElementById(`bubble-${idx}`).innerText;
+                const answers = Array.from(document.querySelectorAll(`.ans-box[data-idx="${idx}"]`)).map(a => a.value);
+                return {
+                    name: m.name,
+                    emoji: m.emoji,
+                    type: bubbleText,
+                    answers: answers
+                };
             })
-        });
+        };
 
-        const data = await response.json();
-        const translatedText = data.candidates[0].content.parts[0].text;
-        
-        // 줄바꿈 보존하여 렌더링
-        bodyElement.innerHTML = `<p>${translatedText.replace(/\n/g, '<br>')}</p>`;
-    } catch (error) {
-        console.error("Translation Error:", error);
-        bodyElement.innerHTML = `<p style="color:red;">번역에 실패했습니다. (API Key 설정 또는 네트워크 확인)</p><p>${originalText}</p>`;
+        await addDoc(postsCollection, postData);
+        alert("Success! 🎉");
+        location.reload(); // 등록 후 페이지 리셋
+    } catch (e) {
+        console.error(e);
+        alert("Error saving data.");
+        btn.disabled = false;
     }
-};
+});
 
-// ==========================================
-// 6. 관리자 리셋 기능 (0530)
-// ==========================================
-const adminInput = document.getElementById('admin-input');
-adminInput.addEventListener('keyup', async (e) => {
-    if (e.key === 'Enter' && adminInput.value === '0530') {
-        if(confirm("🚨 경고: 모든 데이터베이스를 초기화하시겠습니까?")) {
-            const querySnapshot = await getDocs(postsCollection);
-            querySnapshot.forEach(async (documentSnap) => {
-                await deleteDoc(doc(db, "posts", documentSnap.id));
-            });
-            alert("✅ 초기화가 완료되었습니다.");
-            adminInput.value = '';
+// (5) 관리자 리셋 기능 (0530)
+document.getElementById('admin-lock').addEventListener('click', () => {
+    document.getElementById('admin-modal').classList.remove('hidden');
+});
+
+document.getElementById('close-admin').addEventListener('click', () => {
+    document.getElementById('admin-modal').classList.add('hidden');
+});
+
+document.getElementById('del-all-btn').addEventListener('click', async () => {
+    const pw = document.getElementById('admin-pw').value;
+    if(pw === '0530') {
+        if(confirm(translations[currentLang].deleteConfirm)) {
+            const snapshot = await getDocs(postsCollection);
+            const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, "posts", d.id)));
+            await Promise.all(deletePromises);
+            alert("Deleted All.");
+            location.reload();
         }
+    } else {
+        alert("Wrong Password.");
     }
+});
+
+// (6) 게시판 실시간 렌더링 (Feed)
+const q = query(postsCollection, orderBy("timestamp", "desc"));
+onSnapshot(q, (snapshot) => {
+    const feed = document.getElementById('feed-container');
+    feed.innerHTML = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return data.family.map(m => `
+            <div class="post-card">
+                <div class="post-header">
+                    <span>${m.emoji} <strong>${m.name}</strong></span>
+                    <span class="type-tag">${m.type.split(':')[0]}</span>
+                </div>
+                <p class="post-content">${m.answers.join(' / ')}</p>
+            </div>
+        `).join('');
+    }).join('<hr>');
 });
