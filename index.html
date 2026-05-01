@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stepping Stones - Our Journey</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 온보딩 화면 (프로필 생성) -->
+    <div id="onboarding-screen" class="screen active">
+        <div class="card">
+            <h1>Welcome! 🌱</h1>
+            <p>당신의 이야기를 들려주세요. 먼저 사용할 닉네임과 아바타를 골라볼까요?</p>
+            <input type="text" id="nickname-input" placeholder="Nickname (닉네임)" required>
+            
+            <div class="avatar-selection">
+                <p>Choose your Avatar:</p>
+                <div class="emoji-container">
+                    <span class="emoji selected">😊</span>
+                    <span class="emoji">🥺</span>
+                    <span class="emoji">😎</span>
+                    <span class="emoji">🧐</span>
+                    <span class="emoji">😌</span>
+                    <span class="emoji">💪</span>
+                </div>
+            </div>
+            <button id="start-btn" class="primary-btn">시작하기 (Start)</button>
+        </div>
+    </div>
+
+    <!-- 메인 화면 -->
+    <div id="main-screen" class="screen hidden">
+        <header>
+            <div class="user-info">
+                <span id="user-avatar">😊</span> <span id="user-name">User</span>님, 환영합니다!
+            </div>
+        </header>
+
+        <!-- 1. 징검다리 스펙트럼 UI -->
+        <section class="spectrum-section card">
+            <h2>나의 문화적응 징검다리 위치는? 🌉</h2>
+            <p class="subtitle">슬라이더를 움직여 현재 나의 마음 상태를 표현해 보세요.</p>
+            
+            <div class="spectrum-container">
+                <input type="range" id="acculturation-slider" min="0" max="100" value="50">
+                <div class="spectrum-labels">
+                    <div class="stage" title="주변화: 두 문화 모두와 거리를 두고 있는 상태">Marginalization<br>(주변화)</div>
+                    <div class="stage" title="분리: 원래의 문화를 유지하며 새로운 문화를 피하는 상태">Separation<br>(분리)</div>
+                    <div class="stage" title="동화: 원래의 문화를 버리고 새로운 문화에 흡수되는 상태">Assimilation<br>(동화)</div>
+                    <div class="stage" title="통합: 두 문화의 장점을 모두 수용하며 조화롭게 지내는 상태">Integration<br>(통합)</div>
+                </div>
+            </div>
+            <div id="current-stage-display" class="stage-highlight">현재 위치: <strong>Assimilation (동화)</strong> 구간 즈음</div>
+        </section>
+
+        <!-- 2. 4가지 핵심 질문 폼 -->
+        <section class="form-section card">
+            <h2>나의 경험 나누기 ✍️</h2>
+            <div class="input-group">
+                <label>1. 한국에 오게 된 이유 (Reason for coming to Korea)</label>
+                <textarea id="q1" rows="2"></textarea>
+            </div>
+            <div class="input-group">
+                <label>2. 나를 버티게 해준 것 (What keeps me going)</label>
+                <textarea id="q2" rows="2"></textarea>
+            </div>
+            <div class="input-group">
+                <label>3. 나에게 힘이 되는 말 (Words that give me strength)</label>
+                <textarea id="q3" rows="2"></textarea>
+            </div>
+            <div class="input-group">
+                <label>4. 모두 그만두고 싶었던 순간 (Moments I wanted to quit)</label>
+                <textarea id="q4" rows="2"></textarea>
+            </div>
+            <button id="share-btn" class="primary-btn">공유하기 (Share)</button>
+        </section>
+
+        <!-- 3. 커뮤니티 피드 -->
+        <section class="feed-section">
+            <h2>우리들의 이야기 💌</h2>
+            <div id="feed-container">
+                <!-- 게시글들이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </section>
+
+        <!-- 관리자 리셋 기능을 위한 숨김 입력창 -->
+        <div class="admin-zone">
+            <input type="password" id="admin-input" placeholder="Admin Key" class="hidden-admin">
+        </div>
+    </div>
+
+    <!-- JS 모듈 연결 -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
