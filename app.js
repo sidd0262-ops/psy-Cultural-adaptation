@@ -30,7 +30,7 @@ const descs = [
 ];
 const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
 
-// 캐릭터 선택
+// 캐릭터 선택 이벤트
 document.querySelectorAll('.char-opt').forEach(opt => {
     opt.onclick = (e) => {
         document.querySelectorAll('.char-opt').forEach(o => o.classList.remove('selected'));
@@ -40,7 +40,7 @@ document.querySelectorAll('.char-opt').forEach(opt => {
     };
 });
 
-// 멤버 추가
+// 멤버 추가 이벤트
 document.getElementById('add-btn').onclick = () => {
     const name = document.getElementById('user-name').value.trim();
     if(!name) { alert("이름을 입력해주세요."); return; }
@@ -55,8 +55,8 @@ document.getElementById('add-btn').onclick = () => {
     members.push({ name, char: selectedChar, role, typeIdx: 1 }); // 기본값 '분리'
     
     document.getElementById('member-chips').innerHTML = members.map(m => 
-        `<span style="display:inline-block; padding:5px 10px; background:#eee; border:2px solid #333; margin:5px;">
-            ${m.char} 캐릭터 - <strong>${m.name}</strong> ${m.role ? '('+m.role+')' : ''}
+        `<span style="display:inline-block; padding:8px 12px; background:#eee; border:2px solid #333; margin:5px; border-radius:4px;">
+            ${m.char} - <strong>${m.name}</strong> ${m.role ? '('+m.role+')' : ''}
         </span>`
     ).join('');
     
@@ -65,7 +65,7 @@ document.getElementById('add-btn').onclick = () => {
     document.getElementById('role-in').value = "";
 };
 
-// 여정 시작 (직접 입력 창 렌더링)
+// 여정 시작 및 카드 생성
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('survey-area').classList.remove('hidden');
     renderSurvey();
@@ -74,7 +74,7 @@ document.getElementById('start-btn').onclick = () => {
 function renderSurvey() {
     document.getElementById('member-cards').innerHTML = members.map((m, mIdx) => `
         <div class="post-card">
-            <h3>[${m.char}] ${m.name} ${m.role ? '('+m.role+')' : ''}</h3>
+            <h3 style="margin-top: 0;">[${m.char}] ${m.name} ${m.role ? '('+m.role+')' : ''}</h3>
             
             <div class="stones" data-midx="${mIdx}">
                 ${stones.map((s, sIdx) => `<div class="stone ${m.typeIdx === sIdx ? 'active' : ''}" data-sidx="${sIdx}">${s}</div>`).join('')}
@@ -83,33 +83,31 @@ function renderSurvey() {
             
             <div class="input-area">
                 ${questions.map((q, qIdx) => `
-                    <p><strong>Q${qIdx + 1}. ${q}</strong></p>
-                    <textarea class="ans-box" data-midx="${mIdx}" data-qidx="${qIdx}" placeholder="이곳에 직접 답변을 적어주세요."></textarea>
+                    <p>Q${qIdx + 1}. ${q}</p>
+                    <textarea class="ans-box" data-midx="${mIdx}" data-qidx="${qIdx}" placeholder="이곳에 솔직한 마음을 적어주세요."></textarea>
                 `).join('')}
             </div>
         </div>
     `).join('');
     
-    // 징검다리 클릭 이벤트
     document.querySelectorAll('.stone').forEach(st => {
         st.onclick = (e) => {
             const midx = e.target.parentElement.dataset.midx;
             members[midx].typeIdx = parseInt(e.target.dataset.sidx);
             
-            // 답변 내용 백업 (리렌더링 시 날아가는 것 방지)
+            // 답변 날아감 방지 백업
             const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
             const savedAnswers = Array.from(textareas).map(t => t.value);
             
             renderSurvey();
             
-            // 답변 내용 복구
             const newTextareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
             newTextareas.forEach((t, i) => t.value = savedAnswers[i] || "");
         };
     });
 }
 
-// 공유하기 (저장 로직 개선)
+// 공유하기 (저장 로직)
 document.getElementById('share-btn').onclick = async () => {
     try {
         const finalData = members.map((m, mIdx) => ({
@@ -120,47 +118,69 @@ document.getElementById('share-btn').onclick = async () => {
         
         await addDoc(postsCol, { family: finalData, timestamp: new Date() });
         alert("성공적으로 공유되었습니다! 🎉"); 
-        location.reload(); // 화면 새로고침하여 게시판에 즉시 반영
+        
+        // 데이터 초기화 및 렌더링 (새로고침 대신 깔끔하게)
+        members = [];
+        document.getElementById('member-chips').innerHTML = "";
+        document.getElementById('survey-area').classList.add('hidden');
+        document.getElementById('start-btn').classList.add('hidden');
+        
     } catch (error) {
-        alert("오류가 발생했습니다. 파이어베이스 규칙을 확인해주세요.");
+        alert("저장에 실패했습니다. 관리자에게 문의하세요.");
     }
 };
 
-// 실시간 게시판 및 블로그형 페이지네이션 렌더링
+// 실시간 게시판 데이터 수신
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
     allPosts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // 게시글이 1개라도 있으면 즉시 렌더링되도록 수정
     renderFeed();
 });
 
+// 피드 및 페이지네이션 렌더링
 function renderFeed() {
+    if (allPosts.length === 0) {
+        document.getElementById('feed-list').innerHTML = "<p style='text-align:center; color:#666;'>아직 공유된 이야기가 없습니다. 첫 번째 이야기를 들려주세요!</p>";
+        document.getElementById('page-nav').innerHTML = "";
+        return;
+    }
+
     const start = (currentPage - 1) * postsPerPage;
     const paginated = allPosts.slice(start, start + postsPerPage);
 
     document.getElementById('feed-list').innerHTML = paginated.map(post => `
         <div class="post-card">
-            <button class="eraser" onclick="window.delPost('${post.id}')">🧽</button>
+            <button class="eraser" onclick="window.delPost('${post.id}')" title="삭제하기">🧽</button>
             ${post.family.map(m => `
-                <div style="margin-bottom: 20px;">
-                    <div style="font-size: 1.1rem; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px;">
-                        <strong>[${m.char}] ${m.name}</strong> ${m.role ? '('+m.role+')' : ''} - <span style="color:#e91e63;">${m.type}</span>
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 1.2rem; border-bottom: 3px solid #333; padding-bottom: 8px; margin-bottom: 15px;">
+                        <strong>[${m.char}] ${m.name}</strong> ${m.role ? '<span style="font-size:1rem;">('+m.role+')</span>' : ''} 
+                        <span style="color:#e91e63; float:right; font-size:1rem;">${m.type}</span>
                     </div>
-                    ${m.answers.map((ans, qIdx) => `
-                        <div class="qa-block">
-                            <strong>Q. ${questions[qIdx]}</strong>
-                            <span>A. ${ans || "답변 없음"}</span>
-                        </div>
-                    `).join('')}
+                    
+                    <div class="qa-list">
+                        ${m.answers.map((ans, qIdx) => `
+                            <div class="qa-item">
+                                <span class="q-text">Q${qIdx + 1}. ${questions[qIdx]}</span>
+                                <span class="a-text">${ans || "작성된 답변이 없습니다."}</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
-            `).join('<hr style="border: 2px dashed #ccc; margin: 20px 0;">')}
+            `).join('<hr style="border: 2px dashed #bbb; margin: 30px 0;">')}
         </div>
     `).join('');
     
     renderPageNav();
 }
 
-// 5개 단위 페이지 번호 생성
 function renderPageNav() {
     const total = Math.ceil(allPosts.length / postsPerPage);
+    if (total <= 1) {
+        document.getElementById('page-nav').innerHTML = "";
+        return;
+    }
+
     let html = '';
     for(let i = 1; i <= total; i++) {
         html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="window.setPage(${i})">${i}</button>`;
@@ -171,27 +191,33 @@ function renderPageNav() {
 window.setPage = (p) => { 
     currentPage = p; 
     renderFeed(); 
-    // 페이지 이동 시 피드 상단으로 스크롤 부드럽게 이동
-    document.getElementById('ui-feed-title').scrollIntoView({ behavior: 'smooth' });
+    // 페이지 넘길 때 피드 제목 위치로 살짝 스크롤
+    document.getElementById('feed-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-// 개별 삭제 (지우개)
+// 개별 삭제 로직
 window.delPost = async (id) => {
-    if(document.getElementById('admin-pw').value === '0530') {
-        if(confirm("이 게시글을 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", id));
+    const pwInput = document.getElementById('admin-pw').value;
+    if(pwInput === '0530') {
+        if(confirm("이 게시글을 삭제하시겠습니까?")) {
+            await deleteDoc(doc(db, "posts", id));
+            alert("삭제되었습니다.");
+        }
     } else {
-        alert("비밀번호(0530)를 먼저 입력해주세요.");
+        alert("비밀번호를 입력해야 삭제할 수 있습니다.");
     }
 };
 
-// 전체 삭제
+// 전체 삭제 로직
 document.getElementById('del-all').onclick = async () => {
-    if(document.getElementById('admin-pw').value === '0530') {
-        if(confirm("모든 데이터를 영구적으로 삭제하시겠습니까?")) {
+    const pwInput = document.getElementById('admin-pw').value;
+    if(pwInput === '0530') {
+        if(confirm("모든 데이터를 영구적으로 삭제하시겠습니까? (복구 불가)")) {
             const s = await getDocs(postsCol);
             s.forEach(async d => await deleteDoc(doc(db, "posts", d.id)));
+            alert("모든 데이터가 삭제되었습니다.");
         }
     } else {
-        alert("비밀번호(0530)를 먼저 입력해주세요.");
+        alert("비밀번호를 입력해야 삭제할 수 있습니다.");
     }
 };
