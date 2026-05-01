@@ -1,5 +1,4 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-// ✨ 데이터 병합을 위해 where, updateDoc, limit 모듈을 추가로 가져옵니다 ✨
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs, where, updateDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -17,11 +16,15 @@ const postsCol = collection(db, "posts");
 
 let members = [];
 let selectedChar = "남자";
-let currentFamilyName = ""; // ✨ 입력한 가족 이름을 기억하는 변수
+let currentFamilyName = ""; 
 let allPosts = [];
 let currentPage = 1;
 const postsPerPage = 5;
+
+// ✨ 모드 관리를 위한 변수들 ✨
 let isDeleteMode = false; 
+let isEditMode = false;
+let editingPostId = null; // 현재 수정 중인 게시물 ID 기억
 
 const stones = ["주변화", "분리", "동화", "통합"];
 const descs = [
@@ -46,19 +49,17 @@ document.getElementById('add-btn').onclick = () => {
     if(!name) { alert("이름을 입력해주세요."); return; }
     
     let role = "";
-    
-    // ✨ 가족을 선택했을 때 필수 정보 체크 ✨
     if (selectedChar === "가족") {
         const familyNameInput = document.getElementById('family-name-in').value.trim();
         if (!familyNameInput) { alert("가족 이름을 꼭 입력해주세요! (예: 주호진,차무희네 가족)"); return; }
         
-        currentFamilyName = familyNameInput; // 가족 이름 저장
+        currentFamilyName = familyNameInput;
         const gender = document.getElementById('gender-sel').value;
         const roleInput = document.getElementById('role-in').value.trim();
         role = `${gender} / ${roleInput}`;
     }
 
-    members.push({ name, char: selectedChar, role, typeIdx: 1 });
+    members.push({ name, char: selectedChar, role, typeIdx: 1, tempAnswers: [] });
     document.getElementById('member-chips').innerHTML = members.map(m => 
         `<span style="display:inline-block; padding:8px 12px; background:#eee; border:2px solid #333; margin:5px; border-radius:4px;">
             ${m.char} - <strong>${m.name}</strong> ${m.role ? '('+m.role+')' : ''}
@@ -86,7 +87,8 @@ function renderSurvey() {
             <div class="input-area">
                 ${questions.map((q, qIdx) => `
                     <p style="font-weight:bold; margin:15px 0 5px;">Q${qIdx + 1}. ${q}</p>
-                    <textarea class="ans-box" data-midx="${mIdx}" data-qidx="${qIdx}" placeholder="이곳에 솔직한 마음을 적어주세요."></textarea>
+                    <!-- ✨ 불러온 기존 답변이 있다면 미리 채워넣습니다 ✨ -->
+                    <textarea class="ans-box" data-midx="${mIdx}" data-qidx="${qIdx}" placeholder="이곳에 솔직한 마음을 적어주세요.">${m.tempAnswers && m.tempAnswers[qIdx] ? m.tempAnswers[qIdx] : ""}</textarea>
                 `).join('')}
             </div>
         </div>
@@ -97,15 +99,12 @@ function renderSurvey() {
             const midx = e.target.parentElement.dataset.midx;
             members[midx].typeIdx = parseInt(e.target.dataset.sidx);
             const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
-            const savedAnswers = Array.from(textareas).map(t => t.value);
+            members[midx].tempAnswers = Array.from(textareas).map(t => t.value); // 입력 중이던 텍스트 백업
             renderSurvey();
-            const newTextareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
-            newTextareas.forEach((t, i) => t.value = savedAnswers[i] || "");
         };
     });
 }
 
-// ✨ 마법의 병합(묶음) 기능이 들어간 공유하기 로직 ✨
 document.getElementById('share-btn').onclick = async () => {
     try {
         const finalData = members.map((m, mIdx) => ({
@@ -114,25 +113,34 @@ document.getElementById('share-btn').onclick = async () => {
             answers: Array.from(document.querySelectorAll(`.ans-box[data-midx="${mIdx}"]`)).map(a => a.value.trim())
         }));
         
-        // 가족 이름이 입력되어 있다면 데이터베이스에서 같은 이름을 검색합니다.
+        // ✨ 수정 모드일 때: 기존 문서 업데이트 ✨
+        if (editingPostId) {
+            await updateDoc(doc(db, "posts", editingPostId), {
+                family: finalData,
+                familyName: currentFamilyName,
+                timestamp: new Date()
+            });
+            alert("수정이 완벽하게 적용되었습니다! ✏️");
+            location.reload();
+            return;
+        }
+        
+        // 신규 작성 모드일 때 (가족 병합 포함)
         if (currentFamilyName !== "") {
             const q = query(postsCol, where("familyName", "==", currentFamilyName), limit(1));
             const querySnapshot = await getDocs(q);
             
             if (!querySnapshot.empty) {
-                // 이미 같은 가족 이름의 게시물이 있다면, 그 안에 멤버를 추가(병합)합니다!
                 const docId = querySnapshot.docs[0].id;
                 const existingFamily = querySnapshot.docs[0].data().family || [];
                 await updateDoc(doc(db, "posts", docId), {
                     family: [...existingFamily, ...finalData],
-                    timestamp: new Date() // 업데이트 되면서 게시판 맨 위로 올라옵니다.
+                    timestamp: new Date() 
                 });
             } else {
-                // 처음 작성하는 가족 이름이면 새로 만듭니다.
                 await addDoc(postsCol, { familyName: currentFamilyName, family: finalData, timestamp: new Date() });
             }
         } else {
-            // 개인(남자/여자)으로 작성한 경우
             await addDoc(postsCol, { familyName: "", family: finalData, timestamp: new Date() });
         }
 
@@ -159,7 +167,6 @@ function renderFeed() {
 
     document.getElementById('feed-list').innerHTML = paginated.map(post => `
         <div class="post-card" onclick="window.selectPost('${post.id}')">
-            <!-- ✨ 가족 이름이 있으면 맨 위에 예쁜 간판처럼 달아줍니다 ✨ -->
             ${post.familyName ? `<div style="background:#4caf50; color:white; padding:10px 15px; border:3px solid #333; border-radius:8px; margin-bottom:25px; font-weight:bold; font-size:1.1rem; text-align:center; box-shadow: 3px 3px 0px #333;">🏡 ${post.familyName}</div>` : ''}
             
             ${post.family.map(m => `
@@ -194,26 +201,70 @@ function renderPageNav() {
 
 window.setPage = (p) => { currentPage = p; renderFeed(); window.scrollTo(0, document.getElementById('feed-title').offsetTop); };
 
+// ✨ 삭제 모드 버튼 로직 ✨
 document.getElementById('delete-mode-btn').onclick = () => {
     isDeleteMode = true;
+    isEditMode = false;
     document.body.classList.add('delete-mode-active');
-    alert("지우고 싶은 게시물을 클릭해주세요.");
+    document.body.classList.remove('edit-mode-active');
+    alert("지우고 싶은 게시물을 클릭해주세요. (비밀번호 필요)");
 };
 
-window.selectPost = async (id) => {
-    if (!isDeleteMode) return; 
-
-    const pwInput = prompt("이 게시물을 삭제하려면 비밀번호를 입력하세요.");
-
-    if (pwInput === '0530') {
-        await deleteDoc(doc(db, "posts", id));
-        alert("삭제 완료되었습니다.");
-    } else if (pwInput !== null && pwInput !== "") {
-        alert("비밀번호를 올바르게 입력해주세요.");
-    }
-
+// ✨ 수정 모드 버튼 로직 ✨
+document.getElementById('edit-mode-btn').onclick = () => {
+    isEditMode = true;
     isDeleteMode = false;
+    document.body.classList.add('edit-mode-active');
     document.body.classList.remove('delete-mode-active');
+    alert("수정하고 싶은 게시물을 클릭해주세요. (비밀번호 불필요)");
+};
+
+// ✨ 게시물 클릭 시 로직 처리 ✨
+window.selectPost = async (id) => {
+    if (isDeleteMode) {
+        // 지우개 모드
+        const pwInput = prompt("이 게시물을 삭제하려면 비밀번호를 입력하세요.");
+        if (pwInput === '0530') {
+            await deleteDoc(doc(db, "posts", id));
+            alert("삭제 완료되었습니다.");
+        } else if (pwInput !== null && pwInput !== "") {
+            alert("비밀번호를 올바르게 입력해주세요.");
+        }
+        isDeleteMode = false;
+        document.body.classList.remove('delete-mode-active');
+        
+    } else if (isEditMode) {
+        // 연필(수정) 모드
+        const postToEdit = allPosts.find(p => p.id === id);
+        if (postToEdit) {
+            editingPostId = id; // 수정 중인 문서 ID 기억
+            currentFamilyName = postToEdit.familyName || "";
+            
+            // 기존 데이터를 members 배열로 복구
+            members = postToEdit.family.map(m => ({
+                name: m.name,
+                char: m.char,
+                role: m.role,
+                typeIdx: stones.indexOf(m.type) !== -1 ? stones.indexOf(m.type) : 1,
+                tempAnswers: m.answers || []
+            }));
+
+            // UI 변경 (가족 이름, 공유 버튼 텍스트/색상)
+            document.getElementById('family-name-in').value = currentFamilyName;
+            document.getElementById('survey-area').classList.remove('hidden');
+            
+            const shareBtn = document.getElementById('share-btn');
+            shareBtn.innerText = "우리들의 이야기 수정 완료하기";
+            shareBtn.style.background = "#2196F3"; // 눈에 띄게 파란색으로 변경
+
+            renderSurvey();
+            
+            // 맨 위(입력창)로 화면 자동 스크롤
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        isEditMode = false;
+        document.body.classList.remove('edit-mode-active');
+    }
 };
 
 document.getElementById('del-all').onclick = async () => {
