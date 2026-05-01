@@ -20,7 +20,6 @@ let allPosts = [];
 let currentPage = 1;
 const postsPerPage = 5;
 
-// 상세한 문화적응 모델 설명
 const stones = ["주변화", "분리", "동화", "통합"];
 const descs = [
     "주변화(Marginalization): 고유의 문화와 새로운 문화 양쪽 모두에서 소외감을 느끼며, 어디에도 속하지 못해 혼란을 겪는 상태입니다.",
@@ -30,7 +29,6 @@ const descs = [
 ];
 const questions = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 말", "그만두고 싶었던 순간"];
 
-// 캐릭터 선택 이벤트
 document.querySelectorAll('.char-opt').forEach(opt => {
     opt.onclick = (e) => {
         document.querySelectorAll('.char-opt').forEach(o => o.classList.remove('selected'));
@@ -40,7 +38,6 @@ document.querySelectorAll('.char-opt').forEach(opt => {
     };
 });
 
-// 멤버 추가 이벤트
 document.getElementById('add-btn').onclick = () => {
     const name = document.getElementById('user-name').value.trim();
     if(!name) { alert("이름을 입력해주세요."); return; }
@@ -52,7 +49,7 @@ document.getElementById('add-btn').onclick = () => {
         role = `${gender} / ${roleInput}`;
     }
 
-    members.push({ name, char: selectedChar, role, typeIdx: 1 }); // 기본값 '분리'
+    members.push({ name, char: selectedChar, role, typeIdx: 1 });
     
     document.getElementById('member-chips').innerHTML = members.map(m => 
         `<span style="display:inline-block; padding:8px 12px; background:#eee; border:2px solid #333; margin:5px; border-radius:4px;">
@@ -65,7 +62,6 @@ document.getElementById('add-btn').onclick = () => {
     document.getElementById('role-in').value = "";
 };
 
-// 여정 시작 및 카드 생성
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('survey-area').classList.remove('hidden');
     renderSurvey();
@@ -95,7 +91,6 @@ function renderSurvey() {
             const midx = e.target.parentElement.dataset.midx;
             members[midx].typeIdx = parseInt(e.target.dataset.sidx);
             
-            // 답변 날아감 방지 백업
             const textareas = document.querySelectorAll(`.ans-box[data-midx="${midx}"]`);
             const savedAnswers = Array.from(textareas).map(t => t.value);
             
@@ -107,7 +102,6 @@ function renderSurvey() {
     });
 }
 
-// 공유하기 (저장 로직)
 document.getElementById('share-btn').onclick = async () => {
     try {
         const finalData = members.map((m, mIdx) => ({
@@ -119,7 +113,6 @@ document.getElementById('share-btn').onclick = async () => {
         await addDoc(postsCol, { family: finalData, timestamp: new Date() });
         alert("성공적으로 공유되었습니다! 🎉"); 
         
-        // 데이터 초기화 및 렌더링 (새로고침 대신 깔끔하게)
         members = [];
         document.getElementById('member-chips').innerHTML = "";
         document.getElementById('survey-area').classList.add('hidden');
@@ -130,13 +123,11 @@ document.getElementById('share-btn').onclick = async () => {
     }
 };
 
-// 실시간 게시판 데이터 수신
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
     allPosts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderFeed();
 });
 
-// 피드 및 페이지네이션 렌더링
 function renderFeed() {
     if (allPosts.length === 0) {
         document.getElementById('feed-list').innerHTML = "<p style='text-align:center; color:#666;'>아직 공유된 이야기가 없습니다. 첫 번째 이야기를 들려주세요!</p>";
@@ -193,7 +184,6 @@ window.setPage = (p) => {
     document.getElementById('feed-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-// 개별 삭제 로직 (보안 강화)
 window.delPost = async (id) => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
@@ -206,7 +196,6 @@ window.delPost = async (id) => {
     }
 };
 
-// 전체 삭제 로직 (보안 강화)
 document.getElementById('del-all').onclick = async () => {
     const pwInput = document.getElementById('admin-pw').value;
     if(pwInput === '0530') {
