@@ -1,0 +1,17 @@
+{
+  "name": "문화적응 여정",
+  "short_name": "문화적응여정",
+  "description": "존 베리의 문화적응 모델로 나의 마음을 돌아보고 이야기를 나누는 앱",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E3F1FF",
+  "theme_color": "#8EC5FF",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

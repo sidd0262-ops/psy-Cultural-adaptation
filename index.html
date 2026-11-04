@@ -1,118 +1,205 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>문화적응 여정</title>
-    <link href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css" rel="stylesheet">
-    <style>
-        :root { --p-border: #333; --sky: #a2d2ff; }
-        body { font-family: 'NeoDunggeunmo', monospace; margin: 0; background-color: var(--sky); color: #333; overflow-x: hidden; }
-        
-        #google_translate_element { text-align: right; padding: 10px 20px; background: rgba(255,255,255,0.8); border-bottom: 3px solid var(--p-border); }
-        .goog-te-gadget { font-family: 'NeoDunggeunmo', monospace !important; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>문화적응 여정</title>
+  <meta name="description" content="존 베리의 문화적응 모델로 나의 마음을 돌아보고 이야기를 나누는 앱">
+  <meta name="theme-color" content="#8EC5FF">
+  <meta name="robots" content="noindex, nofollow">
 
-        .sky-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: linear-gradient(180deg, #87ceeb 0%, #e0f7fa 100%); }
-        .airplane { position: absolute; font-size: 3rem; top: 100px; left: -100px; animation: fly 25s linear infinite; z-index: -1; }
-        @keyframes fly { from { left: -100px; transform: translateY(0); } 50% { transform: translateY(30px); } to { left: 110vw; transform: translateY(0); } }
+  <!-- 📲 앱(PWA) 설정 -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="문화적응여정">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-        .container { max-width: 650px; margin: 30px auto; background: rgba(255, 255, 255, 0.95); border: 4px solid var(--p-border); padding: 30px; box-shadow: 10px 10px 0 rgba(0,0,0,0.1); }
-        
-        .char-grid { display: flex; justify-content: center; gap: 20px; margin: 25px 0; }
-        .char-opt { width: 80px; height: 80px; border: 3px solid var(--p-border); background: #fff; cursor: pointer; transition: 0.2s; object-fit: cover; image-rendering: pixelated; }
-        .char-opt.selected { background: #ffeb3b; transform: scale(1.15); box-shadow: 0 5px 0 var(--p-border); border-color: #e91e63; }
-
-        .stones { display: flex; justify-content: space-between; margin: 35px 0; position: relative; }
-        .stones::after { content: ''; position: absolute; top: 22px; left: 5%; right: 5%; height: 6px; background: #8d6e63; z-index: 1; border: 2px solid var(--p-border); }
-        .stone { z-index: 2; width: 75px; height: 45px; background: #d7ccc8; border: 3px solid var(--p-border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; box-shadow: 0 5px 0 #5d4037; }
-        .stone.active { background: #4caf50; color: white; transform: translateY(-5px); box-shadow: 0 5px 0 #2e7d32; }
-
-        .speech-bubble { background: #fdfcf0; border: 3px solid var(--p-border); padding: 15px; border-radius: 10px; margin: 15px 0; position: relative; line-height: 1.6; font-size: 0.95rem;}
-        .speech-bubble::after { content: ''; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); border-width: 0 10px 10px 10px; border-style: solid; border-color: transparent transparent var(--p-border) transparent; }
-
-        .ans-box { width: calc(100% - 24px); height: 60px; font-family: inherit; padding: 10px; border: 3px solid var(--p-border); margin-bottom: 5px; resize: none; font-size: 1rem; }
-        input, select { font-family: inherit; padding: 10px; border: 3px solid var(--p-border); margin: 10px 0; width: calc(100% - 26px); font-size: 1rem; box-sizing: border-box; }
-        button { font-family: inherit; border: 3px solid var(--p-border); padding: 12px; cursor: pointer; box-shadow: 4px 4px 0 var(--p-border); width: 100%; font-size: 1.1rem; }
-        
-        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 30px; }
-        .page-btn { padding: 8px 15px; border: 2px solid var(--p-border); background: #fff; cursor: pointer; width: auto; box-shadow: 2px 2px 0 var(--p-border); font-size: 1rem; }
-        .page-btn.active { background: #9c27b0; color: white; }
-
-        .hidden { display: none !important; }
-        
-        .post-card { border: 3px solid var(--p-border); padding: 25px; margin-bottom: 25px; background: #fff; text-align: left; transition: 0.2s; }
-        .qa-item { background: #f9f9f9; padding: 12px; border-left: 5px solid #ff9800; border-radius: 4px; margin-top: 10px; }
-        .q-text { display: block; font-weight: bold; color: #444; margin-bottom: 5px; font-size: 0.9rem; }
-        .a-text { display: block; color: #111; font-size: 1rem; white-space: pre-wrap; }
-
-        .delete-mode-active .post-card { border: 4px dashed #f44336; cursor: pointer; }
-        .delete-mode-active .post-card:hover { background-color: #ffebee; transform: translateY(-5px); box-shadow: 0 10px 0 rgba(244, 67, 54, 0.2); }
-        
-        .edit-mode-active .post-card { border: 4px dashed #4caf50; cursor: pointer; }
-        .edit-mode-active .post-card:hover { background-color: #e8f5e9; transform: translateY(-5px); box-shadow: 0 10px 0 rgba(76, 175, 80, 0.2); }
-    </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="google_translate_element"></div>
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'ko',
-                includedLanguages: 'ko,vi,zh-CN,zh-TW,th,tl,ru,mn,km,ne,id,uz,en,ja', 
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-            }, 'google_translate_element');
-        }
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <!-- ☁️ 배경 -->
+  <div class="sky" aria-hidden="true">
+    <span class="cloud c1">☁️</span><span class="cloud c2">☁️</span><span class="plane">✈️</span>
+  </div>
 
-    <div class="sky-bg"><div class="airplane">✈️</div></div>
-
-    <div class="container">
-        <h1 style="text-align: center; color: #4a148c; text-shadow: 2px 2px #fff;">문화적응 여정</h1>
-        
-        <!-- ✨ 헷갈림 방지를 위해 초기 입력폼을 하나의 그룹으로 묶었습니다 ✨ -->
-        <div id="top-input-section">
-            <div class="char-grid">
-                <img src="pixel_man.png" alt="남자" class="char-opt selected" data-char="남자">
-                <img src="pixel_woman.png" alt="여자" class="char-opt" data-char="여자">
-                <img src="pixel_family.png" alt="가족" class="char-opt" data-char="가족">
-            </div>
-
-            <input type="text" id="user-name" placeholder="이름을 입력하세요">
-            
-            <div id="family-form" class="hidden">
-                <input type="text" id="family-name-in" placeholder="우리 가족 이름 (예: 주호진,차무희네 가족)" style="border-color: #4caf50; background-color: #f1f8e9;">
-                <select id="gender-sel">
-                    <option value="남성">남성</option>
-                    <option value="여성">여성</option>
-                </select>
-                <input type="text" id="role-in" placeholder="가족 내 역할 (예: 첫째 딸)">
-            </div>
-
-            <button id="add-btn" style="background: #e0e0e0;">멤버 추가</button>
-            <div id="member-chips" style="margin-top: 15px;"></div>
-            <button id="start-btn" class="hidden" style="background:#ff9800; color:white; margin-top: 15px;">여정 시작 (START)</button>
-        </div>
-
-        <div id="survey-area" class="hidden">
-            <div id="member-cards"></div>
-            <button id="share-btn" style="background:#4caf50; color:white; margin-top: 20px;">우리들의 이야기 공유하기</button>
-        </div>
+  <!-- 상단 바 -->
+  <header class="topbar">
+    <div class="brand"><span class="brand-emo">✈️</span><span>문화적응 여정</span></div>
+    <div class="top-actions">
+      <div id="google_translate_element" title="언어 바꾸기"></div>
+      <button class="icon-btn" id="help-top" aria-label="사용설명서 보기">❓</button>
     </div>
+  </header>
 
-    <div class="container" style="background:rgba(255,255,255,0.95);">
-        <h2 id="feed-title" style="text-align: center;">우리들의 이야기 💌</h2>
-        <div id="feed-list"></div>
-        <div class="pagination" id="page-nav"></div>
-        
-        <div style="margin-top:40px; border-top:2px dashed #ccc; padding-top:20px; display:flex; justify-content:center; align-items:center; gap:10px;">
-            <button id="edit-mode-btn" style="background:none; border:none; font-size:2rem; cursor:pointer; padding:0; box-shadow:none; width:auto;" title="게시물 수정하기">✏️</button>
-            <button id="delete-mode-btn" style="background:none; border:none; font-size:2rem; cursor:pointer; padding:0; box-shadow:none; width:auto;" title="개별 게시물 지우기">🧽</button>
-            <input type="password" id="admin-pw" placeholder="비밀번호" style="width:120px; margin:0;">
-            <button id="del-all" style="width:auto; background:#f44336; color:white; padding:12px; margin:0;">전체 삭제</button>
+  <main>
+    <!-- ================= 🧭 여정 탭 ================= -->
+    <section id="view-journey" class="view">
+
+      <!-- STEP 1: 누구의 이야기? -->
+      <div id="step-who" class="card">
+        <div class="step-pill">STEP 1 · 참여자 정하기</div>
+        <h2>누구의 이야기인가요? 🙌</h2>
+
+        <div class="who-grid">
+          <button class="who-opt selected" data-char="남자"><span class="emo">🙋‍♂️</span><b>남자</b></button>
+          <button class="who-opt" data-char="여자"><span class="emo">🙋‍♀️</span><b>여자</b></button>
+          <button class="who-opt" data-char="가족"><span class="emo">🏡</span><b>가족</b></button>
         </div>
-    </div>
 
-    <script type="module" src="app.js"></script>
+        <label class="field">
+          <span class="field-label">✏️ 이름 (별명도 좋아요)</span>
+          <input type="text" id="user-name" placeholder="이름을 입력하세요" autocomplete="off" enterkeyhint="done">
+        </label>
+
+        <div id="family-form" class="family-box hidden">
+          <label class="field">
+            <span class="field-label">🏡 우리 가족 이름</span>
+            <input type="text" id="family-name-in" placeholder="예: 주호진, 차무희네 가족" autocomplete="off">
+          </label>
+          <span class="field-label">🙂 나는 가족 중에서…</span>
+          <div class="avatar-row" id="avatar-row"></div>
+          <label class="field">
+            <span class="field-label">👪 가족 안에서의 역할</span>
+            <input type="text" id="role-in" placeholder="예: 첫째 딸, 엄마" autocomplete="off">
+          </label>
+        </div>
+
+        <button id="add-btn" class="btn btn-soft">➕ 이 사람 추가하기</button>
+        <div id="member-chips" class="chips"></div>
+        <button id="start-btn" class="btn btn-primary">여정 시작하기 🚀</button>
+        <p class="hint">💡 혼자라면 이름만 쓰고 <b>여정 시작하기</b>를 누르세요.<br>여러 명이 함께라면 한 명씩 <b>추가하기</b>를 눌러 주세요.</p>
+      </div>
+
+      <!-- STEP 2: 유형 + 질문 -->
+      <div id="step-write" class="hidden">
+        <div class="card slim">
+          <div class="step-pill">STEP 2 · 나의 마음 적기</div>
+          <p class="muted">🧭 유형을 하나 고르고, 4가지 질문에 편하게 답해 주세요. 쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</p>
+          <div id="family-edit"></div>
+        </div>
+        <div id="member-cards"></div>
+        <div class="row-btns">
+          <button id="back-btn" class="btn btn-ghost">◀ 처음으로</button>
+          <button id="share-btn" class="btn btn-primary">💌 이야기 공유하기</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: 완료 -->
+      <div id="step-done" class="card center hidden">
+        <div class="big-emo bounce">🎉</div>
+        <h2 id="done-title">이야기가 광장에 올라갔어요!</h2>
+        <div id="done-summary" class="done-summary"></div>
+        <button id="go-board" class="btn btn-primary">💌 모두의 이야기 보러 가기</button>
+        <button id="ext-share" class="btn btn-soft">📤 친구에게 링크 보내기</button>
+        <button id="new-story" class="btn btn-ghost">✍️ 새 이야기 쓰기</button>
+      </div>
+    </section>
+
+    <!-- ================= 💌 이야기 광장 탭 ================= -->
+    <section id="view-board" class="view hidden">
+      <div class="card slim">
+        <div class="title-row">
+          <h2>💌 모두의 이야기</h2>
+          <button class="icon-btn" data-open-guide="board" aria-label="이야기 광장 사용법">❓</button>
+        </div>
+        <p class="muted" id="board-count">이야기를 불러오는 중이에요… ⏳</p>
+        <div class="filter-chips" id="filter-chips"></div>
+      </div>
+      <div id="feed-list"></div>
+      <button id="more-btn" class="btn btn-soft hidden">⬇️ 이야기 더 보기</button>
+    </section>
+
+    <!-- ================= 📖 사용설명서 탭 ================= -->
+    <section id="view-guide" class="view hidden">
+      <div class="card">
+        <h2>📖 사용설명서</h2>
+        <p class="muted">처음 오셨나요? 아래 순서대로 읽어 보세요. 언제든 오른쪽 위 <b>❓</b>를 누르면 다시 볼 수 있어요.</p>
+        <button class="btn btn-soft" data-open-guide="intro">▶️ 처음 안내 다시 보기</button>
+      </div>
+
+      <div class="card">
+        <h3>🧭 문화적응이란?</h3>
+        <p>심리학자 <b>존 베리(John W. Berry)</b>는 새로운 나라에 사는 사람의 마음을 두 가지 질문으로 살펴봤어요.</p>
+        <div class="q-axis">
+          <div>❶ <b>내 나라의 문화</b>(언어·음식·전통)를 지키고 싶나요?</div>
+          <div>❷ <b>한국 사람들, 한국 문화</b>와 어울리고 싶나요?</div>
+        </div>
+        <p>두 질문의 답에 따라 4가지 유형이 나와요. 좋고 나쁨이 아니라 <b>지금 내 마음의 위치</b>예요. 마음은 계속 움직여요 🌱</p>
+        <div id="guide-matrix"></div>
+      </div>
+
+      <div class="card">
+        <h3>✍️ 나의 이야기 쓰는 법</h3>
+        <ol class="steps">
+          <li><span>🙋</span><div><b>누구인지 고르기</b><br>남자·여자·가족 중 하나를 눌러요.</div></li>
+          <li><span>✏️</span><div><b>이름 쓰기</b><br>가족이라면 가족 이름과 역할도 적어요. 여러 명이면 <b>➕ 추가하기</b>를 눌러요.</div></li>
+          <li><span>🚀</span><div><b>여정 시작하기</b><br>버튼을 누르면 질문 화면으로 넘어가요.</div></li>
+          <li><span>🧭</span><div><b>유형 고르기</b><br>4개 카드 중 지금 마음과 가까운 것을 눌러요. 잘 모르겠으면 <b>🤔 간단 체크</b>를 해 보세요.</div></li>
+          <li><span>💬</span><div><b>질문 4개 답하기</b><br>짧게 써도 괜찮아요. 빈칸으로 두어도 돼요.</div></li>
+          <li><span>💌</span><div><b>이야기 공유하기</b><br>버튼을 누르면 <b>모두의 이야기</b>에 올라가요.</div></li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>💌 모두의 이야기 사용법</h3>
+        <ul class="bullets">
+          <li>🔎 위쪽의 <b>유형 버튼</b>을 누르면 같은 유형의 이야기만 모아 볼 수 있어요.</li>
+          <li>❤️ <b>공감</b>을 누르면 마음을 전할 수 있어요. (한 이야기에 한 번)</li>
+          <li>⋯ 버튼을 누르면 <b>수정하기</b>·<b>삭제하기</b>가 나와요. 삭제하려면 선생님께 받은 비밀번호가 필요해요.</li>
+          <li>🏡 같은 가족 이름으로 쓰면 하나의 가족 카드로 모일 수 있어요. 합치기 전에 꼭 물어봐요.</li>
+          <li>🌐 오른쪽 위 번역 버튼으로 내 나라 말로 읽을 수 있어요.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>📲 휴대폰에 앱으로 설치하기</h3>
+        <div class="install-box">
+          <div><b>🍎 아이폰 (Safari)</b><br>아래쪽 <b>공유 버튼 ⬆️</b> → <b>홈 화면에 추가 ➕</b> → <b>추가</b></div>
+          <div><b>🤖 안드로이드 (Chrome)</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
+        </div>
+        <button id="install-btn" class="btn btn-primary hidden">📲 지금 앱 설치하기</button>
+        <p class="hint">설치하면 홈 화면의 ✈️ 아이콘으로 바로 열 수 있어요.</p>
+      </div>
+
+      <details class="card admin">
+        <summary>🔐 관리자 메뉴 (선생님용)</summary>
+        <p class="muted">모든 이야기를 한 번에 지워요. 되돌릴 수 없어요.</p>
+        <input type="password" id="admin-pw" placeholder="관리자 비밀번호">
+        <button id="del-all" class="btn btn-danger">🗑️ 전체 삭제</button>
+      </details>
+    </section>
+  </main>
+
+  <!-- 하단 탭바 -->
+  <nav class="tabbar">
+    <button class="tab active" data-tab="journey"><span>🧭</span>여정</button>
+    <button class="tab" data-tab="board"><span>💌</span>모두의 이야기</button>
+    <button class="tab" data-tab="guide"><span>📖</span>설명서</button>
+  </nav>
+
+  <!-- 모달 (사용설명서 / 간단 체크 / 메뉴) -->
+  <div id="sheet" class="sheet-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="sheet" id="sheet-body"></div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'ko',
+        includedLanguages: 'ko,vi,zh-CN,zh-TW,th,tl,ru,mn,km,ne,id,uz,en,ja',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
+    }
+  </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
