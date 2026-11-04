@@ -1,5 +1,5 @@
 // ✈️ 문화적응 여정 — 오프라인 지원 (앱 화면만 저장, 이야기 데이터는 항상 최신으로)
-const CACHE = "journey-v2";
+const CACHE = "journey-v3";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

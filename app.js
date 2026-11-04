@@ -101,6 +101,89 @@ function isSameFamily(a, b) {
   return false;
 }
 
+/* ============ 🌐 언어 (크롬 번역) ============ */
+// 크롬 번역이 켜져 있으면 <html>에 translated-ltr/rtl 표시와 번역 언어가 붙어요.
+function currentLang() {
+  const h = document.documentElement;
+  const translated = /translated-(ltr|rtl)/.test(h.className) && h.lang && h.lang !== "ko";
+  const raw = (translated ? h.lang : navigator.language) || "ko";
+  const [base, region] = raw.split(/[-_]/);
+  return base.toLowerCase() === "zh" && region ? `zh-${region.toUpperCase()}` : base.toLowerCase();
+}
+function langName(code) {
+  try { return new Intl.DisplayNames(["ko"], { type: "language" }).of(code) || code; } catch { return code; }
+}
+
+/* ============ 🔤 이야기 번역 ============ */
+// 크롬 페이지 번역은 페이지 전체를 한 언어로 보고 번역해서, 여러 언어가 섞이면 일부가 안 바뀌어요.
+// 그래서 답변을 하나씩 따로 보내 언어를 각각 알아낸 뒤 번역해요.
+let trMode = store.get("tr-mode", "orig");
+const trCache = new Map(store.get("tr-cache", []));
+function saveTrCache() { store.set("tr-cache", [...trCache.entries()].slice(-800)); }
+
+async function translateText(text, tl) {
+  const key = `${tl}|${text}`;
+  if (trCache.has(key)) return trCache.get(key);
+  const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t`, {
+    method: "POST", body: new URLSearchParams({ q: text })
+  });
+  if (!res.ok) throw new Error(`translate ${res.status}`);
+  const d = await res.json();
+  const out = { t: (d?.[0] || []).map((s) => s?.[0] || "").join(""), src: d?.[2] || "" };
+  trCache.set(key, out);
+  saveTrCache();
+  return out;
+}
+
+function trOptions() {
+  const opts = [{ v: "orig", label: "📝 원문" }, { v: "ko", label: "🇰🇷 한국어" }, { v: "en", label: "🇺🇸 English" }];
+  const mine = currentLang();
+  if (!["ko", "en"].includes(mine.split("-")[0])) opts.push({ v: mine, label: `🌐 ${langName(mine)}` });
+  if (!opts.some((o) => o.v === trMode)) opts.push({ v: trMode, label: `🌐 ${langName(trMode)}` });
+  return opts;
+}
+function renderTrSeg() {
+  $("#tr-seg").innerHTML = trOptions().map((o) =>
+    `<button type="button" class="${o.v === trMode ? "on" : ""}" data-tr="${esc(o.v)}">${esc(o.label)}</button>`).join("");
+}
+$("#tr-seg").onclick = (e) => {
+  const b = e.target.closest("[data-tr]"); if (!b) return;
+  trMode = b.dataset.tr; store.set("tr-mode", trMode);
+  renderTrSeg(); renderFeed();
+};
+
+let trRun = 0;
+async function applyTranslations() {
+  const run = ++trRun;
+  const els = $$("#feed-list .qb[data-orig]");
+  const status = $("#tr-status");
+  if (trMode === "orig" || !els.length) { status.textContent = ""; return; }
+  const tl = trMode, queue = [...els];
+  let done = 0, failed = 0;
+  const worker = async () => {
+    while (queue.length && run === trRun) {
+      const el = queue.shift(), orig = el.dataset.orig;
+      el.classList.add("tr-loading");
+      try {
+        const r = await translateText(orig, tl);
+        if (run !== trRun || !el.isConnected) return;
+        const same = !r.src || r.src.split("-")[0] === tl.split("-")[0];
+        el.innerHTML = same
+          ? `<span translate="no" class="notranslate">${esc(orig)}</span>`
+          : `<span translate="no" class="notranslate">${esc(r.t)}</span><span class="orig">원문 · ${esc(langName(r.src))}<br><span translate="no" class="notranslate">${esc(orig)}</span></span>`;
+      } catch (err) {
+        console.error(err); failed++;
+        if (el.isConnected) el.innerHTML = `${esc(orig)}<span class="orig">⚠️ 번역하지 못했어요 (인터넷 연결 확인)</span>`;
+      } finally {
+        el.classList.remove("tr-loading");
+        done++;
+        if (run === trRun) status.textContent = done < els.length ? `번역 중… ${done}/${els.length}` : failed ? `⚠️ ${failed}개 번역 실패` : "✅ 번역 완료";
+      }
+    }
+  };
+  await Promise.all([1, 2, 3, 4].map(worker));
+}
+
 /* ============ 🧭 탭 ============ */
 function showTab(name) {
   $$(".view").forEach((v) => v.classList.add("hidden"));
@@ -124,13 +207,23 @@ function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
   <div class="axis-note">⬆️ 위쪽 줄: 내 문화를 지켜요 · ➡️ 오른쪽 줄: 한국 문화와 어울려요</div>`;
 }
 
+const LANG_SLIDE = `<div class="big-emo">🌐</div><h2>내 나라 말로 보기</h2>
+       <p class="lang-ask">🙏 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b></p>
+       <p>크롬(Chrome)의 <b>번역</b> 기능을 써요.</p>
+       <div class="install-box" style="text-align:left">
+         <div><b>🤖 안드로이드</b><br>⋮ 메뉴 → <b>번역…</b> → 번역 막대 ⋮ → <b>다른 언어 선택</b></div>
+         <div><b>🍎 아이폰</b><br>⋯ 메뉴 → <b>번역</b> → 번역 막대에서 언어 고르기</div>
+       </div>
+       <p class="muted">답은 내 나라 말로 써도 괜찮아요. 고른 언어가 이야기에 함께 기록돼요.</p>`;
+
 const GUIDES = {
   intro: {
     flag: "hide-guide-intro",
     slides: [
       `<div class="big-emo">👋</div><h2>문화적응 여정에 오신 걸 환영해요!</h2>
        <p>낯선 나라에서 살아가는 <b>나의 마음</b>을 돌아보고,<br>다른 사람들과 <b>이야기를 나누는</b> 곳이에요.</p>
-       <p>🌐 오른쪽 위 번역 버튼으로 <b>내 나라 말</b>로 바꿀 수 있어요.</p>`,
+       <p>🌐 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b><br>다음 장에서 방법을 알려 드릴게요.</p>`,
+      LANG_SLIDE,
       `<div class="big-emo">🧭</div><h2>4가지 마음의 모양</h2>
        <p>존 베리의 문화적응 모델이에요. 좋고 나쁨은 없어요!</p>${matrixHTML()}`,
       `<div class="big-emo">✍️</div><h2>이렇게 참여해요</h2>
@@ -149,6 +242,7 @@ const GUIDES = {
        <p>아래 <b>📖 설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`
     ]
   },
+  lang: { flag: "hide-guide-lang-never", slides: [LANG_SLIDE] },
   board: {
     flag: "hide-guide-board",
     slides: [
@@ -159,6 +253,7 @@ const GUIDES = {
          <li>❤️ <b>공감</b> → 마음 전하기 (한 이야기에 한 번)</li>
          <li>⋯ 버튼 → <b>✏️ 수정하기</b> / <b>🗑️ 삭제하기</b></li>
          <li>🏡 가족 이야기는 하나의 카드로 모여요</li>
+         <li>🔤 <b>이야기 번역</b> → 한국어 / English를 누르면 여러 언어의 답변이 한 언어로 모여요</li>
          <li>✍️ 내 이야기를 올리려면 아래 <b>🧭 여정</b> 탭으로!</li>
        </ul>
        <p class="muted">🤝 다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`
@@ -372,7 +467,8 @@ $("#share-btn").onclick = async () => {
     currentFamilyName = currentFamilyName.trim();
     const finalData = members.map((m) => ({
       name: m.name.trim(), char: m.char, role: (m.role || "").trim(), emoji: memberEmoji(m),
-      type: TYPES[m.typeIdx].key, answers: m.tempAnswers.map((a) => (a || "").trim())
+      type: TYPES[m.typeIdx].key, answers: m.tempAnswers.map((a) => (a || "").trim()),
+      lang: m.lang || currentLang()
     }));
 
     // 같은 가족 후보 찾기 → 합치기 전에 물어봐요
@@ -465,15 +561,15 @@ function renderFeed() {
   const liked = store.get("liked", []);
   $("#feed-list").innerHTML = list.slice(0, visibleCount).map((post) => `
     <article class="post">
-      ${post.familyName ? `<div class="fam-banner">🏡 ${esc(post.familyName)}</div>` : ""}
+      ${post.familyName ? `<div class="fam-banner">🏡 <span translate="no" class="notranslate">${esc(post.familyName)}</span></div>` : ""}
       ${(post.family || []).map((m) => {
         const i = typeIndex(m.type);
         const answers = (m.answers || []).map((a, qi) => a ? `
-          <div class="qa"><div class="ql">${QUESTIONS[qi]?.icon || "💭"} ${esc(QUESTIONS[qi]?.q || "")}</div><div class="qb">${esc(a)}</div></div>` : "").join("");
+          <div class="qa"><div class="ql">${QUESTIONS[qi]?.icon || "💭"} ${esc(QUESTIONS[qi]?.q || "")}</div><div class="qb" data-orig="${esc(a)}"${m.lang ? ` lang="${esc(m.lang)}"` : ""}>${esc(a)}</div></div>` : "").join("");
         return `<div class="member">
           <div class="member-top">
             <div class="avatar sm">${esc(memberEmoji(m))}</div>
-            <div class="who"><b>${esc(m.name)}</b>${m.role ? `<small>${esc(m.role)}</small>` : ""}</div>
+            <div class="who"><b translate="no" class="notranslate">${esc(m.name)}</b>${m.role ? `<small>${esc(m.role)}</small>` : ""}${m.lang && m.lang !== "ko" ? `<br><span class="lang-tag">🌐 ${esc(langName(m.lang))}로 작성</span>` : ""}</div>
             ${i >= 0 ? `<span class="badge" style="${typeStyle(i)}">${TYPES[i].emoji} ${TYPES[i].key}</span>` : ""}
           </div>
           ${answers || `<div class="no-ans">💭 작성된 답변이 없어요</div>`}
@@ -486,6 +582,7 @@ function renderFeed() {
       </div>
     </article>`).join("");
   $("#more-btn").classList.toggle("hidden", list.length <= visibleCount);
+  applyTranslations();
 }
 $("#more-btn").onclick = () => { visibleCount += 5; renderFeed(); };
 
@@ -532,7 +629,8 @@ function startEdit(id) {
   members = (p.family || []).map((m) => ({
     name: m.name || "", char: m.char, role: m.role || "", emoji: m.emoji || "",
     typeIdx: typeIndex(m.type) >= 0 ? typeIndex(m.type) : null,
-    tempAnswers: [0, 1, 2, 3].map((k) => m.answers?.[k] || "")
+    tempAnswers: [0, 1, 2, 3].map((k) => m.answers?.[k] || ""),
+    lang: m.lang || ""
   }));
   showTab("journey");
   goWrite();
@@ -568,5 +666,6 @@ $("#install-btn").onclick = async () => {
 };
 
 /* ============ 🚀 시작 ============ */
+renderTrSeg();
 loadDraft();
 if (!store.get("hide-guide-intro")) openGuide("intro");

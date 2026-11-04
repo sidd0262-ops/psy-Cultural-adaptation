@@ -32,7 +32,7 @@
   <header class="topbar">
     <div class="brand"><span class="brand-emo">✈️</span><span>문화적응 여정</span></div>
     <div class="top-actions">
-      <div id="google_translate_element" title="언어 바꾸기"></div>
+      <button class="icon-btn" data-open-guide="lang" aria-label="내 나라 말로 보기">🌐</button>
       <button class="icon-btn" id="help-top" aria-label="사용설명서 보기">❓</button>
     </div>
   </header>
@@ -110,6 +110,11 @@
         </div>
         <p class="muted" id="board-count">이야기를 불러오는 중이에요… ⏳</p>
         <div class="filter-chips" id="filter-chips"></div>
+        <div class="tr-bar">
+          <div class="tr-title">🌐 이야기 번역 <span id="tr-status" class="tr-status"></span></div>
+          <div class="seg" id="tr-seg"></div>
+          <p class="tr-note">여러 나라 말로 쓴 이야기를 <b>한 언어로 모아</b> 볼 수 있어요. 답변마다 언어를 따로 알아내서 번역해요. (Google 번역 사용)</p>
+        </div>
       </div>
       <div id="feed-list"></div>
       <button id="more-btn" class="btn btn-soft hidden">⬇️ 이야기 더 보기</button>
@@ -121,6 +126,22 @@
         <h2>📖 사용설명서</h2>
         <p class="muted">처음 오셨나요? 아래 순서대로 읽어 보세요. 언제든 오른쪽 위 <b>❓</b>를 누르면 다시 볼 수 있어요.</p>
         <button class="btn btn-soft" data-open-guide="intro">▶️ 처음 안내 다시 보기</button>
+      </div>
+
+      <div class="card">
+        <h3>🌐 내 나라 말로 보기 (크롬 번역)</h3>
+        <p class="lang-ask">🙏 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b></p>
+        <p>이 앱은 <b>크롬(Chrome)에 들어 있는 번역 기능</b>을 써요. 100개가 넘는 언어를 고를 수 있어요.</p>
+        <div class="install-box">
+          <div><b>🤖 안드로이드 (크롬)</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>번역…</b> → 아래 번역 막대의 <b>⋮</b> → <b>다른 언어 선택</b> → 내 언어 고르기</div>
+          <div><b>🍎 아이폰 (크롬)</b><br>아래쪽 <b>⋯ 메뉴</b> → <b>번역</b> → 번역 막대의 <b>⚙️</b> 또는 언어 이름 → 내 언어 고르기</div>
+          <div><b>💻 컴퓨터 (크롬)</b><br>주소창 오른쪽 <b>번역 아이콘</b> 또는 화면에서 <b>마우스 오른쪽 클릭</b> → <b>번역</b> → <b>⋮</b> → <b>다른 언어 선택</b></div>
+        </div>
+        <ul class="bullets" style="margin-top:12px">
+          <li>✍️ 답은 <b>내 나라 말로 편하게</b> 써도 괜찮아요. 내가 고른 언어가 이야기에 자동으로 함께 기록돼요.</li>
+          <li>👀 다른 사람의 이야기도 크롬 번역을 켜 두면 <b>내가 고른 언어로</b> 바뀌어 보여요.</li>
+          <li>🙂 이름은 번역되지 않고 그대로 보여요.</li>
+        </ul>
       </div>
 
       <div class="card">
@@ -153,7 +174,8 @@
           <li>❤️ <b>공감</b>을 누르면 마음을 전할 수 있어요. (한 이야기에 한 번)</li>
           <li>⋯ 버튼을 누르면 <b>수정하기</b>·<b>삭제하기</b>가 나와요. 삭제하려면 선생님께 받은 비밀번호가 필요해요.</li>
           <li>🏡 같은 가족 이름으로 쓰면 하나의 가족 카드로 모일 수 있어요. 합치기 전에 꼭 물어봐요.</li>
-          <li>🌐 오른쪽 위 번역 버튼으로 내 나라 말로 읽을 수 있어요.</li>
+          <li>🔤 <b>이야기 번역</b>에서 <b>한국어</b>나 <b>English</b>를 누르면, 여러 나라 말로 쓴 답변이 <b>모두 한 언어로</b> 바뀌어요. 원문도 아래에 함께 보여요. (진행자·강사님께 추천)</li>
+          <li>🌐 크롬 번역을 켜면 다른 사람의 이야기도 <b>내가 고른 언어</b>로 읽을 수 있어요. 오른쪽 위 <b>🌐</b>를 눌러 보세요.</li>
         </ul>
       </div>
 
@@ -191,16 +213,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <script>
-    function googleTranslateElementInit() {
-      new google.translate.TranslateElement({
-        pageLanguage: 'ko',
-        includedLanguages: 'ko,vi,zh-CN,zh-TW,th,tl,ru,mn,km,ne,id,uz,en,ja',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-      }, 'google_translate_element');
-    }
-  </script>
-  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
