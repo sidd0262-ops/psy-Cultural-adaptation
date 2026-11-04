@@ -142,8 +142,9 @@ const GUIDES = {
        </ol>`,
       `<div class="big-emo">📲</div><h2>앱처럼 설치할 수 있어요</h2>
        <div class="install-box" style="text-align:left">
-         <div><b>🍎 아이폰</b><br>Safari 공유 버튼 ⬆️ → <b>홈 화면에 추가</b></div>
-         <div><b>🤖 안드로이드</b><br>Chrome ⋮ 메뉴 → <b>앱 설치</b></div>
+         <div>🌐 <b>크롬(Chrome)</b>으로 열어 주세요</div>
+         <div><b>🍎 아이폰</b><br>공유 버튼 ⬆️ → <b>홈 화면에 추가</b></div>
+         <div><b>🤖 안드로이드</b><br>⋮ 메뉴 → <b>앱 설치</b></div>
        </div>
        <p>아래 <b>📖 설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`
     ]
