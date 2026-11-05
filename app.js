@@ -346,12 +346,10 @@ $$(".tab").forEach((t) => (t.onclick = () => showTab(t.dataset.tab)));
 function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
   const cells = MATRIX_ORDER.map((i) => {
     const t = TYPES[i];
-    const keepMine = i === 1 || i === 3, joinKr = i === 2 || i === 3; // 분리·통합 / 동화·통합
     const cls = ["type-opt", selected === i ? "selected" : "", selected !== null && selected !== i ? "dim" : ""].join(" ");
     const tag = interactive ? "button" : "div";
     return `<${tag} class="${cls}" style="${typeStyle(i)}" ${interactive ? `data-type="${i}" data-midx="${midx}" type="button"` : ""}>
-      <span class="emo">${t.emoji}</span><b>${t.key}</b><small>${t.short}</small>
-      <span class="mx-tags"><span class="${keepMine ? "hi" : ""}">🏠 내 문화 ${keepMine ? "많이" : "조금"}</span><span class="${joinKr ? "hi" : ""}">🤝 한국 문화 ${joinKr ? "많이" : "조금"}</span></span></${tag}>`;
+      <span class="emo">${t.emoji}</span><b>${t.key}</b><small>${t.short}</small></${tag}>`;
   });
   return `<div class="axis-note">4가지 모양은 두 가지로 나눠져요<br>🏠 <b>내 문화</b>를 얼마나 지키는지 · 🤝 <b>한국 문화</b>와 얼마나 어울리는지</div>
   <div class="matrix ${interactive ? "" : "static"}">${cells.join("")}</div>`;
