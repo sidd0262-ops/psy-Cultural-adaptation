@@ -1,5 +1,5 @@
 // ✈️ 문화적응 여정 — 오프라인 지원 (앱 화면만 저장, 이야기 데이터는 항상 최신으로)
-const CACHE = "journey-v6";
+const CACHE = "journey-v7";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -13,8 +13,8 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" }) // 브라우저 캐시에 남은 옛 파일 대신 항상 새 파일을 확인해요
       .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return res; })
-      .catch(() => caches.match(e.request).then((r) => r || caches.match("index.html")))
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match("index.html")))
   );
 });

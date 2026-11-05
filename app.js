@@ -462,7 +462,7 @@ function addMember() {
   members.push({ name, char: selectedChar, role, emoji, typeIdx: null, tempAnswers: ["", "", "", ""] });
   $("#user-name").value = ""; $("#role-in").value = "";
   renderChips(); saveDraft();
-  toast(`${emoji} ${name} 님이 추가됐어요`);
+  toast(`${emoji} ${name} 님의 아바타가 만들어졌어요`);
   return true;
 }
 function renderChips() {
@@ -791,6 +791,8 @@ $("#del-all").onclick = async () => {
 // 서비스 워커를 바로 등록해요 (크롬은 이게 준비돼야 '설치 가능' 신호를 보내요)
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(console.error);
 // 크롬·엣지·삼성 인터넷은 버튼 한 번으로 설치할 수 있어요. 아이폰·사파리·파이어폭스는 안 돼요.
+// 예전 버전은 질문을 보여 주기만 해도 '물어봤음'으로 기록했어요. 새 이름으로 바꿔 모두에게 한 번 다시 물어요.
+const INSTALL_KEY = "install-asked-v2";
 const CAN_AUTO_INSTALL = "onbeforeinstallprompt" in window && !IS_IOS;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault(); deferredInstall = e;
@@ -858,10 +860,10 @@ function askInstall(next) {
         <button class="btn btn-soft" id="ia-no">아니오</button>
         <button class="btn btn-primary" id="ia-yes">예 👍</button>
       </div>
-    </div>`, () => { store.set("install-asked", true); next(); });
+    </div>`, () => { store.set(INSTALL_KEY, true); next(); });
   $("#ia-no").onclick = closeSheet;
   $("#ia-yes").onclick = () => {
-    store.set("install-asked", true);
+    store.set(INSTALL_KEY, true);
     // 설치 창은 '예'를 누른 그 순간에 바로 띄워야 해요 (기다리면 브라우저가 막아요)
     if (deferredInstall) { closeSheet(); runInstall(); }
     else if (CAN_AUTO_INSTALL) waitInstallSheet(next);
@@ -894,6 +896,6 @@ $("#guide-lang-grid").outerHTML = langGridHTML();
 loadDraft();
 const startIntro = () => { if (!store.get("hide-guide-intro")) openGuide("intro"); };
 // 처음 들어오면 항상 바로 물어봐요 (설치한 앱으로 열었거나 이미 답했으면 안 물어요)
-if (IS_STANDALONE || store.get("install-asked")) startIntro();
+if (IS_STANDALONE || store.get(INSTALL_KEY)) startIntro();
 else askInstall(startIntro);
 if (uiLang !== "ko") translatePage();
