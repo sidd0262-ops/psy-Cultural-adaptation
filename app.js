@@ -832,6 +832,12 @@ function manualInstallSheet(next) {
              <div><b>2.</b> <b>홈 화면에 추가 ➕</b> 누르기</div>
              <div><b>3.</b> 오른쪽 위 <b>추가</b> 누르기</div>
            </div>`
+        : CAN_AUTO_INSTALL
+        ? `<p>지금은 크롬이 바로 설치를 허락하지 않았어요.<br>이미 설치되어 있거나 <b>시크릿 창</b>이면 이렇게 돼요.<br>아래 방법으로 설치해 주세요.</p>`
+          + `<div class="install-box" style="text-align:left">
+             <div><b>📱 휴대폰</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
+             <div><b>💻 컴퓨터</b><br>주소창 오른쪽 <b>설치 아이콘</b> 또는 <b>⋮ 메뉴</b> → <b>앱 설치</b></div>
+           </div>`
         : `<p>이 브라우저는 버튼 하나로 바로 설치할 수 없어요.<br><b>크롬(Chrome)</b>으로 열면 바로 설치돼요.</p>
            <div class="install-box" style="text-align:left">
              <div><b>📱 휴대폰</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
@@ -852,14 +858,33 @@ function askInstall(next) {
         <button class="btn btn-soft" id="ia-no">아니오</button>
         <button class="btn btn-primary" id="ia-yes">예 👍</button>
       </div>
-    </div>`, next);
-  store.set("install-asked", true);
+    </div>`, () => { store.set("install-asked", true); next(); });
   $("#ia-no").onclick = closeSheet;
   $("#ia-yes").onclick = () => {
+    store.set("install-asked", true);
     // 설치 창은 '예'를 누른 그 순간에 바로 띄워야 해요 (기다리면 브라우저가 막아요)
     if (deferredInstall) { closeSheet(); runInstall(); }
+    else if (CAN_AUTO_INSTALL) waitInstallSheet(next);
     else manualInstallSheet(next);
   };
+}
+// 크롬이 아직 설치 준비 중이면: 준비될 때까지 기다렸다가 '지금 설치하기' 버튼을 보여 줘요
+function waitInstallSheet(next) {
+  openSheet(`
+    <div class="slide" style="min-height:0">
+      <div class="big-emo">⏳</div><h2 id="iw-title">설치를 준비하고 있어요</h2>
+      <p id="iw-text">잠시만 기다려 주세요…</p>
+      <button class="btn btn-primary" id="iw-go" disabled>⏳ 준비 중…</button>
+    </div>`, next);
+  const btn = $("#iw-go");
+  waitInstallPrompt(10000).then((ev) => {
+    if (!btn.isConnected) return;
+    if (!ev) { manualInstallSheet(next); return; }
+    $("#iw-title").textContent = "설치 준비가 끝났어요!";
+    $("#iw-text").textContent = "아래 버튼을 누르면 바로 설치돼요.";
+    btn.disabled = false; btn.textContent = "📲 지금 설치하기";
+    btn.onclick = () => { closeSheet(); runInstall(); };
+  });
 }
 
 /* ============ 🚀 시작 ============ */
@@ -868,11 +893,7 @@ renderTrSeg();
 $("#guide-lang-grid").outerHTML = langGridHTML();
 loadDraft();
 const startIntro = () => { if (!store.get("hide-guide-intro")) openGuide("intro"); };
+// 처음 들어오면 항상 바로 물어봐요 (설치한 앱으로 열었거나 이미 답했으면 안 물어요)
 if (IS_STANDALONE || store.get("install-asked")) startIntro();
-else if (!CAN_AUTO_INSTALL) askInstall(startIntro);
-else {
-  // 크롬이 '설치 가능' 신호를 보낼 때까지 잠깐 기다렸다가 물어봐요.
-  // 신호가 안 오면(이미 설치됨 등) 이번에는 묻지 않고, 다음에 다시 확인해요.
-  waitInstallPrompt(5000).then((ev) => (ev ? askInstall(startIntro) : startIntro()));
-}
+else askInstall(startIntro);
 if (uiLang !== "ko") translatePage();
