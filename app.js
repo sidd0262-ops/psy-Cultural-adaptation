@@ -788,9 +788,10 @@ $("#del-all").onclick = async () => {
 };
 
 /* ============ 📲 앱 설치 (PWA) ============ */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error));
-}
+// 서비스 워커를 바로 등록해요 (크롬은 이게 준비돼야 '설치 가능' 신호를 보내요)
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(console.error);
+// 크롬·엣지·삼성 인터넷은 버튼 한 번으로 설치할 수 있어요. 아이폰·사파리·파이어폭스는 안 돼요.
+const CAN_AUTO_INSTALL = "onbeforeinstallprompt" in window && !IS_IOS;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault(); deferredInstall = e;
   $("#install-btn").classList.remove("hidden");
@@ -831,8 +832,10 @@ function manualInstallSheet(next) {
              <div><b>2.</b> <b>홈 화면에 추가 ➕</b> 누르기</div>
              <div><b>3.</b> 오른쪽 위 <b>추가</b> 누르기</div>
            </div>`
-        : `<div class="install-box" style="text-align:left">
-             <div><b>🤖 크롬</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
+        : `<p>이 브라우저는 버튼 하나로 바로 설치할 수 없어요.<br><b>크롬(Chrome)</b>으로 열면 바로 설치돼요.</p>
+           <div class="install-box" style="text-align:left">
+             <div><b>📱 휴대폰</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
+             <div><b>💻 컴퓨터</b><br>주소창 오른쪽 <b>설치 아이콘</b> 또는 <b>⋮ 메뉴</b> → <b>앱 설치</b></div>
            </div>`}
       <p class="muted">이미 설치했다면 홈 화면의 ✈️ 아이콘으로 열어 주세요.</p>
       <button class="btn btn-primary" id="mi-ok">알겠어요 👍</button>
@@ -844,7 +847,7 @@ function askInstall(next) {
   openSheet(`
     <div class="slide" style="min-height:0">
       <div class="big-emo">📲</div><h2>앱으로 설치할까요?</h2>
-      <p>휴대폰 홈 화면에 ✈️ 아이콘이 생겨서<br>다음부터 바로 열 수 있어요.</p>
+      <p>홈 화면(컴퓨터는 바탕화면)에 ✈️ 아이콘이 생겨서<br>다음부터 바로 열 수 있어요.</p>
       <div class="ask-btns">
         <button class="btn btn-soft" id="ia-no">아니오</button>
         <button class="btn btn-primary" id="ia-yes">예 👍</button>
@@ -852,9 +855,8 @@ function askInstall(next) {
     </div>`, next);
   store.set("install-asked", true);
   $("#ia-no").onclick = closeSheet;
-  $("#ia-yes").onclick = async (e) => {
-    e.currentTarget.disabled = true; e.currentTarget.textContent = "⏳";
-    if (!IS_IOS) await waitInstallPrompt(2000);
+  $("#ia-yes").onclick = () => {
+    // 설치 창은 '예'를 누른 그 순간에 바로 띄워야 해요 (기다리면 브라우저가 막아요)
     if (deferredInstall) { closeSheet(); runInstall(); }
     else manualInstallSheet(next);
   };
@@ -866,6 +868,11 @@ renderTrSeg();
 $("#guide-lang-grid").outerHTML = langGridHTML();
 loadDraft();
 const startIntro = () => { if (!store.get("hide-guide-intro")) openGuide("intro"); };
-if (!IS_STANDALONE && !store.get("install-asked")) askInstall(startIntro);
-else startIntro();
+if (IS_STANDALONE || store.get("install-asked")) startIntro();
+else if (!CAN_AUTO_INSTALL) askInstall(startIntro);
+else {
+  // 크롬이 '설치 가능' 신호를 보낼 때까지 잠깐 기다렸다가 물어봐요.
+  // 신호가 안 오면(이미 설치됨 등) 이번에는 묻지 않고, 다음에 다시 확인해요.
+  waitInstallPrompt(5000).then((ev) => (ev ? askInstall(startIntro) : startIntro()));
+}
 if (uiLang !== "ko") translatePage();
