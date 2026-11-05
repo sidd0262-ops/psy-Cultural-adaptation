@@ -21,6 +21,6 @@ Windows PC에서 작업한 커밋:
   - 작업 시작 전: `git pull`
   - 작업 후: 커밋하고 `git push` (사용자에게 확인 후)
 - Windows PC: Git, GitHub CLI 설치됨 (C:\Program Files\Git, C:\Program Files\GitHub CLI), gh 로그인 완료.
-  - git 이름/이메일(user.name, user.email)이 설정되어 있지 않음 → 커밋할 때 `git -c user.name="sidd0262-ops" -c user.email="sidd0262@gmail.com" commit ...`으로 기존 작성자와 맞춤.
+  - git 작성자 설정 완료 (global user.name=sidd0262-ops, user.email=sidd0262@gmail.com) — 그냥 `git commit` 하면 됨.
   - `icons/.claude/launch.json`은 로컬 미리보기 서버 설정(python http.server 8765)이라 커밋하지 않음.
 - 사용자와는 한국어로 대화.
