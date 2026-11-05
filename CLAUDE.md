@@ -3,6 +3,7 @@
 문화적응 유형을 알아보는 웹앱. 휴대폰에 설치할 수 있는 PWA 형태.
 
 - GitHub: https://github.com/sidd0262-ops/psy-Cultural-adaptation (계정 sidd0262-ops)
+- 위치(Windows): 메인 폴더 `Desktop\클로드 코드\` 안의 `문화적응앱\` 폴더 (2026-11-06에 옮김)
 - 파일: index.html, app.js, style.css, sw.js(서비스 워커), manifest.webmanifest, icons/
 
 ## 진행 상황 (2026-11-05 기준)
