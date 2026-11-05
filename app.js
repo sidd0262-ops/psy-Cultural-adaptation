@@ -21,14 +21,30 @@ const ADMIN_PW = "0530";
 // 순서는 기존 데이터와 같아요: 0 주변화, 1 분리, 2 동화, 3 통합
 const TYPES = [
   { key: "주변화", en: "Marginalization", emoji: "🍂", short: "어디에도 속하지 않는 느낌", tc: "#7B68C8", tbg: "#F0EDFB",
-    desc: "고향 문화와 한국 문화 양쪽 모두에서 소외감을 느끼고, 어디에도 속하지 못해 혼란스러운 상태예요. 지금 많이 힘들 수 있어요. 혼자가 아니에요 🤍" },
+    desc: "우리 나라 문화도, 한국 문화도 나와 조금 멀게 느껴져요. 내가 어디에 속하는지 헷갈릴 수 있어요. 이런 마음도 자연스러워요. 혼자가 아니에요 🤍" },
   { key: "분리", en: "Separation", emoji: "🏠", short: "내 문화를 꼭 지켜요", tc: "#E07B1F", tbg: "#FFF1E2",
-    desc: "나의 뿌리 문화를 강하게 지키면서, 한국 사회의 문화와는 조금 거리를 두는 방식이에요." },
+    desc: "우리 나라 문화를 가장 소중하게 지켜요. 한국 문화와는 아직 조금 거리를 두고 있어요." },
   { key: "동화", en: "Assimilation", emoji: "🦎", short: "한국 문화에 맞춰가요", tc: "#1E9E5A", tbg: "#E3F8EC",
-    desc: "한국 사회에 잘 적응하기 위해 나의 고유 문화를 내려놓거나 맞추려고 노력하는 상태예요." },
+    desc: "한국 생활에 맞춰 살아가려고 해요. 우리 나라 문화보다 한국 문화를 더 많이 따르고 있어요." },
   { key: "통합", en: "Integration", emoji: "🌈", short: "두 문화 모두 소중해요", tc: "#2F7FE0", tbg: "#E6F1FF",
-    desc: "나의 문화를 소중히 지키면서, 한국 문화의 좋은 점도 조화롭게 받아들인 상태예요." }
+    desc: "우리 나라 문화도 지키고, 한국 문화도 즐겨요. 두 문화를 함께 가지고 살아가요." }
 ];
+
+// 🧭 마음 체크: 베리의 두 질문(내 나라 문화 지키기 a / 한국 문화와 어울리기 b)을 2문항씩
+const CHECK_QS = [
+  { axis: "a", t: "우리 나라의 <b>말·음식·명절</b>을 지키는 것이 나에게 중요해요." },
+  { axis: "a", t: "<b>우리 나라 사람들</b>과 만나면 마음이 편하고 좋아요." },
+  { axis: "b", t: "<b>한국 사람들</b>과 친해지고 함께 어울리고 싶어요." },
+  { axis: "b", t: "<b>한국 말·음식·문화</b>를 배우고 즐기는 것이 좋아요." }
+];
+const CHECK_OPTS = [{ v: 2, label: "👍 그래요" }, { v: 1, label: "🙂 조금" }, { v: 0, label: "👎 아니에요" }];
+// 각 쪽 점수(0~4)가 2 이상이면 '그 쪽 마음이 있어요'로 봐요
+function checkResult(c) {
+  if (!c || c.some((v) => v === null || v === undefined)) return null;
+  const sum = (ax) => CHECK_QS.reduce((n, q, i) => n + (q.axis === ax ? c[i] : 0), 0);
+  const a = sum("a") >= 2, b = sum("b") >= 2;
+  return a ? (b ? 3 : 1) : (b ? 2 : 0);
+}
 // 베리의 2×2 그림 배치: [분리, 통합] / [주변화, 동화]
 const MATRIX_ORDER = [1, 3, 0, 2];
 
@@ -339,6 +355,21 @@ function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
   <div class="axis-note">⬆️ 위쪽 줄: 내 문화를 지켜요 · ➡️ 오른쪽 줄: 한국 문화와 어울려요</div>`;
 }
 
+// 4가지 모양 설명 목록
+const typeListHTML = () => `<ul class="type-list">${MATRIX_ORDER.map((k) =>
+  `<li style="${typeStyle(k)}"><b>${TYPES[k].emoji} ${TYPES[k].key}</b><small> (${TYPES[k].en})</small><br>${TYPES[k].desc}</li>`).join("")}</ul>`;
+
+// 🌈 문화적응은 스펙트럼이에요 (여러 곳에서 같이 보여 줘요)
+const SPECTRUM_HTML = `<div class="spectrum">
+  <div class="sp-title">🌈 알아 두세요</div>
+  <ul>
+    <li>✅ 4가지 모양에 <b>좋고 나쁜 것은 없어요.</b></li>
+    <li>🎨 문화적응은 하나로 딱 정해지지 않아요. 생활 속에서 <b>여러 모양이 섞여</b> 나타나요.
+      <div class="sp-ex">🍜 라면·불고기는 좋아하지만, 김밥은 잘 안 먹어요.<br>🎤 K-POP은 좋아하지만, 트로트는 잘 안 들어요.</div></li>
+    <li>🕐 그래서 마음 체크는 <b>지금 내가 가장 많이 느끼는 마음</b>을 알아보는 거예요. 마음은 시간이 지나면 바뀔 수 있어요 🌱</li>
+  </ul>
+</div>`;
+
 const LANG_SLIDE = () => `<div class="big-emo">🌐</div><h2>내 나라 말로 보기</h2>
        <p class="lang-ask">🙏 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b></p>
        <p>언어를 누르면 화면이 바로 바뀌어요. 앱으로 설치해도 똑같이 쓸 수 있어요.</p>
@@ -354,12 +385,12 @@ const GUIDES = {
        <p>🌐 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b><br>다음 장에서 방법을 알려 드릴게요.</p>`,
       LANG_SLIDE,
       `<div class="big-emo">🧭</div><h2>4가지 마음의 모양</h2>
-       <p>존 베리의 문화적응 모델이에요. 좋고 나쁨은 없어요!</p>${matrixHTML()}`,
+       <p>존 베리의 문화적응 모델이에요.</p>${matrixHTML()}${SPECTRUM_HTML}`,
       `<div class="big-emo">✍️</div><h2>이렇게 참여해요</h2>
        <ol class="steps">
          <li><span>🙋</span><div><b>누구인지 고르고 이름 쓰기</b></div></li>
-         <li><span>🧭</span><div><b>지금 마음과 가까운 유형 고르기</b><br>모르겠으면 🤔 간단 체크!</div></li>
-         <li><span>💬</span><div><b>질문 4개에 답하기</b> (짧아도 OK)</div></li>
+         <li><span>🧭</span><div><b>마음 체크 질문 4개에 답하기</b><br>지금 내 마음과 가장 가까운 모양을 알려 줘요</div></li>
+         <li><span>💬</span><div><b>나의 이야기 질문 4개 쓰기</b> (짧아도 OK)</div></li>
          <li><span>💌</span><div><b>공유하기</b> → 모두의 이야기에 올라가요</div></li>
        </ol>`,
       ...(IS_STANDALONE ? [] : [`<div class="big-emo">📲</div><h2>앱처럼 설치할 수 있어요</h2>
@@ -429,7 +460,8 @@ function openGuide(name) {
 }
 $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.openGuide)));
 $("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "intro" : "board");
-$("#guide-matrix").innerHTML = matrixHTML();
+$("#guide-matrix").innerHTML = matrixHTML() + typeListHTML() + SPECTRUM_HTML;
+$("#spectrum-write").innerHTML = SPECTRUM_HTML;
 
 /* ============ STEP 1: 누구? ============ */
 $("#avatar-row").innerHTML = FAMILY_AVATARS.map((a, i) =>
@@ -459,7 +491,7 @@ function addMember() {
     role = [selectedAvatar.g, r].filter(Boolean).join(" / ");
     emoji = selectedAvatar.e;
   }
-  members.push({ name, char: selectedChar, role, emoji, typeIdx: null, tempAnswers: ["", "", "", ""] });
+  members.push({ name, char: selectedChar, role, emoji, typeIdx: null, check: [null, null, null, null], tempAnswers: ["", "", "", ""] });
   $("#user-name").value = ""; $("#role-in").value = "";
   renderChips(); saveDraft();
   toast(`${emoji} ${name} 님의 아바타가 만들어졌어요`);
@@ -505,12 +537,7 @@ function renderSurvey() {
           ${m.char === "가족" ? `<input type="text" data-f="role" data-midx="${i}" value="${esc(m.role)}" placeholder="역할 (예: 여성 / 첫째 딸)">` : ""}
         </div>
       </div>
-      <div class="sec-title">🧭 지금 나의 마음은 어디에 가까운가요?</div>
-      ${matrixHTML({ selected: m.typeIdx, interactive: true, midx: i })}
-      ${m.typeIdx !== null
-        ? `<div class="bubble" style="${typeStyle(m.typeIdx)}">${TYPES[m.typeIdx].emoji} <b>${TYPES[m.typeIdx].key}</b> <small>(${TYPES[m.typeIdx].en})</small><br>${TYPES[m.typeIdx].desc}</div>`
-        : `<div class="bubble">👆 카드를 하나 눌러 주세요</div>`}
-      <button class="link-btn" data-check="${i}" type="button">🤔 잘 모르겠어요 → 간단 체크 해보기</button>
+      ${checkHTML(m, i)}
       <div class="qa-write">
         ${QUESTIONS.map((q, qi) => `
           <div class="q"><span class="qi">${q.icon}</span>Q${qi + 1}. ${q.q}</div>
@@ -534,37 +561,44 @@ $("#step-write").addEventListener("input", (e) => {
 $("#member-cards").addEventListener("click", (e) => {
   const t = e.target.closest(".type-opt[data-type]");
   if (t) { members[+t.dataset.midx].typeIdx = +t.dataset.type; saveDraft(); renderSurvey(); return; }
-  const c = e.target.closest("[data-check]");
-  if (c) openQuickCheck(+c.dataset.check);
+  const q = e.target.closest("[data-cq]");
+  if (q) {
+    const m = members[+q.dataset.midx];
+    m.check = m.check || [null, null, null, null];
+    m.check[+q.dataset.cq] = +q.dataset.cv;
+    const r = checkResult(m.check);
+    if (r !== null) m.typeIdx = r;
+    saveDraft(); renderSurvey();
+  }
 });
+// '4가지 모양 모두 보기'를 열어 둔 상태를 기억해요 (다시 그려도 닫히지 않게)
+$("#member-cards").addEventListener("toggle", (e) => {
+  const d = e.target;
+  if (d.matches?.("details.all-types")) { const m = members[+d.dataset.midx]; if (m) { m.showAll = d.open; saveDraft(); } }
+}, true);
 
-// 🤔 간단 체크: 베리의 두 질문
-function openQuickCheck(midx) {
-  const ans = { a: null, b: null };
-  const render = () => {
-    let result = "";
-    if (ans.a !== null && ans.b !== null) {
-      const idx = ans.a ? (ans.b ? 3 : 1) : (ans.b ? 2 : 0);
-      const t = TYPES[idx];
-      result = `<div class="bubble" style="${typeStyle(idx)}">${t.emoji} 나는 <b>${t.key}</b>에 가까워요!<br>${t.desc}</div>
-        <button class="btn btn-primary" id="qc-ok" data-idx="${idx}">이 유형으로 할게요 👍</button>`;
-    }
-    openSheet(`
-      <div class="slide" style="min-height:0">
-        <div class="big-emo">🤔</div><h2>간단 체크</h2>
-        <p>두 질문에 답하면 가까운 유형을 알려 드려요.</p>
-        <div class="check-q">❶ <b>내 나라의 언어·음식·전통</b>을 지키는 것이 나에게 중요해요.
-          <div class="yn"><button data-q="a" data-v="1" class="${ans.a === true ? "selected" : ""}">👍 그래요</button><button data-q="a" data-v="0" class="${ans.a === false ? "selected" : ""}">👎 아니에요</button></div></div>
-        <div class="check-q">❷ <b>한국 사람들과 어울리고</b> 한국 문화를 배우고 싶어요.
-          <div class="yn"><button data-q="b" data-v="1" class="${ans.b === true ? "selected" : ""}">👍 그래요</button><button data-q="b" data-v="0" class="${ans.b === false ? "selected" : ""}">👎 아니에요</button></div></div>
-        ${result}
-        <button class="btn btn-ghost" id="qc-close">닫기</button>
-      </div>`);
-    $$("#sheet-body .yn button").forEach((b) => (b.onclick = () => { ans[b.dataset.q] = b.dataset.v === "1"; render(); }));
-    $("#qc-close").onclick = closeSheet;
-    if ($("#qc-ok")) $("#qc-ok").onclick = () => { members[midx].typeIdx = +$("#qc-ok").dataset.idx; saveDraft(); closeSheet(); renderSurvey(); };
-  };
-  render();
+function checkHTML(m, i) {
+  const c = m.check || [null, null, null, null];
+  const done = c.filter((v) => v !== null && v !== undefined).length;
+  const t = m.typeIdx !== null ? TYPES[m.typeIdx] : null;
+  return `
+    <div class="sec-title">🧭 나의 마음 체크</div>
+    <p class="muted" style="margin-top:0">질문 4개에 답하면, <b>지금 내 마음</b>이 4가지 모양 중 어디에 가장 가까운지 알려 드려요.</p>
+    ${CHECK_QS.map((q, qi) => `
+      <div class="check-q"><span class="cq-n">${qi + 1}</span> ${q.t}
+        <div class="yn3">${CHECK_OPTS.map((o) =>
+          `<button type="button" data-cq="${qi}" data-cv="${o.v}" data-midx="${i}" class="${c[qi] === o.v ? "selected" : ""}">${o.label}</button>`).join("")}</div>
+      </div>`).join("")}
+    ${t
+      ? `<div class="bubble result" style="${typeStyle(m.typeIdx)}">지금 나는 <b>${t.emoji} ${t.key}</b><small> (${t.en})</small>에 가장 가까워요<br>${t.desc}
+           <div class="r-note">💡 이건 '지금 가장 많이 느끼는 마음'이에요. 좋고 나쁜 모양은 없어요.</div></div>`
+      : `<div class="bubble">👆 질문에 모두 답하면 결과가 나와요 (${done}/4)</div>`}
+    <details class="all-types" data-midx="${i}" ${m.showAll ? "open" : ""}>
+      <summary>🧭 4가지 모양 모두 보기 · 직접 고르기</summary>
+      ${typeListHTML()}
+      <p class="muted">결과가 내 마음과 다르면, 더 가까운 모양을 직접 눌러 바꿀 수 있어요.</p>
+      ${matrixHTML({ selected: m.typeIdx, interactive: true, midx: i })}
+    </details>`;
 }
 
 $("#back-btn").onclick = () => {
@@ -593,7 +627,7 @@ function loadDraft() {
 $("#share-btn").onclick = async () => {
   const missing = members.findIndex((m) => m.typeIdx === null);
   if (missing !== -1) {
-    toast(`🧭 ${members[missing].name || "참여자"} 님의 유형을 골라 주세요`);
+    toast(`🧭 ${members[missing].name || "참여자"} 님의 마음 체크 질문에 답해 주세요`);
     $(`.member-card[data-midx="${missing}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }

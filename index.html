@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
   <!-- ☁️ 배경 -->
@@ -80,7 +80,8 @@
       <div id="step-write" class="hidden">
         <div class="card slim">
           <div class="step-pill">STEP 2 · 나의 마음 적기</div>
-          <p class="muted">🧭 유형을 하나 고르고, 4가지 질문에 편하게 답해 주세요. 쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</p>
+          <p class="muted">🧭 먼저 <b>마음 체크 질문 4개</b>에 답하고, 이어서 <b>나의 이야기</b>를 편하게 써 주세요. 쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</p>
+          <div id="spectrum-write"></div>
           <div id="family-edit"></div>
         </div>
         <div id="member-cards"></div>
@@ -157,8 +158,8 @@
           <li><span>🙋</span><div><b>누구인지 고르기</b><br>남자·여자·가족 중 하나를 눌러요.</div></li>
           <li><span>✏️</span><div><b>이름 쓰기</b><br>가족이라면 가족 이름과 역할도 적어요. 여러 명이면 <b>➕ 내 아바타 만들기</b>를 눌러요.</div></li>
           <li><span>🚀</span><div><b>여정 시작하기</b><br>버튼을 누르면 질문 화면으로 넘어가요.</div></li>
-          <li><span>🧭</span><div><b>유형 고르기</b><br>4개 카드 중 지금 마음과 가까운 것을 눌러요. 잘 모르겠으면 <b>🤔 간단 체크</b>를 해 보세요.</div></li>
-          <li><span>💬</span><div><b>질문 4개 답하기</b><br>짧게 써도 괜찮아요. 빈칸으로 두어도 돼요.</div></li>
+          <li><span>🧭</span><div><b>마음 체크 질문 4개 답하기</b><br>👍 그래요 · 🙂 조금 · 👎 아니에요 중에서 골라요. 다 답하면 <b>지금 내 마음과 가장 가까운 모양</b>을 알려 줘요. 결과가 내 마음과 다르면 직접 바꿀 수도 있어요.</div></li>
+          <li><span>💬</span><div><b>나의 이야기 질문 4개 쓰기</b><br>짧게 써도 괜찮아요. 빈칸으로 두어도 돼요.</div></li>
           <li><span>💌</span><div><b>이야기 공유하기</b><br>버튼을 누르면 <b>모두의 이야기</b>에 올라가요.</div></li>
         </ol>
       </div>
@@ -202,13 +203,13 @@
     <button class="tab" data-tab="guide"><span>📖</span>설명서</button>
   </nav>
 
-  <!-- 모달 (사용설명서 / 간단 체크 / 메뉴) -->
+  <!-- 모달 (사용설명서 / 설치 / 메뉴) -->
   <div id="sheet" class="sheet-backdrop hidden" role="dialog" aria-modal="true">
     <div class="sheet" id="sheet-body"></div>
   </div>
 
   <div id="toast" class="toast"></div>
 
-  <script type="module" src="app.js?v=8"></script>
+  <script type="module" src="app.js?v=9"></script>
 </body>
 </html>
