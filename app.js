@@ -45,8 +45,8 @@ function checkResult(c) {
   const a = sum("a") >= 2, b = sum("b") >= 2;
   return a ? (b ? 3 : 1) : (b ? 2 : 0);
 }
-// 베리의 2×2 그림 배치: [분리, 통합] / [주변화, 동화]
-const MATRIX_ORDER = [1, 3, 0, 2];
+// 베리의 2×2 그림 배치(단계 순서): [주변화, 분리] / [동화, 통합]
+const MATRIX_ORDER = [0, 1, 2, 3];
 
 // 질문 문구는 기존과 같아요 (기존 답변과 짝이 맞아야 해요)
 const QUESTIONS = [
@@ -352,7 +352,7 @@ function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
       <span class="emo">${t.emoji}</span><b>${t.key}</b><small>${t.short}</small></${tag}>`;
   });
   return `<div class="matrix ${interactive ? "" : "static"}">${cells.join("")}</div>
-  <div class="axis-note">⬆️ 위쪽 줄: 내 문화를 지켜요 · ➡️ 오른쪽 줄: 한국 문화와 어울려요</div>`;
+  <div class="axis-note">➡️ 오른쪽 줄: 내 문화를 지켜요 · ⬇️ 아래쪽 줄: 한국 문화와 어울려요</div>`;
 }
 
 // 4가지 모양 설명 목록
