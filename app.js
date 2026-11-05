@@ -815,14 +815,6 @@ async function runInstall() {
 }
 $("#install-btn").onclick = runInstall;
 
-// 설치 창이 아직 준비되지 않았으면 조금 기다려요 (크롬이 페이지를 연 직후 알려 줘요)
-function waitInstallPrompt(ms) {
-  if (deferredInstall) return Promise.resolve(deferredInstall);
-  return new Promise((resolve) => {
-    const t = setTimeout(() => resolve(deferredInstall), ms);
-    window.addEventListener("beforeinstallprompt", () => { clearTimeout(t); setTimeout(() => resolve(deferredInstall)); }, { once: true });
-  });
-}
 function manualInstallSheet(next) {
   openSheet(`
     <div class="slide" style="min-height:0">
@@ -835,7 +827,7 @@ function manualInstallSheet(next) {
              <div><b>3.</b> 오른쪽 위 <b>추가</b> 누르기</div>
            </div>`
         : CAN_AUTO_INSTALL
-        ? `<p>지금은 크롬이 바로 설치를 허락하지 않았어요.<br>이미 설치되어 있거나 <b>시크릿 창</b>이면 이렇게 돼요.<br>아래 방법으로 설치해 주세요.</p>`
+        ? `<p>크롬이 아직 설치를 허락하지 않았어요.<br>이미 설치되어 있거나 <b>시크릿 창</b>이면 이렇게 돼요.<br>아래 방법으로도 설치할 수 있어요.</p>`
           + `<div class="install-box" style="text-align:left">
              <div><b>📱 휴대폰</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
              <div><b>💻 컴퓨터</b><br>주소창 오른쪽 <b>설치 아이콘</b> 또는 <b>⋮ 메뉴</b> → <b>앱 설치</b></div>
@@ -870,23 +862,47 @@ function askInstall(next) {
     else manualInstallSheet(next);
   };
 }
-// 크롬이 아직 설치 준비 중이면: 준비될 때까지 기다렸다가 '지금 설치하기' 버튼을 보여 줘요
+// 크롬은 처음 온 사람이 화면을 한 번 누르고 30초쯤 머문 뒤에야 설치를 허락해요.
+// 그동안 진행 막대를 보여 주며 기다렸다가, 허락이 나면 '지금 설치하기' 버튼을 켜요.
+const WAIT_MS = 32000;
 function waitInstallSheet(next) {
   openSheet(`
     <div class="slide" style="min-height:0">
       <div class="big-emo">⏳</div><h2 id="iw-title">설치를 준비하고 있어요</h2>
-      <p id="iw-text">잠시만 기다려 주세요…</p>
+      <p id="iw-text">크롬이 설치를 허락할 때까지 기다리는 중이에요.<br>처음 오셨다면 <b>30초쯤</b> 걸려요. 이 화면을 그대로 두세요.</p>
+      <div class="iw-bar"><i id="iw-fill"></i></div>
       <button class="btn btn-primary" id="iw-go" disabled>⏳ 준비 중…</button>
+      <button class="link-btn hidden" id="iw-manual" type="button">설치가 안 되나요? 직접 설치하는 방법 보기</button>
     </div>`, next);
-  const btn = $("#iw-go");
-  waitInstallPrompt(10000).then((ev) => {
+  const btn = $("#iw-go"), t0 = Date.now();
+  const tick = setInterval(() => {
+    if (!btn.isConnected) { clearInterval(tick); return; }
+    const ms = Date.now() - t0;
+    $("#iw-fill").style.width = `${Math.min(96, (ms / WAIT_MS) * 100)}%`;
+    if (ms > WAIT_MS + 8000) $("#iw-manual").classList.remove("hidden");
+  }, 250);
+  $("#iw-manual").onclick = () => { clearInterval(tick); manualInstallSheet(next); };
+  const ready = () => {
     if (!btn.isConnected) return;
-    if (!ev) { manualInstallSheet(next); return; }
+    clearInterval(tick);
+    $("#iw-fill").style.width = "100%";
     $("#iw-title").textContent = "설치 준비가 끝났어요!";
     $("#iw-text").textContent = "아래 버튼을 누르면 바로 설치돼요.";
+    $("#iw-manual").classList.add("hidden");
     btn.disabled = false; btn.textContent = "📲 지금 설치하기";
     btn.onclick = () => { closeSheet(); runInstall(); };
-  });
+  };
+  // 시간 제한 없이 기다려요 (늦게 허락이 나도 버튼이 켜져요)
+  if (deferredInstall) ready();
+  else window.addEventListener("beforeinstallprompt", () => setTimeout(ready), { once: true });
+}
+// 이미 설치돼 있는지 확인 (크롬은 설치된 앱에는 설치 허락을 보내지 않아요)
+async function isInstalled() {
+  try {
+    if (!navigator.getInstalledRelatedApps) return false;
+    const apps = await Promise.race([navigator.getInstalledRelatedApps(), new Promise((r) => setTimeout(() => r([]), 1500))]);
+    return apps.length > 0;
+  } catch { return false; }
 }
 
 /* ============ 🚀 시작 ============ */
@@ -897,5 +913,5 @@ loadDraft();
 const startIntro = () => { if (!store.get("hide-guide-intro")) openGuide("intro"); };
 // 처음 들어오면 항상 바로 물어봐요 (설치한 앱으로 열었거나 이미 답했으면 안 물어요)
 if (IS_STANDALONE || store.get(INSTALL_KEY)) startIntro();
-else askInstall(startIntro);
+else isInstalled().then((yes) => (yes ? startIntro() : askInstall(startIntro)));
 if (uiLang !== "ko") translatePage();

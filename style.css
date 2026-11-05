@@ -276,3 +276,6 @@ textarea { resize: vertical; min-height: 84px; }
   .type-opt small { display: none; }
   .row-btns { grid-template-columns: 1fr; }
 }
+/* 설치 준비 진행 막대 */
+.iw-bar { height: 10px; background: var(--soft); border-radius: 999px; overflow: hidden; margin: 14px 0 4px; }
+.iw-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8EC5FF, #FF7AA8); border-radius: 999px; transition: width .25s linear; }
