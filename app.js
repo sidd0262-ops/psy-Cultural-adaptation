@@ -101,9 +101,26 @@ function isSameFamily(a, b) {
   return false;
 }
 
-/* ============ 🌐 언어 (크롬 번역) ============ */
-// 크롬 번역이 켜져 있으면 <html>에 translated-ltr/rtl 표시와 번역 언어가 붙어요.
+// 홈 화면에 설치한 앱으로 열었는지 (설치 앱에는 크롬 메뉴가 없어서 크롬 번역을 쓸 수 없어요)
+const IS_STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+/* ============ 🌐 언어 ============ */
+// 앱 안에서 고른 언어 (설치 앱·브라우저 모두에서 똑같이 동작해요)
+let uiLang = store.get("ui-lang", "ko");
+const UI_LANGS = [
+  ["ko", "한국어"], ["en", "English"], ["vi", "Tiếng Việt"], ["zh-CN", "简体中文"], ["zh-TW", "繁體中文"],
+  ["ja", "日本語"], ["th", "ไทย"], ["km", "ខ្មែរ"], ["my", "မြန်မာ"], ["ne", "नेपाली"], ["mn", "Монгол"],
+  ["uz", "Oʻzbek"], ["ru", "Русский"], ["kk", "Қазақ"], ["ky", "Кыргызча"], ["id", "Indonesia"],
+  ["tl", "Filipino"], ["si", "සිංහල"], ["bn", "বাংলা"], ["ur", "اردو"], ["hi", "हिन्दी"],
+  ["lo", "ລາວ"], ["ar", "العربية"], ["fr", "Français"], ["es", "Español"], ["pt", "Português"]
+];
+const langGridHTML = () => `<div class="lang-grid notranslate" translate="no">${UI_LANGS.map(([c, n]) =>
+  `<button type="button" data-ui-lang="${c}" class="${c === uiLang ? "on" : ""}">${n}</button>`).join("")}</div>`;
+
 function currentLang() {
+  if (uiLang !== "ko") return uiLang;
+  // 크롬 번역이 켜져 있으면 <html>에 translated-ltr/rtl 표시와 번역 언어가 붙어요.
   const h = document.documentElement;
   const translated = /translated-(ltr|rtl)/.test(h.className) && h.lang && h.lang !== "ko";
   const raw = (translated ? h.lang : navigator.language) || "ko";
@@ -119,21 +136,136 @@ function langName(code) {
 // 그래서 답변을 하나씩 따로 보내 언어를 각각 알아낸 뒤 번역해요.
 let trMode = store.get("tr-mode", "orig");
 const trCache = new Map(store.get("tr-cache", []));
-function saveTrCache() { store.set("tr-cache", [...trCache.entries()].slice(-800)); }
+let saveTimer;
+function saveTrCache() { clearTimeout(saveTimer); saveTimer = setTimeout(() => store.set("tr-cache", [...trCache.entries()].slice(-2500)), 400); }
+const trKey = (tl, sl, text) => (sl === "auto" ? `${tl}|${text}` : `${tl}|${sl}>${text}`);
+const inflight = new Map();
 
-async function translateText(text, tl) {
-  const key = `${tl}|${text}`;
-  if (trCache.has(key)) return trCache.get(key);
-  const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t`, {
-    method: "POST", body: new URLSearchParams({ q: text })
+// 여러 문장을 줄바꿈으로 묶어 한 번에 보내요 (빠르게). 줄 수가 안 맞으면 하나씩 다시 보내요.
+async function fetchTr(texts, tl, sl) {
+  const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${encodeURIComponent(tl)}&dt=t`, {
+    method: "POST", body: new URLSearchParams({ q: texts.join("\n") })
   });
   if (!res.ok) throw new Error(`translate ${res.status}`);
   const d = await res.json();
-  const out = { t: (d?.[0] || []).map((s) => s?.[0] || "").join(""), src: d?.[2] || "" };
-  trCache.set(key, out);
-  saveTrCache();
+  const src = d?.[2] || (sl === "auto" ? "" : sl);
+  const full = (d?.[0] || []).map((s) => s?.[0] || "").join("");
+  if (texts.length === 1) return [{ t: full, src }];
+  const lines = full.split("\n");
+  if (lines.length !== texts.length) throw new Error("line mismatch");
+  return lines.map((t) => ({ t: t.trim(), src }));
+}
+// 문장 목록 → 번역 결과 Promise 목록 (저장본·진행 중인 요청을 다시 써요)
+function translateMany(texts, tl, sl = "auto") {
+  const out = new Array(texts.length), todo = [];
+  texts.forEach((x, i) => {
+    const k = trKey(tl, sl, x);
+    if (trCache.has(k)) out[i] = Promise.resolve(trCache.get(k));
+    else if (inflight.has(k)) out[i] = inflight.get(k);
+    else todo.push(i);
+  });
+  const chunks = [];
+  let chunk = [], len = 0;
+  for (const i of todo) {
+    if (chunk.length && (len + texts[i].length > 1500 || chunk.length >= 40)) { chunks.push(chunk); chunk = []; len = 0; }
+    chunk.push(i); len += texts[i].length + 1;
+  }
+  if (chunk.length) chunks.push(chunk);
+  for (const c of chunks) {
+    const strs = [...new Set(c.map((i) => texts[i]))];
+    const one = () => Promise.all(strs.map((s) => fetchTr([s], tl, sl).then((r) => r[0])));
+    const p = (strs.length > 1 && !strs.some((s) => s.includes("\n")) ? fetchTr(strs, tl, sl).catch(one) : one())
+      .then((rs) => { rs.forEach((r, j) => trCache.set(trKey(tl, sl, strs[j]), r)); saveTrCache(); return rs; })
+      .finally(() => strs.forEach((s) => inflight.delete(trKey(tl, sl, s))));
+    strs.forEach((s, j) => inflight.set(trKey(tl, sl, s), p.then((rs) => rs[j])));
+    c.forEach((i) => (out[i] = inflight.get(trKey(tl, sl, texts[i]))));
+  }
   return out;
 }
+const translateText = (text, tl) => translateMany([text], tl)[0];
+
+/* ============ 🌐 앱 화면 번역 ============ */
+// 화면의 글자를 하나씩 찾아 고른 언어로 바꿔요. 새로 생기는 글자(안내창·알림 등)도 자동으로 바꿔요.
+// 이름·입력 중인 글(textarea)·notranslate 표시가 있는 곳은 그대로 둬요.
+const tState = new WeakMap(), aState = new WeakMap();
+const TR_ATTRS = ["placeholder", "aria-label"];
+function skipEl(el) {
+  const c = el.closest('[translate="no"], .notranslate, script, style, textarea');
+  return !!c && c !== document.documentElement;
+}
+function collectItems() {
+  const items = [];
+  const add = (st, valid, set, auto) => {
+    if (!/\p{L}/u.test(st.orig)) return;
+    const m = st.orig.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    items.push({ st, valid, set, auto, pre: m[1], core: m[2], post: m[3] });
+  };
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    const p = n.parentElement;
+    if (!p || skipEl(p)) continue;
+    let st = tState.get(n);
+    if (!st || n.nodeValue !== st.shown) { st = { orig: n.nodeValue, shown: n.nodeValue }; tState.set(n, st); }
+    add(st, () => tState.get(n) === st && n.nodeValue === st.shown, (s) => { st.shown = s; n.nodeValue = s; }, !!p.closest(".qb"));
+  }
+  document.body.querySelectorAll("[placeholder], [aria-label]").forEach((el) => {
+    if (skipEl(el)) return;
+    let m = aState.get(el);
+    if (!m) aState.set(el, (m = {}));
+    TR_ATTRS.forEach((a) => {
+      const v = el.getAttribute(a);
+      if (v === null) return;
+      let st = m[a];
+      if (!st || v !== st.shown) m[a] = st = { orig: v, shown: v };
+      add(st, () => m[a] === st && el.getAttribute(a) === st.shown, (s) => { st.shown = s; el.setAttribute(a, s); }, false);
+    });
+  });
+  return items;
+}
+async function translatePage() {
+  const tl = uiLang, items = collectItems();
+  if (tl === "ko") { items.forEach((it) => it.st.shown !== it.st.orig && it.set(it.st.orig)); return; }
+  const apply = (it, t) => { if (uiLang === tl && it.valid()) { const s = it.pre + t + it.post; if (s !== it.st.shown) it.set(s); } };
+  const ui = items.filter((it) => !it.auto), answers = items.filter((it) => it.auto);
+  await seedTypeNames(tl);
+  const ps = translateMany(ui.map((it) => it.core), tl, "ko").map((p, i) => p.then((r) => apply(ui[i], r.t)));
+  // 답변은 어느 나라 말인지 모르니 하나씩 언어를 알아내서 번역해요
+  answers.forEach((it) => ps.push(translateText(it.core, tl).then((r) => {
+    const same = !r.src || r.src.split("-")[0] === tl.split("-")[0];
+    apply(it, same ? it.core : r.t);
+  })));
+  return Promise.allSettled(ps);
+}
+// 유형 이름(동화·분리…)은 한 단어라 잘못 번역되기 쉬워서, 영어 이름(Assimilation…)을 번역해 써요
+async function seedTypeNames(tl) {
+  if (TYPES.every((t) => trCache.has(trKey(tl, "ko", t.key)))) return;
+  const rs = await Promise.allSettled(translateMany(TYPES.map((t) => t.en), tl, "en"));
+  rs.forEach((r, i) => r.status === "fulfilled" && trCache.set(trKey(tl, "ko", TYPES[i].key), { t: r.value.t, src: "ko" }));
+}
+let pageTimer;
+new MutationObserver(() => {
+  if (uiLang === "ko") return;
+  clearTimeout(pageTimer); pageTimer = setTimeout(translatePage, 60);
+}).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: TR_ATTRS });
+
+function applyLangAttrs() {
+  const h = document.documentElement;
+  h.lang = uiLang;
+  // 앱 번역을 쓰는 동안에는 크롬 번역이 겹치지 않게 막아요
+  if (uiLang === "ko") h.removeAttribute("translate"); else h.setAttribute("translate", "no");
+}
+async function setUiLang(code) {
+  if (code === uiLang) return;
+  uiLang = code; store.set("ui-lang", code);
+  applyLangAttrs();
+  $$("[data-ui-lang]").forEach((b) => b.classList.toggle("on", b.dataset.uiLang === code));
+  renderTrSeg();
+  await translatePage();
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ui-lang]");
+  if (b) setUiLang(b.dataset.uiLang);
+});
 
 function trOptions() {
   const opts = [{ v: "orig", label: "📝 원문" }, { v: "ko", label: "🇰🇷 한국어" }, { v: "en", label: "🇺🇸 English" }];
@@ -207,14 +339,11 @@ function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
   <div class="axis-note">⬆️ 위쪽 줄: 내 문화를 지켜요 · ➡️ 오른쪽 줄: 한국 문화와 어울려요</div>`;
 }
 
-const LANG_SLIDE = `<div class="big-emo">🌐</div><h2>내 나라 말로 보기</h2>
+const LANG_SLIDE = () => `<div class="big-emo">🌐</div><h2>내 나라 말로 보기</h2>
        <p class="lang-ask">🙏 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b></p>
-       <p>크롬(Chrome)의 <b>번역</b> 기능을 써요.</p>
-       <div class="install-box" style="text-align:left">
-         <div><b>🤖 안드로이드</b><br>⋮ 메뉴 → <b>번역…</b> → 번역 막대 ⋮ → <b>다른 언어 선택</b></div>
-         <div><b>🍎 아이폰</b><br>⋯ 메뉴 → <b>번역</b> → 번역 막대에서 언어 고르기</div>
-       </div>
-       <p class="muted">답은 내 나라 말로 써도 괜찮아요. 고른 언어가 이야기에 함께 기록돼요.</p>`;
+       <p>언어를 누르면 화면이 바로 바뀌어요. 앱으로 설치해도 똑같이 쓸 수 있어요.</p>
+       ${langGridHTML()}
+       <p class="muted">언제든 오른쪽 위 🌐 버튼으로 바꿀 수 있어요. 답은 내 나라 말로 써도 괜찮아요.</p>`;
 
 const GUIDES = {
   intro: {
@@ -233,16 +362,16 @@ const GUIDES = {
          <li><span>💬</span><div><b>질문 4개에 답하기</b> (짧아도 OK)</div></li>
          <li><span>💌</span><div><b>공유하기</b> → 모두의 이야기에 올라가요</div></li>
        </ol>`,
-      `<div class="big-emo">📲</div><h2>앱처럼 설치할 수 있어요</h2>
+      ...(IS_STANDALONE ? [] : [`<div class="big-emo">📲</div><h2>앱처럼 설치할 수 있어요</h2>
        <div class="install-box" style="text-align:left">
          <div>🌐 <b>크롬(Chrome)</b>으로 열어 주세요</div>
          <div><b>🍎 아이폰</b><br>공유 버튼 ⬆️ → <b>홈 화면에 추가</b></div>
          <div><b>🤖 안드로이드</b><br>⋮ 메뉴 → <b>앱 설치</b></div>
        </div>
-       <p>아래 <b>📖 설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`
+       <p>아래 <b>📖 설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`])
     ]
   },
-  lang: { flag: "hide-guide-lang-never", slides: [LANG_SLIDE] },
+  lang: { flag: "hide-guide-lang-never", slides: [LANG_SLIDE], noHide: true },
   board: {
     flag: "hide-guide-board",
     slides: [
@@ -261,29 +390,38 @@ const GUIDES = {
   }
 };
 
-function openSheet(html) {
-  $("#sheet-body").innerHTML = `<div class="grabber"></div>${html}`;
+// onClose: 창이 닫힐 때(✕·바깥 누르기·버튼) 한 번 실행할 일
+let sheetOnClose = null;
+function openSheet(html, onClose = null) {
+  $("#sheet-body").innerHTML = `<button type="button" class="sheet-x" aria-label="닫기">✕</button><div class="grabber"></div>${html}`;
   $("#sheet").classList.remove("hidden");
+  $("#sheet-body").scrollTop = 0;
+  sheetOnClose = onClose;
 }
-function closeSheet() { $("#sheet").classList.add("hidden"); }
-$("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet") closeSheet(); });
+function closeSheet() {
+  $("#sheet").classList.add("hidden");
+  const f = sheetOnClose; sheetOnClose = null;
+  if (f) f();
+}
+$("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.target.closest(".sheet-x")) closeSheet(); });
 
 function openGuide(name) {
   const g = GUIDES[name];
   let i = 0;
   const render = () => {
     const last = i === g.slides.length - 1;
+    const s = g.slides[i];
     openSheet(`
-      <div class="slide">${g.slides[i]}</div>
+      <div class="slide">${typeof s === "function" ? s() : s}</div>
       ${g.slides.length > 1 ? `<div class="dots">${g.slides.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
       <div class="sheet-foot">
-        <label><input type="checkbox" id="g-hide" ${store.get(g.flag) ? "checked" : ""}> 다시 보지 않기</label>
+        ${g.noHide ? "<span></span>" : `<label><input type="checkbox" id="g-hide" ${store.get(g.flag) ? "checked" : ""}> 다시 보지 않기</label>`}
         <div style="display:flex;gap:6px">
           ${i > 0 ? `<button class="btn btn-ghost" id="g-prev">이전</button>` : ""}
-          <button class="btn btn-primary" id="g-next">${last ? "시작하기 👍" : "다음 ▶"}</button>
+          <button class="btn btn-primary" id="g-next">${g.noHide ? "확인 👍" : last ? "시작하기 👍" : "다음 ▶"}</button>
         </div>
       </div>`);
-    $("#g-hide").onchange = (e) => (e.target.checked ? store.set(g.flag, true) : store.del(g.flag));
+    if ($("#g-hide")) $("#g-hide").onchange = (e) => (e.target.checked ? store.set(g.flag, true) : store.del(g.flag));
     $("#g-next").onclick = () => { if (last) closeSheet(); else { i++; render(); } };
     if ($("#g-prev")) $("#g-prev").onclick = () => { i--; render(); };
   };
@@ -494,7 +632,7 @@ $("#share-btn").onclick = async () => {
     $("#done-title").textContent = msg;
     $("#done-summary").innerHTML = finalData.map((m) => {
       const i = typeIndex(m.type);
-      return `<span class="badge" style="${typeStyle(i)}">${esc(m.emoji)} ${esc(m.name)} · ${TYPES[i].emoji} ${m.type}</span>`;
+      return `<span class="badge" style="${typeStyle(i)}">${esc(m.emoji)} ${esc(m.name)} · ${TYPES[i].emoji} <span>${m.type}</span></span>`;
     }).join("");
     store.del("draft");
     members = []; currentFamilyName = ""; editingPostId = null;
@@ -542,7 +680,7 @@ function renderFilters() {
   $("#board-count").innerHTML = `지금까지 <b>${people}명</b>이 <b>${allPosts.length}개</b>의 이야기를 나눴어요 🙌`;
   $("#filter-chips").innerHTML =
     `<button class="f-chip ${filterType === "all" ? "active" : ""}" data-filter="all">✨ 전체 <b>${people}</b></button>` +
-    TYPES.map((t, i) => `<button class="f-chip ${filterType === t.key ? "active" : ""}" data-filter="${t.key}">${t.emoji} ${t.key} <b>${counts[i]}</b></button>`).join("");
+    TYPES.map((t, i) => `<button class="f-chip ${filterType === t.key ? "active" : ""}" data-filter="${t.key}">${t.emoji} <span>${t.key}</span> <b>${counts[i]}</b></button>`).join("");
 }
 $("#filter-chips").onclick = (e) => {
   const b = e.target.closest("[data-filter]"); if (!b) return;
@@ -570,7 +708,7 @@ function renderFeed() {
           <div class="member-top">
             <div class="avatar sm">${esc(memberEmoji(m))}</div>
             <div class="who"><b translate="no" class="notranslate">${esc(m.name)}</b>${m.role ? `<small>${esc(m.role)}</small>` : ""}${m.lang && m.lang !== "ko" ? `<br><span class="lang-tag">🌐 ${esc(langName(m.lang))}로 작성</span>` : ""}</div>
-            ${i >= 0 ? `<span class="badge" style="${typeStyle(i)}">${TYPES[i].emoji} ${TYPES[i].key}</span>` : ""}
+            ${i >= 0 ? `<span class="badge" style="${typeStyle(i)}">${TYPES[i].emoji} <span>${TYPES[i].key}</span></span>` : ""}
           </div>
           ${answers || `<div class="no-ans">💭 작성된 답변이 없어요</div>`}
         </div>`;
@@ -657,15 +795,77 @@ window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault(); deferredInstall = e;
   $("#install-btn").classList.remove("hidden");
 });
-$("#install-btn").onclick = async () => {
-  if (!deferredInstall) return;
-  deferredInstall.prompt();
-  await deferredInstall.userChoice;
+window.addEventListener("appinstalled", () => {
   deferredInstall = null;
   $("#install-btn").classList.add("hidden");
-};
+  toast("📲 설치됐어요! 홈 화면의 ✈️ 아이콘으로 열어 주세요");
+});
+async function runInstall() {
+  if (!deferredInstall) return false;
+  const ev = deferredInstall;
+  ev.prompt();
+  const { outcome } = await ev.userChoice;
+  deferredInstall = null;
+  $("#install-btn").classList.add("hidden");
+  if (outcome === "accepted") toast("📲 설치하고 있어요!");
+  return true;
+}
+$("#install-btn").onclick = runInstall;
+
+// 설치 창이 아직 준비되지 않았으면 조금 기다려요 (크롬이 페이지를 연 직후 알려 줘요)
+function waitInstallPrompt(ms) {
+  if (deferredInstall) return Promise.resolve(deferredInstall);
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(deferredInstall), ms);
+    window.addEventListener("beforeinstallprompt", () => { clearTimeout(t); setTimeout(() => resolve(deferredInstall)); }, { once: true });
+  });
+}
+function manualInstallSheet(next) {
+  openSheet(`
+    <div class="slide" style="min-height:0">
+      <div class="big-emo">📲</div><h2>이렇게 설치해 주세요</h2>
+      ${IS_IOS
+        ? `<p>아이폰은 버튼 하나로 바로 설치할 수 없어서<br>아래 순서대로 눌러 주세요.</p>
+           <div class="install-box" style="text-align:left">
+             <div><b>1.</b> 화면의 <b>공유 버튼 ⬆️</b> 누르기</div>
+             <div><b>2.</b> <b>홈 화면에 추가 ➕</b> 누르기</div>
+             <div><b>3.</b> 오른쪽 위 <b>추가</b> 누르기</div>
+           </div>`
+        : `<div class="install-box" style="text-align:left">
+             <div><b>🤖 크롬</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
+           </div>`}
+      <p class="muted">이미 설치했다면 홈 화면의 ✈️ 아이콘으로 열어 주세요.</p>
+      <button class="btn btn-primary" id="mi-ok">알겠어요 👍</button>
+    </div>`, next);
+  $("#mi-ok").onclick = closeSheet;
+}
+// 처음 들어왔을 때: "앱으로 설치할까요?" → 아니오: 그냥 넘어가요 / 예: 바로 설치해요
+function askInstall(next) {
+  openSheet(`
+    <div class="slide" style="min-height:0">
+      <div class="big-emo">📲</div><h2>앱으로 설치할까요?</h2>
+      <p>휴대폰 홈 화면에 ✈️ 아이콘이 생겨서<br>다음부터 바로 열 수 있어요.</p>
+      <div class="ask-btns">
+        <button class="btn btn-soft" id="ia-no">아니오</button>
+        <button class="btn btn-primary" id="ia-yes">예 👍</button>
+      </div>
+    </div>`, next);
+  store.set("install-asked", true);
+  $("#ia-no").onclick = closeSheet;
+  $("#ia-yes").onclick = async (e) => {
+    e.currentTarget.disabled = true; e.currentTarget.textContent = "⏳";
+    if (!IS_IOS) await waitInstallPrompt(2000);
+    if (deferredInstall) { closeSheet(); runInstall(); }
+    else manualInstallSheet(next);
+  };
+}
 
 /* ============ 🚀 시작 ============ */
+applyLangAttrs();
 renderTrSeg();
+$("#guide-lang-grid").outerHTML = langGridHTML();
 loadDraft();
-if (!store.get("hide-guide-intro")) openGuide("intro");
+const startIntro = () => { if (!store.get("hide-guide-intro")) openGuide("intro"); };
+if (!IS_STANDALONE && !store.get("install-asked")) askInstall(startIntro);
+else startIntro();
+if (uiLang !== "ko") translatePage();
