@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy,
-  deleteDoc, doc, getDocs, updateDoc, increment
+  deleteDoc, doc, getDocs, updateDoc, increment, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 /* ============ 🔥 Firebase (기존과 동일 — 기존 이야기가 그대로 보여요) ============ */
@@ -108,13 +108,12 @@ function fmtDate(ts) {
   } catch { return ""; }
 }
 
-// 가족 이름 비교 (기존 규칙 유지: 의미 없는 말을 빼고 한 글자라도 겹치면 같은 가족 후보)
+// 가족 이름 비교: 띄어쓰기·끝의 "네 / 가족 / 식구"만 빼고 똑같으면 같은 가족
+// (예: "차무희네 가족" = "차무희 가족" = "차무희네" = "차무희")
+const famKey = (s) => String(s || "").toLowerCase().replace(/[\s,.\/\-_]/g, "").replace(/(가족|식구|family)$/, "").replace(/네$/, "");
 function isSameFamily(a, b) {
-  if (!a || !b) return false;
-  const re = /가족|식구|부부|그룹|팀|네|과|와|\s|[,\.\/\-_]/g;
-  const x = a.replace(re, ""), y = b.replace(re, "");
-  for (const ch of x) if (y.includes(ch)) return true;
-  return false;
+  const x = famKey(a), y = famKey(b);
+  return !!x && x === y;
 }
 
 // 홈 화면에 설치한 앱으로 열었는지 (설치 앱에는 크롬 메뉴가 없어서 크롬 번역을 쓸 수 없어요)
@@ -412,7 +411,7 @@ const GUIDES = {
          <li>🔎 위쪽 <b>유형 버튼</b> → 같은 유형 이야기만 모아 보기</li>
          <li>❤️ <b>공감</b> → 마음 전하기 (한 이야기에 한 번)</li>
          <li>⋯ 버튼 → <b>✏️ 수정하기</b> / <b>🗑️ 삭제하기</b></li>
-         <li>🏡 가족 이야기는 하나의 카드로 모여요</li>
+         <li>🏡 가족 이름이 같으면 각자 폰에서 써도 하나의 가족 카드로 모여요</li>
          <li>🔤 <b>이야기 번역</b> → 한국어 / English를 누르면 여러 언어의 답변이 한 언어로 모여요</li>
          <li>✍️ 내 이야기를 올리려면 아래 <b>🧭 여정</b> 탭으로!</li>
        </ul>
@@ -643,16 +642,15 @@ $("#share-btn").onclick = async () => {
       lang: m.lang || currentLang()
     }));
 
-    // 같은 가족 후보 찾기 → 합치기 전에 물어봐요
+    // 같은 가족 이름이 이미 있으면 (다른 폰에서 쓴 것도) 그 가족 카드에 저절로 합쳐요
     let target = null;
     if (currentFamilyName) {
-      const match = allPosts.find((p) => p.familyName && p.id !== editingPostId && isSameFamily(p.familyName, currentFamilyName));
-      if (match && confirm(`🏡 이미 '${match.familyName}' 이야기가 있어요.\n이 가족과 하나로 합칠까요?\n\n(아니요를 누르면 새 가족 카드로 올라가요)`)) target = match;
+      target = allPosts.find((p) => p.familyName && p.id !== editingPostId && isSameFamily(p.familyName, currentFamilyName)) || null;
     }
 
     let msg;
     if (target) {
-      await updateDoc(doc(db, "posts", target.id), { family: [...(target.family || []), ...finalData], timestamp: new Date() });
+      await updateDoc(doc(db, "posts", target.id), { family: arrayUnion(...finalData), timestamp: new Date() });
       if (editingPostId) await deleteDoc(doc(db, "posts", editingPostId));
       msg = `'${target.familyName}' 가족과 하나로 합쳐졌어요! 🏡`;
     } else if (editingPostId) {

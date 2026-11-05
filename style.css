@@ -300,3 +300,8 @@ textarea { resize: vertical; min-height: 84px; }
 .spectrum .sp-title { font-family: "Jua", sans-serif; font-size: 1.05rem; margin-bottom: 4px; }
 .spectrum ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 0.9rem; }
 .spectrum .sp-ex { margin-top: 4px; background: rgba(255,255,255,0.75); border-radius: 10px; padding: 6px 10px; font-size: 0.85rem; color: #4A4F68; }
+
+/* 가족 이름 안내 */
+.fam-tip { margin: -2px 0 12px; padding: 10px 12px; border-radius: 14px; background: #FFF8E1; font-size: 0.82rem; line-height: 1.5; color: #5D627A; }
+.fam-tip b { color: var(--ink); }
+.fam-tip small { color: var(--muted); }
