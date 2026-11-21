@@ -1,3 +1,6 @@
 .env
 *.pyc
 __pycache__/
+
+# 로컬 미리보기 서버 설정 (기기마다 다름)
+.claude/launch.json
