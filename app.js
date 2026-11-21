@@ -21,7 +21,7 @@ const ADMIN_PW = "0530";
 // 순서는 기존 데이터와 같아요: 0 주변화, 1 분리, 2 동화, 3 통합
 const TYPES = [
   { key: "주변화", en: "Marginalization", emoji: "🍂", short: "어디에도 속하지 않는 느낌", tc: "#7B68C8", tbg: "#F0EDFB",
-    desc: "우리 나라 문화도, 한국 문화도 나와 조금 멀게 느껴져요. 내가 어디에 속하는지 헷갈릴 수 있어요. 이런 마음도 자연스러워요. 혼자가 아니에요 🤍" },
+    desc: "우리 나라 문화도, 한국 문화도 나와 조금 멀게 느껴져요. 내가 어디에 속하는지 헷갈릴 수 있어요. 이런 마음도 자연스러워요. 혼자가 아니에요." },
   { key: "분리", en: "Separation", emoji: "🏠", short: "내 문화를 꼭 지켜요", tc: "#E07B1F", tbg: "#FFF1E2",
     desc: "우리 나라 문화를 가장 소중하게 지켜요. 한국 문화와는 아직 조금 거리를 두고 있어요." },
   { key: "동화", en: "Assimilation", emoji: "🦎", short: "한국 문화에 맞춰가요", tc: "#1E9E5A", tbg: "#E3F8EC",
@@ -32,10 +32,11 @@ const TYPES = [
 
 // 🧭 마음 체크: 베리의 두 질문(내 나라 문화 지키기 a / 한국 문화와 어울리기 b)을 2문항씩
 const CHECK_QS = [
-  { axis: "a", t: "우리 나라의 <b>말·음식·명절</b>을 지키는 것이 나에게 중요해요." },
+  // '말'은 '말(동물)'로 잘못 번역되기 쉬워서 '언어'·'한국어'로 써요
+  { axis: "a", t: "우리 나라의 <b>언어·음식·명절</b>을 지키는 것이 나에게 중요해요." },
   { axis: "a", t: "<b>우리 나라 사람들</b>과 만나면 마음이 편하고 좋아요." },
   { axis: "b", t: "<b>한국 사람들</b>과 친해지고 함께 어울리고 싶어요." },
-  { axis: "b", t: "<b>한국 말·음식·문화</b>를 배우고 즐기는 것이 좋아요." }
+  { axis: "b", t: "<b>한국어와 한국 음식·문화</b>를 배우고 즐기는 것이 좋아요." }
 ];
 const CHECK_OPTS = [{ v: 2, label: "👍 그래요" }, { v: 1, label: "🙂 조금" }, { v: 0, label: "👎 아니에요" }];
 // 각 쪽 점수(0~4)가 2 이상이면 '그 쪽 마음이 있어요'로 봐요
@@ -48,13 +49,26 @@ function checkResult(c) {
 // 베리의 2×2 그림 배치(단계 순서): [주변화, 분리] / [동화, 통합]
 const MATRIX_ORDER = [0, 1, 2, 3];
 
-// 질문 문구는 기존과 같아요 (기존 답변과 짝이 맞아야 해요)
+// 답변은 순서(0~3)로 짝을 맞춰 저장돼요. 순서는 바꾸지 말고, 뜻이 같은 문구로만 고쳐요.
+// tag: 이 질문이 무엇을 살펴보는지 (이주 동기 / 심리적 자원 / 어려움)
 const QUESTIONS = [
-  { q: "한국에 오게 된 이유", icon: "🧳", ph: "예: 일을 하려고, 가족과 함께 살려고…" },
-  { q: "나를 버티게 해준 것", icon: "💪", ph: "예: 아이들의 웃음, 고향 음식, 친구…" },
-  { q: "나에게 힘이 되는 말", icon: "💬", ph: "예: \"괜찮아, 잘하고 있어\"" },
-  { q: "그만두고 싶었던 순간", icon: "🌧️", ph: "예: 말이 통하지 않아 답답했을 때…" }
+  { q: "한국에 오게 된 이유", icon: "🧳", tag: "이주 동기", ph: "예: 일을 하려고, 가족과 함께 살려고…" },
+  { q: "나를 버티게 해준 것", icon: "💪", tag: "심리적 자원", ph: "예: 아이들의 웃음, 고향 음식, 친구…" },
+  { q: "나에게 힘이 되는 응원의 한마디", icon: "💬", tag: "심리적 자원", ph: "예: \"괜찮아, 잘하고 있어\"" },
+  { q: "그만두고 싶었던 순간", icon: "🌧️", tag: "힘들었던 순간", ph: "예: 한국어가 잘 통하지 않아 답답했을 때…" }
 ];
+// 나의 이야기 질문이 무엇을 살펴보는지 알려 주는 상자
+const STORY_INTRO_HTML = `<div class="story-intro">
+  <p>이 질문들은 두 가지를 돌아봐요.</p>
+  <dl class="def-list">
+    <div><dt>이주 동기</dt><dd>내가 한국에 오게 된 이유</dd></div>
+    <div><dt>심리적 자원</dt><dd>다른 문화 속에서 살아가도록 나를 도와준 힘</dd></div>
+  </dl>
+  <div class="info-box">
+    <div class="info-title">💡 심리적 자원이란?</div>
+    <span>살아가면서 나에게 힘이 되는 것이에요. 예를 들면 <b>나를 아껴 주는 관계</b>, <b>응원의 말</b>, <b>다른 사람의 공감</b> 같은 것이에요.</span>
+  </div>
+</div>`;
 
 const CHAR_EMOJI = { "남자": "🙋‍♂️", "여자": "🙋‍♀️", "가족": "🏡" };
 const FAMILY_AVATARS = [
@@ -210,18 +224,18 @@ function skipEl(el) {
 }
 function collectItems() {
   const items = [];
-  const add = (st, valid, set, auto) => {
+  const add = (st, valid, set, auto, el) => {
     if (!/\p{L}/u.test(st.orig)) return;
     const m = st.orig.match(/^(\s*)([\s\S]*?)(\s*)$/);
-    items.push({ st, valid, set, auto, pre: m[1], core: m[2], post: m[3] });
+    items.push({ st, valid, set, auto, el, pre: m[1], core: m[2], post: m[3] });
   };
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n = w.nextNode(); n; n = w.nextNode()) {
     const p = n.parentElement;
-    if (!p || skipEl(p)) continue;
+    if (!p || skipEl(p) || p.closest("[data-tr-dict]")) continue;
     let st = tState.get(n);
     if (!st || n.nodeValue !== st.shown) { st = { orig: n.nodeValue, shown: n.nodeValue }; tState.set(n, st); }
-    add(st, () => tState.get(n) === st && n.nodeValue === st.shown, (s) => { st.shown = s; n.nodeValue = s; }, !!p.closest(".qb"));
+    add(st, () => tState.get(n) === st && n.nodeValue === st.shown, (s) => { st.shown = s; n.nodeValue = s; }, !!p.closest(".qb"), p);
   }
   document.body.querySelectorAll("[placeholder], [aria-label]").forEach((el) => {
     if (skipEl(el)) return;
@@ -232,16 +246,74 @@ function collectItems() {
       if (v === null) return;
       let st = m[a];
       if (!st || v !== st.shown) m[a] = st = { orig: v, shown: v };
-      add(st, () => m[a] === st && el.getAttribute(a) === st.shown, (s) => { st.shown = s; el.setAttribute(a, s); }, false);
+      add(st, () => m[a] === st && el.getAttribute(a) === st.shown, (s) => { st.shown = s; el.setAttribute(a, s); }, false, null);
     });
   });
   return items;
 }
+/* ============ 📚 검수한 번역 사전 (i18n/<언어>.json) ============ */
+// 문장을 통째로(굵은 글씨 같은 꾸밈까지) 번역해 둔 사전이에요.
+// 번역은 직접 쓰고, Chrome에서 DeepL·Gemini 사이트로 뜻을 확인한 뒤 넣었어요. (원문 목록: i18n/source.json)
+// 사전에 있는 문장은 사전대로, 없는 글자만 예전처럼 Google 번역으로 바로 번역해요.
+const dicts = new Map();
+async function loadDict(tl) {
+  if (!dicts.has(tl)) dicts.set(tl, fetch(`i18n/${tl}.json`).then((r) => (r.ok ? r.json() : null))
+    .then((o) => (o ? new Map(Object.entries(o)) : null)).catch(() => null));
+  return dicts.get(tl);
+}
+const normKey = (s) => String(s).replace(/\s+/g, " ").trim();
+const HANGUL = /[가-힣]/;
+const INLINE_TAGS = new Set(["B", "STRONG", "SMALL", "SPAN", "BR", "I", "EM"]);
+// 글자와 꾸밈 태그(b·small·span·br)만 들어 있는 '문장 덩어리'인지 (태그가 하나도 없으면 글자 단위로 처리해요)
+function isBlockOnly(el) {
+  if (!el.firstElementChild || ["SCRIPT", "STYLE", "TEXTAREA"].includes(el.tagName)) return false;
+  for (const c of el.querySelectorAll("*")) {
+    if (!INLINE_TAGS.has(c.tagName) || c.id || c.matches(".qb")) return false;
+  }
+  return HANGUL.test(el.textContent);
+}
+// 가장 바깥쪽 문장 덩어리만 써요 (부모가 이미 덩어리면 그 안쪽은 건너뛰어요)
+const isSentenceBlock = (el) => isBlockOnly(el) && !(el.parentElement && isBlockOnly(el.parentElement));
+const bState = new WeakMap();
+function applyDictBlocks(tl, dict) {
+  for (const el of document.body.querySelectorAll("*")) {
+    if (skipEl(el)) continue;
+    const st = bState.get(el);
+    if (st && el.dataset.trDict) {
+      if (el.innerHTML === st.shown) {
+        const want = tl === "ko" ? null : dict?.get(st.key);
+        if (want == null) { el.innerHTML = st.orig; delete el.dataset.trDict; bState.delete(el); }
+        else if (want !== st.tr) { el.innerHTML = want; st.tr = want; st.shown = el.innerHTML; }
+        continue;
+      }
+      delete el.dataset.trDict; bState.delete(el); // 앱이 내용을 새로 바꿨어요 → 처음부터 다시
+    }
+    if (tl === "ko" || !dict || el.closest("[data-tr-dict]") || !isSentenceBlock(el)) continue;
+    const key = normKey(el.innerHTML), tr = dict.get(key);
+    if (tr == null) continue;
+    const orig = el.innerHTML;
+    el.innerHTML = tr;
+    el.dataset.trDict = "1";
+    bState.set(el, { orig, key, tr, shown: el.innerHTML });
+  }
+}
+// 사전의 한 줄짜리 글자(태그 없는 문장·placeholder 등)는 번역 저장본에 미리 넣어 둬요
+function seedDictTexts(tl, dict) {
+  if (!dict || dict.__seeded) return;
+  for (const [k, v] of dict) if (!k.includes("<")) trCache.set(trKey(tl, "ko", k), { t: v, src: "ko" });
+  dict.__seeded = true;
+}
+
 async function translatePage() {
-  const tl = uiLang, items = collectItems();
+  const tl = uiLang;
+  const dict = tl === "ko" ? null : await loadDict(tl);
+  if (uiLang !== tl) return;
+  applyDictBlocks(tl, dict);
+  const items = collectItems();
   if (tl === "ko") { items.forEach((it) => it.st.shown !== it.st.orig && it.set(it.st.orig)); return; }
   const apply = (it, t) => { if (uiLang === tl && it.valid()) { const s = it.pre + t + it.post; if (s !== it.st.shown) it.set(s); } };
   const ui = items.filter((it) => !it.auto), answers = items.filter((it) => it.auto);
+  seedDictTexts(tl, dict);
   await seedTypeNames(tl);
   const ps = translateMany(ui.map((it) => it.core), tl, "ko").map((p, i) => p.then((r) => apply(ui[i], r.t)));
   // 답변은 어느 나라 말인지 모르니 하나씩 언어를 알아내서 번역해요
@@ -257,6 +329,28 @@ async function seedTypeNames(tl) {
   const rs = await Promise.allSettled(translateMany(TYPES.map((t) => t.en), tl, "en"));
   rs.forEach((r, i) => r.status === "fulfilled" && trCache.set(trKey(tl, "ko", TYPES[i].key), { t: r.value.t, src: "ko" }));
 }
+// 🧺 번역할 글자 모으기 (개발용: 주소 끝에 ?harvest 를 붙이면 켜져요)
+// 화면을 하나씩 열면서 window.__harvest() 를 부르면, 사전에 넣을 한국어 문장을 모아 줘요.
+if (new URLSearchParams(location.search).has("harvest")) {
+  const seen = new Map();
+  const ctxOf = (el) => normKey((el.closest("p, li, h1, h2, h3, dt, dd, summary, button, label, .q, .bubble, .check-q, .toast, div") || el).textContent).split(/(?:)/u).slice(0, 300).join("");
+  window.__harvest = () => {
+    for (const el of document.body.querySelectorAll("*")) {
+      if (skipEl(el) || el.closest("[data-tr-dict], .member-top, .fam-banner, .chip, .qb, .f-chip, #board-count") || !isSentenceBlock(el)) continue;
+      const k = normKey(el.innerHTML);
+      if (!seen.has(k)) seen.set(k, { key: k, kind: "html", ctx: ctxOf(el.parentElement || el) });
+    }
+    const inBlock = (el) => { for (let a = el; a && a !== document.body; a = a.parentElement) if (isSentenceBlock(a)) return true; return false; };
+    collectItems().forEach((it) => {
+      if (it.auto || !HANGUL.test(it.core) || (it.el && inBlock(it.el))) return;
+      const k = normKey(it.core);
+      if (!seen.has(k)) seen.set(k, { key: k, kind: "text", ctx: it.el ? ctxOf(it.el) : "(입력칸 안내 글자)" });
+    });
+    return seen.size;
+  };
+  window.__harvestDump = () => [...seen.values()];
+}
+
 let pageTimer;
 new MutationObserver(() => {
   if (uiLang === "ko") return;
@@ -350,7 +444,7 @@ function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
     return `<${tag} class="${cls}" style="${typeStyle(i)}" ${interactive ? `data-type="${i}" data-midx="${midx}" type="button"` : ""}>
       <span class="emo">${t.emoji}</span><b>${t.key}</b><small>${t.short}</small></${tag}>`;
   });
-  return `<div class="axis-note">4가지 모양은 두 가지로 나눠져요<br>🏠 <b>내 문화</b>를 얼마나 지키는지 · 🤝 <b>한국 문화</b>와 얼마나 어울리는지</div>
+  return `<div class="axis-note">4가지 모양은 두 가지로 나눠져요<br><b>내 문화</b>를 얼마나 지키는지 · <b>한국 문화</b>와 얼마나 어울리는지</div>
   <div class="matrix ${interactive ? "" : "static"}">${cells.join("")}</div>`;
 }
 
@@ -358,22 +452,52 @@ function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
 const typeListHTML = () => `<ul class="type-list">${MATRIX_ORDER.map((k) =>
   `<li style="${typeStyle(k)}"><b>${TYPES[k].emoji} ${TYPES[k].key}</b><small> (${TYPES[k].en})</small><br>${TYPES[k].desc}</li>`).join("")}</ul>`;
 
-// 🌈 문화적응은 스펙트럼이에요 (여러 곳에서 같이 보여 줘요)
-const SPECTRUM_HTML = `<div class="spectrum">
-  <div class="sp-title">🌈 알아 두세요</div>
-  <ul>
-    <li>✅ 4가지 모양에 <b>좋고 나쁜 것은 없어요.</b></li>
-    <li>🎨 문화적응은 하나로 딱 정해지지 않아요. 생활 속에서 <b>여러 모양이 섞여</b> 나타나요.
-      <div class="sp-ex">🍜 라면·불고기는 좋아하지만, 김밥은 잘 안 먹어요.<br>🎤 K-POP은 좋아하지만, 트로트는 잘 안 들어요.</div></li>
-    <li>🕐 그래서 마음 체크는 <b>지금 내가 가장 많이 느끼는 마음</b>을 알아보는 거예요. 마음은 시간이 지나면 바뀔 수 있어요 🌱</li>
+// 💡 알아 두세요: 문화적응은 스펙트럼이에요 (여러 곳에서 같이 보여 줘요)
+// 안내(Info)라서 노란색 상자로 보여 줘요. 아이콘은 제목에만 써요.
+const SPECTRUM_HTML = `<div class="info-box">
+  <div class="info-title">💡 알아 두세요</div>
+  <ul class="dot-list">
+    <li>4가지 모양에 <b>좋고 나쁜 것은 없어요.</b></li>
+    <li><span>문화적응은 하나로 딱 정해지지 않아요. 생활 속에서 <b>여러 모양이 섞여</b> 나타나요.</span>
+      <div class="info-ex"><span class="ex-label">예</span>라면·불고기는 좋아하지만, 김밥은 잘 안 먹어요.<br><span class="ex-label">예</span>K-POP은 좋아하지만, 트로트는 잘 안 들어요.</div></li>
+    <li>그래서 마음 체크는 <b>지금 내가 가장 많이 느끼는 마음</b>을 알아보는 거예요. 마음은 시간이 지나면 바뀔 수 있어요.</li>
   </ul>
 </div>`;
 
-const LANG_SLIDE = () => `<div class="big-emo">🌐</div><h2>내 나라 말로 보기</h2>
-       <p class="lang-ask">🙏 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b></p>
+// 📲 설치 방법: ① 크롬으로 열기 → ② 내 폰에 맞는 방법으로 홈 화면에 추가 (②에서 아이폰/안드로이드로 나뉘어요)
+const INSTALL_FLOW_HTML = `<ol class="flow">
+  <li><b>크롬(Chrome) 앱</b>으로 이 링크를 열어요.</li>
+  <li><span><b>홈 화면에 추가</b>해요. 내 휴대폰에 맞는 방법을 따라 해요.</span>
+    <div class="branch">
+      <div><div class="branch-h">아이폰</div><span>공유 버튼 ⬆️ → <b>홈 화면에 추가</b> → <b>추가</b></span></div>
+      <div><div class="branch-h">안드로이드</div><span>오른쪽 위 ⋮ 메뉴 → <b>앱 설치</b></span></div>
+    </div>
+    <small class="muted">아이폰에서 메뉴가 안 보이면 최신 버전으로 업데이트하거나 Safari로 열어 같은 방법으로 해 주세요.</small>
+  </li>
+</ol>`;
+
+// 💌 모두의 이야기 사용법: 왼쪽은 화면에 있는 '버튼 모양' 그대로, 오른쪽은 설명만 (아이콘을 섞지 않아요)
+const BOARD_HOWTO_HTML = `<div class="howto">
+  <div class="howto-group">이야기 보기</div>
+  <div class="howto-row"><span class="ui-chip">🍂 주변화 3</span><span>같은 유형의 이야기만 모아 봐요.</span></div>
+  <div class="howto-row"><span class="ui-chip">한국어 · English</span><span>여러 나라 언어로 쓴 답변을 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요.</span></div>
+  <div class="howto-group">마음 나누기</div>
+  <div class="howto-row"><span class="ui-chip">🤍 공감</span><span>마음을 전해요. 이야기 하나에 한 번 누를 수 있어요.</span></div>
+  <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기를 <b>수정</b>하거나 <b>삭제</b>해요. 삭제는 비밀번호가 필요해요.</span></div>
+</div>
+<div class="info-box">
+  <div class="info-title">💡 알아 두세요</div>
+  <ul class="dot-list">
+    <li>가족 이름이 같으면, 각자 휴대폰에서 써도 <b>하나의 가족 카드</b>로 모여요.</li>
+    <li>내 이야기를 올리려면 아래 <b>여정</b> 탭으로 가요.</li>
+  </ul>
+</div>`;
+
+const LANG_SLIDE = () => `<div class="big-emo">🌐</div><h2>내 나라 언어로 보기</h2>
+       <p class="lang-ask"><b>자신이 편한 모국어나 영어를 골라서 진행해 주세요.</b></p>
        <p>언어를 누르면 화면이 바로 바뀌어요. 앱으로 설치해도 똑같이 쓸 수 있어요.</p>
        ${langGridHTML()}
-       <p class="muted">언제든 오른쪽 위 🌐 버튼으로 바꿀 수 있어요. 답은 내 나라 말로 써도 괜찮아요.</p>`;
+       <p class="muted">언제든 오른쪽 위 <span class="ui-chip">🌐</span> 버튼으로 바꿀 수 있어요. 답은 내 나라 언어로 써도 괜찮아요.</p>`;
 
 const GUIDES = {
   intro: {
@@ -381,24 +505,20 @@ const GUIDES = {
     slides: [
       `<div class="big-emo">👋</div><h2>문화적응 여정에 오신 걸 환영해요!</h2>
        <p>낯선 나라에서 살아가는 <b>나의 마음</b>을 돌아보고,<br>다른 사람들과 <b>이야기를 나누는</b> 곳이에요.</p>
-       <p>🌐 <b>자신이 편한 모국어나 영어로 선택해서 진행해 주세요.</b><br>다음 장에서 방법을 알려 드릴게요.</p>`,
+       <p><b>자신이 편한 모국어나 영어를 골라서 진행해 주세요.</b><br>다음 장에서 방법을 알려 드릴게요.</p>`,
       LANG_SLIDE,
       `<div class="big-emo">🧭</div><h2>4가지 마음의 모양</h2>
        <p>존 베리의 문화적응 모델이에요.</p>${matrixHTML()}${SPECTRUM_HTML}`,
       `<div class="big-emo">✍️</div><h2>이렇게 참여해요</h2>
-       <ol class="steps">
-         <li><span>🙋</span><div><b>누구인지 고르고 이름 쓰기</b></div></li>
-         <li><span>🧭</span><div><b>마음 체크 질문 4개에 답하기</b><br>지금 내 마음과 가장 가까운 모양을 알려 줘요</div></li>
-         <li><span>💬</span><div><b>나의 이야기 질문 4개 쓰기</b> (짧아도 OK)</div></li>
-         <li><span>💌</span><div><b>공유하기</b> → 모두의 이야기에 올라가요</div></li>
+       <ol class="num-steps">
+         <li><b>누구인지 고르고 이름 쓰기</b></li>
+         <li><b>마음 체크 질문 4개에 답하기</b><br>지금 내 마음과 가장 가까운 모양을 알려 줘요.</li>
+         <li><b>나의 이야기 질문 4개 쓰기</b><br>짧게 써도 괜찮아요.</li>
+         <li><b>공유하기</b><br>모두의 이야기에 올라가요.</li>
        </ol>`,
       ...(IS_STANDALONE ? [] : [`<div class="big-emo">📲</div><h2>앱처럼 설치할 수 있어요</h2>
-       <div class="install-box" style="text-align:left">
-         <div>🌐 <b>크롬(Chrome)</b>으로 열어 주세요</div>
-         <div><b>🍎 아이폰</b><br>공유 버튼 ⬆️ → <b>홈 화면에 추가</b></div>
-         <div><b>🤖 안드로이드</b><br>⋮ 메뉴 → <b>앱 설치</b></div>
-       </div>
-       <p>아래 <b>📖 설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`])
+       ${INSTALL_FLOW_HTML}
+       <p>아래 <b>설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`])
     ]
   },
   lang: { flag: "hide-guide-lang-never", slides: [LANG_SLIDE], noHide: true },
@@ -406,16 +526,9 @@ const GUIDES = {
     flag: "hide-guide-board",
     slides: [
       `<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
-       <p>참여한 모든 사람의 결과가 이곳에 모여요.</p>
-       <ul class="bullets">
-         <li>🔎 위쪽 <b>유형 버튼</b> → 같은 유형 이야기만 모아 보기</li>
-         <li>❤️ <b>공감</b> → 마음 전하기 (한 이야기에 한 번)</li>
-         <li>⋯ 버튼 → <b>✏️ 수정하기</b> / <b>🗑️ 삭제하기</b></li>
-         <li>🏡 가족 이름이 같으면 각자 폰에서 써도 하나의 가족 카드로 모여요</li>
-         <li>🔤 <b>이야기 번역</b> → 한국어 / English를 누르면 여러 언어의 답변이 한 언어로 모여요</li>
-         <li>✍️ 내 이야기를 올리려면 아래 <b>🧭 여정</b> 탭으로!</li>
-       </ul>
-       <p class="muted">🤝 다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`
+       <p>참여한 모든 사람의 이야기가 이곳에 모여요.</p>
+       ${BOARD_HOWTO_HTML}
+       <p class="muted">다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`
     ]
   }
 };
@@ -448,7 +561,7 @@ function openGuide(name) {
         ${g.noHide ? "<span></span>" : `<label><input type="checkbox" id="g-hide" ${store.get(g.flag) ? "checked" : ""}> 다시 보지 않기</label>`}
         <div style="display:flex;gap:6px">
           ${i > 0 ? `<button class="btn btn-ghost" id="g-prev">이전</button>` : ""}
-          <button class="btn btn-primary" id="g-next">${g.noHide ? "확인 👍" : last ? "시작하기 👍" : "다음 ▶"}</button>
+          <button class="btn btn-primary" id="g-next">${g.noHide ? "확인" : last ? "시작하기" : "다음 ▶"}</button>
         </div>
       </div>`);
     if ($("#g-hide")) $("#g-hide").onchange = (e) => (e.target.checked ? store.set(g.flag, true) : store.del(g.flag));
@@ -461,6 +574,8 @@ $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.op
 $("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "intro" : "board");
 $("#guide-matrix").innerHTML = matrixHTML() + typeListHTML() + SPECTRUM_HTML;
 $("#spectrum-write").innerHTML = SPECTRUM_HTML;
+$("#board-howto").innerHTML = BOARD_HOWTO_HTML;
+$("#install-flow").innerHTML = INSTALL_FLOW_HTML;
 
 /* ============ STEP 1: 누구? ============ */
 $("#avatar-row").innerHTML = FAMILY_AVATARS.map((a, i) =>
@@ -523,7 +638,7 @@ function goWrite() { goStep("#step-write"); renderSurvey(); }
 function renderSurvey() {
   $("#family-edit").innerHTML = currentFamilyName !== "" ? `
     <label class="field" style="margin:12px 0 0">
-      <span class="field-label">🏡 우리 가족 이름 (고칠 수 있어요)</span>
+      <span class="field-label">우리 가족 이름 (고칠 수 있어요)</span>
       <input type="text" id="edit-family-name" value="${esc(currentFamilyName)}">
     </label>` : "";
 
@@ -538,13 +653,15 @@ function renderSurvey() {
       </div>
       ${checkHTML(m, i)}
       <div class="qa-write">
+        <div class="sec-title">나의 이야기</div>
+        ${STORY_INTRO_HTML}
         ${QUESTIONS.map((q, qi) => `
-          <div class="q"><span class="qi">${q.icon}</span>Q${qi + 1}. ${q.q}</div>
+          <div class="q"><span class="qi">${q.icon}</span><span>Q${qi + 1}. ${q.q} <span class="q-tag">${q.tag}</span></span></div>
           <textarea data-f="ans" data-midx="${i}" data-qidx="${qi}" placeholder="${esc(q.ph)}">${esc(m.tempAnswers?.[qi] || "")}</textarea>`).join("")}
       </div>
     </div>`).join("");
 
-  $("#share-btn").textContent = editingPostId ? "✏️ 수정 완료하기" : "💌 이야기 공유하기";
+  $("#share-btn").textContent = editingPostId ? "수정 완료하기" : "이야기 공유하기";
 }
 
 // 입력할 때마다 상태에 바로 저장 (다시 그려도 글이 사라지지 않아요)
@@ -581,19 +698,19 @@ function checkHTML(m, i) {
   const done = c.filter((v) => v !== null && v !== undefined).length;
   const t = m.typeIdx !== null ? TYPES[m.typeIdx] : null;
   return `
-    <div class="sec-title">🧭 나의 마음 체크</div>
+    <div class="sec-title">나의 마음 체크</div>
     <p class="muted" style="margin-top:0">질문 4개에 답하면, <b>지금 내 마음</b>이 4가지 모양 중 어디에 가장 가까운지 알려 드려요.</p>
     ${CHECK_QS.map((q, qi) => `
-      <div class="check-q"><span class="cq-n">${qi + 1}</span> ${q.t}
+      <div class="check-q"><span class="cq-n">${qi + 1}</span> <span class="cq-t">${q.t}</span>
         <div class="yn3">${CHECK_OPTS.map((o) =>
           `<button type="button" data-cq="${qi}" data-cv="${o.v}" data-midx="${i}" class="${c[qi] === o.v ? "selected" : ""}">${o.label}</button>`).join("")}</div>
       </div>`).join("")}
     ${t
-      ? `<div class="bubble result" style="${typeStyle(m.typeIdx)}">지금 나는 <b>${t.emoji} ${t.key}</b><small> (${t.en})</small>에 가장 가까워요<br>${t.desc}
-           <div class="r-note">💡 이건 '지금 가장 많이 느끼는 마음'이에요. 좋고 나쁜 모양은 없어요.</div></div>`
-      : `<div class="bubble">👆 질문에 모두 답하면 결과가 나와요 (${done}/4)</div>`}
+      ? `<div class="bubble result" style="${typeStyle(m.typeIdx)}"><span>지금 나는 <b>${t.emoji} ${t.key}</b><small> (${t.en})</small>에 가장 가까워요</span><br><span>${t.desc}</span>
+           <div class="r-note">이건 '지금 가장 많이 느끼는 마음'이에요. 좋고 나쁜 모양은 없어요.</div></div>`
+      : `<div class="bubble">질문에 모두 답하면 결과가 나와요 (${done}/4)</div>`}
     <details class="all-types" data-midx="${i}" ${m.showAll ? "open" : ""}>
-      <summary>🧭 4가지 모양 모두 보기 · 직접 고르기</summary>
+      <summary>4가지 모양 모두 보기 · 직접 고르기</summary>
       ${typeListHTML()}
       <p class="muted">결과가 내 마음과 다르면, 더 가까운 모양을 직접 눌러 바꿀 수 있어요.</p>
       ${matrixHTML({ selected: m.typeIdx, interactive: true, midx: i })}
@@ -675,7 +792,7 @@ $("#share-btn").onclick = async () => {
     toast(err?.code === "permission-denied" ? "🔒 서버가 잠겨 있어 올릴 수 없어요. 관리자에게 알려 주세요" : "😢 오류가 났어요. 인터넷 연결을 확인하고 다시 눌러 주세요");
   } finally {
     btn.disabled = false;
-    btn.textContent = editingPostId ? "✏️ 수정 완료하기" : "💌 이야기 공유하기";
+    btn.textContent = editingPostId ? "수정 완료하기" : "이야기 공유하기";
   }
 };
 
@@ -709,7 +826,7 @@ function renderFilters() {
   const counts = [0, 0, 0, 0];
   let people = 0;
   allPosts.forEach((p) => (p.family || []).forEach((m) => { people++; const i = typeIndex(m.type); if (i >= 0) counts[i]++; }));
-  $("#board-count").innerHTML = `지금까지 <b>${people}명</b>이 <b>${allPosts.length}개</b>의 이야기를 나눴어요 🙌`;
+  $("#board-count").innerHTML = `지금까지 <b>${people}명</b>이 <b>${allPosts.length}개</b>의 이야기를 나눴어요.`;
   $("#filter-chips").innerHTML =
     `<button class="f-chip ${filterType === "all" ? "active" : ""}" data-filter="all">✨ 전체 <b>${people}</b></button>` +
     TYPES.map((t, i) => `<button class="f-chip ${filterType === t.key ? "active" : ""}" data-filter="${t.key}">${t.emoji} <span>${t.key}</span> <b>${counts[i]}</b></button>`).join("");
@@ -742,7 +859,7 @@ function renderFeed() {
             <div class="who"><b translate="no" class="notranslate">${esc(m.name)}</b>${m.role ? `<small>${esc(m.role)}</small>` : ""}${m.lang && m.lang !== "ko" ? `<br><span class="lang-tag">🌐 ${esc(langName(m.lang))}로 작성</span>` : ""}</div>
             ${i >= 0 ? `<span class="badge" style="${typeStyle(i)}">${TYPES[i].emoji} <span>${TYPES[i].key}</span></span>` : ""}
           </div>
-          ${answers || `<div class="no-ans">💭 작성된 답변이 없어요</div>`}
+          ${answers || `<div class="no-ans">작성된 답변이 없어요</div>`}
         </div>`;
       }).join("")}
       <div class="post-foot">
@@ -776,8 +893,8 @@ function openPostMenu(id) {
   openSheet(`
     <h3 style="text-align:center">이 이야기를…</h3>
     <div class="action-list">
-      <button class="btn btn-soft" id="pm-edit">✏️ 수정하기</button>
-      <button class="btn btn-danger" id="pm-del">🗑️ 삭제하기 (비밀번호 필요)</button>
+      <button class="btn btn-soft" id="pm-edit">수정하기</button>
+      <button class="btn btn-danger" id="pm-del">삭제하기 (비밀번호 필요)</button>
       <button class="btn btn-ghost" id="pm-cancel">취소</button>
     </div>`);
   $("#pm-cancel").onclick = closeSheet;
@@ -853,24 +970,20 @@ function manualInstallSheet(next) {
       <div class="big-emo">📲</div><h2>이렇게 설치해 주세요</h2>
       ${IS_IOS
         ? `<p>아이폰은 버튼 하나로 바로 설치할 수 없어서<br>아래 순서대로 눌러 주세요.</p>
-           <div class="install-box" style="text-align:left">
-             <div><b>1.</b> 화면의 <b>공유 버튼 ⬆️</b> 누르기</div>
-             <div><b>2.</b> <b>홈 화면에 추가 ➕</b> 누르기</div>
-             <div><b>3.</b> 오른쪽 위 <b>추가</b> 누르기</div>
-           </div>`
-        : CAN_AUTO_INSTALL
-        ? `<p>크롬이 아직 설치를 허락하지 않았어요.<br>이미 설치되어 있거나 <b>시크릿 창</b>이면 이렇게 돼요.<br>아래 방법으로도 설치할 수 있어요.</p>`
-          + `<div class="install-box" style="text-align:left">
-             <div><b>📱 휴대폰</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
-             <div><b>💻 컴퓨터</b><br>주소창 오른쪽 <b>설치 아이콘</b> 또는 <b>⋮ 메뉴</b> → <b>앱 설치</b></div>
-           </div>`
-        : `<p>이 브라우저는 버튼 하나로 바로 설치할 수 없어요.<br><b>크롬(Chrome)</b>으로 열면 바로 설치돼요.</p>
-           <div class="install-box" style="text-align:left">
-             <div><b>📱 휴대폰</b><br>오른쪽 위 <b>⋮ 메뉴</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></div>
-             <div><b>💻 컴퓨터</b><br>주소창 오른쪽 <b>설치 아이콘</b> 또는 <b>⋮ 메뉴</b> → <b>앱 설치</b></div>
+           <ol class="num-steps">
+             <li>화면의 <b>공유 버튼 ⬆️</b> 누르기</li>
+             <li><b>홈 화면에 추가</b> 누르기</li>
+             <li>오른쪽 위 <b>추가</b> 누르기</li>
+           </ol>`
+        : (CAN_AUTO_INSTALL
+          ? `<p>크롬이 아직 설치를 허락하지 않았어요.<br>이미 설치되어 있거나 <b>시크릿 창</b>이면 이렇게 돼요.<br>아래 방법으로도 설치할 수 있어요.</p>`
+          : `<p>이 브라우저는 버튼 하나로 바로 설치할 수 없어요.<br><b>크롬(Chrome)</b>으로 열면 바로 설치돼요.</p>`)
+          + `<div class="branch">
+             <div><div class="branch-h">휴대폰</div><span>오른쪽 위 ⋮ 메뉴 → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></span></div>
+             <div><div class="branch-h">컴퓨터</div><span>주소창 오른쪽 <b>설치 아이콘</b> 또는 ⋮ 메뉴 → <b>앱 설치</b></span></div>
            </div>`}
       <p class="muted">이미 설치했다면 홈 화면의 ✈️ 아이콘으로 열어 주세요.</p>
-      <button class="btn btn-primary" id="mi-ok">알겠어요 👍</button>
+      <button class="btn btn-primary" id="mi-ok">알겠어요</button>
     </div>`, next);
   $("#mi-ok").onclick = closeSheet;
 }
@@ -882,7 +995,7 @@ function askInstall(next) {
       <p>홈 화면(컴퓨터는 바탕화면)에 ✈️ 아이콘이 생겨서<br>다음부터 바로 열 수 있어요.</p>
       <div class="ask-btns">
         <button class="btn btn-soft" id="ia-no">아니오</button>
-        <button class="btn btn-primary" id="ia-yes">예 👍</button>
+        <button class="btn btn-primary" id="ia-yes">예</button>
       </div>
     </div>`, () => { store.set(INSTALL_KEY, true); next(); });
   $("#ia-no").onclick = closeSheet;
@@ -921,7 +1034,7 @@ function waitInstallSheet(next) {
     $("#iw-title").textContent = "설치 준비가 끝났어요!";
     $("#iw-text").textContent = "아래 버튼을 누르면 바로 설치돼요.";
     $("#iw-manual").classList.add("hidden");
-    btn.disabled = false; btn.textContent = "📲 지금 설치하기";
+    btn.disabled = false; btn.textContent = "지금 설치하기";
     btn.onclick = () => { closeSheet(); runInstall(); };
   };
   // 시간 제한 없이 기다려요 (늦게 허락이 나도 버튼이 켜져요)

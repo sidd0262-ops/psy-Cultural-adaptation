@@ -27,7 +27,10 @@ body {
   line-height: 1.55;
   padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px);
   overflow-x: hidden;
+  overflow-wrap: break-word;
 }
+/* 한국어는 단어(어절) 중간에서 줄이 바뀌지 않게 해요 */
+html:lang(ko) body { word-break: keep-all; overflow-wrap: anywhere; }
 h1, h2, h3, .brand, .tab, .btn, .step-pill { font-family: "Jua", -apple-system, sans-serif; font-weight: 400; }
 h2 { font-size: 1.45rem; margin: 6px 0 14px; }
 h3 { font-size: 1.2rem; margin: 0 0 10px; }
@@ -130,6 +133,9 @@ textarea { resize: vertical; min-height: 84px; }
 
 /* 유형 매트릭스 */
 .matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* 번역된 긴 유형 이름(Marginalization 등)이 칸 밖으로 넘치지 않게 */
+.matrix > * { min-width: 0; }
+.matrix b, .matrix small { overflow-wrap: anywhere; hyphens: auto; }
 .axis-note { text-align: center; font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px; line-height: 1.5; }
 .axis-note b { color: var(--ink); }
 .type-opt {
@@ -242,7 +248,9 @@ textarea { resize: vertical; min-height: 84px; }
 .ask-btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 18px; }
 .ask-btns .btn { margin: 0; }
 /* 🌐 언어 고르기 */
-.lang-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0 4px; }
+.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.6em, 1fr)); gap: 6px; margin: 12px 0 4px; }
+/* 언어 이름은 단어 중간에서 줄이 바뀌지 않게 해요 */
+.lang-grid button { overflow-wrap: normal; word-break: normal; white-space: nowrap; min-width: 0; }
 .lang-grid button { border: 2px solid transparent; background: var(--soft); border-radius: 14px; padding: 9px 4px; font: inherit; font-size: 0.88rem; color: var(--ink); cursor: pointer; }
 .lang-grid button.on { border-color: var(--blue); background: #EAF3FF; font-weight: 700; }
 .lang-grid button:active { transform: scale(0.95); }
@@ -295,13 +303,58 @@ textarea { resize: vertical; min-height: 84px; }
 .type-list li { background: var(--tbg); border-left: 5px solid var(--tc); border-radius: 12px; padding: 8px 10px; font-size: 0.88rem; }
 .type-list li b { color: var(--tc); font-family: "Jua", sans-serif; font-weight: 400; font-size: 1rem; }
 .type-list li small { color: var(--muted); }
-/* 🌈 스펙트럼 안내 */
-.spectrum { background: linear-gradient(135deg, #FFF6E5, #EAF4FF); border-radius: 18px; padding: 12px 14px; margin-top: 12px; text-align: left; }
-.spectrum .sp-title { font-family: "Jua", sans-serif; font-size: 1.05rem; margin-bottom: 4px; }
-.spectrum ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 0.9rem; }
-.spectrum .sp-ex { margin-top: 4px; background: rgba(255,255,255,0.75); border-radius: 10px; padding: 6px 10px; font-size: 0.85rem; color: #4A4F68; }
 
 /* 가족 이름 안내 */
 .fam-tip { margin: -2px 0 12px; padding: 10px 12px; border-radius: 14px; background: #FFF8E1; font-size: 0.82rem; line-height: 1.5; color: #5D627A; }
 .fam-tip b { color: var(--ink); }
 .fam-tip small { color: var(--muted); }
+
+/* 💡 안내 상자 (Info = 노란색). 위 내용과 간격을 넉넉히 둬요 */
+.info-box { background: #FFF8DB; border: 1px solid #F6E3A1; border-radius: 16px; padding: 12px 14px; margin-top: 20px; text-align: left; font-size: 0.9rem; color: #4A4F68; }
+.info-title { font-weight: 700; color: #8A6500; margin-bottom: 6px; font-size: 0.95rem; }
+.info-ex { margin-top: 6px; background: rgba(255,255,255,0.8); border-radius: 10px; padding: 6px 10px; font-size: 0.85rem; line-height: 1.7; }
+.ex-label { display: inline-block; font-size: 0.72rem; font-weight: 700; color: #8A6500; background: #FFEFB3; border-radius: 6px; padding: 0 6px; margin-right: 6px; }
+
+/* • 순서 없는 목록 (아이콘 대신 점) */
+.dot-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; text-align: left; font-size: 0.92rem; }
+.dot-list li { position: relative; padding-left: 14px; }
+.dot-list li::before { content: ""; position: absolute; left: 2px; top: 0.62em; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+
+/* 1 2 3 순서 있는 단계 (번호 동그라미) */
+.num-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; counter-reset: st; text-align: left; }
+.num-steps li { counter-increment: st; position: relative; background: #FAFBFF; border-radius: 14px; padding: 10px 12px 10px 46px; font-size: 0.92rem; }
+.num-steps li::before { content: counter(st); position: absolute; left: 12px; top: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; font-size: 0.82rem; display: grid; place-items: center; }
+
+/* 📲 설치 흐름: ① → ② 아래에 아이폰/안드로이드로 나뉘어요 */
+.flow { list-style: none; padding: 0; margin: 0; counter-reset: fl; display: grid; gap: 0; text-align: left; font-size: 0.92rem; }
+.flow > li { counter-increment: fl; position: relative; padding: 0 0 16px 40px; }
+.flow > li:last-child { padding-bottom: 0; }
+.flow small { display: block; text-align: left; }
+.flow > li::before { content: counter(fl); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; display: grid; place-items: center; }
+.flow > li:not(:last-child)::after { content: ""; position: absolute; left: 13px; top: 32px; bottom: 4px; width: 2px; background: #FFD0E0; }
+.branch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 6px; text-align: left; font-size: 0.88rem; }
+.branch > div { background: #FAFBFF; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.branch-h { font-weight: 700; color: #3D4AA8; font-size: 0.85rem; margin-bottom: 2px; }
+@media (max-width: 380px) { .branch { grid-template-columns: 1fr; } }
+
+/* 💌 사용법: 왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명 */
+.howto { display: grid; gap: 6px; text-align: left; font-size: 0.9rem; }
+.howto-group { font-weight: 700; color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
+.howto-group:first-child { margin-top: 0; }
+/* 버튼 모양이 길어지면(번역·작은 화면) 설명이 아래 줄로 내려가요. 서로 겹치지 않아요 */
+.howto-row { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; background: #FAFBFF; border-radius: 12px; padding: 8px 10px; }
+.howto-row > .ui-chip { flex: none; min-width: 6.5em; text-align: center; }
+.howto-row > span:last-child { flex: 1 1 11em; min-width: 0; }
+/* 글 속의 버튼 모양 (예: 오른쪽 위 🌐 버튼) */
+p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0 8px; margin: 0 1px; }
+.ui-chip { justify-self: start; background: #fff; border: 1px solid #DDE1EE; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+/* 💬 나의 이야기 질문 소개 */
+.story-intro { background: #F6F8FF; border-radius: 16px; padding: 12px 14px; font-size: 0.9rem; }
+.story-intro > p { margin: 0 0 8px; }
+.def-list { margin: 0; display: grid; gap: 6px; }
+.def-list > div { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; align-items: baseline; }
+.def-list dt { font-weight: 700; color: #3D4AA8; }
+.def-list dd { margin: 0; }
+.story-intro .info-box { margin-top: 12px; }
+.q-tag { display: inline-block; vertical-align: middle; font-size: 0.72rem; font-weight: 600; color: #3D4AA8; background: #EEF3FF; border-radius: 999px; padding: 1px 8px; margin-left: 4px; }
