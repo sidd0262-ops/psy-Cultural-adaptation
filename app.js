@@ -106,11 +106,19 @@ function avatarSVG(raw) {
         .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="11" fill="${h}" ${S}/>`).join("");
       front = [[36, 31], [50, 27], [64, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5" fill="${h}" ${S}/>`).join("");
       break;
-    case "ghost":
-      head = `<path d="M21 90 L21 52 C21 20 79 20 79 52 L79 90 L69.5 83 L60 90 L50 83 L40 90 L30.5 83 Z" fill="${c}" ${S}/>`;
-      // 아래쪽 물결 무늬 (포인트 색)
-      mid = `<path d="M22.3 77 Q36 72 50 77 Q64 82 77.7 77 L77.7 87.5 L69.5 81.5 L60 88 L50 81.5 L40 88 L30.5 81.5 L22.3 87.5 Z" fill="${h}"/>`;
+    case "ghost": {
+      // 둥근 머리 + 물결 밑단 + 작은 팔(한쪽은 '부~' 하고 들기) + 바닥 그림자 → 둥둥 떠 있는 유령
+      const body = "M22 58 C22 30 35 17 50 17 C65 17 78 30 78 58 L78 81 Q78 89 71.5 86.5 Q66 84.5 63 89.5 Q59 95 54.5 89.5 Q50 84.5 45.5 89.5 Q41 95 37 89.5 Q34 84.5 28.5 86.5 Q22 89 22 81 Z";
+      back = `<ellipse cx="50" cy="97" rx="17" ry="2.6" fill="${INK}" opacity=".13"/>
+        <path d="M24 62 Q12 60 9 68 Q15 71 24 70 Z" fill="${c}" ${S}/>
+        <path d="M75 60 Q84 54 86 44 Q87 37 91.5 39 Q95 41 92 50 Q88 61 76 67 Z" fill="${c}" ${S}/>`;
+      head = `<clipPath id="gh-clip"><path d="${body}"/></clipPath>
+        <path d="${body}" fill="${c}"/>
+        <g clip-path="url(#gh-clip)"><path d="M10 79 Q30 72 50 78 Q70 84 90 76 L90 100 L10 100 Z" fill="${h}" opacity=".9"/></g>
+        <path d="${body}" fill="none" ${S}/>
+        <path d="M31 38 Q34 27 44 23" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity=".85"/>`;
       break;
+    }
     case "alien":
       back = `<path d="M39 32 L30 13 M61 32 L70 13" fill="none" ${S}/>
         <circle cx="30" cy="12" r="5" fill="${h}" ${S}/><circle cx="70" cy="12" r="5" fill="${h}" ${S}/>`;
@@ -208,7 +216,9 @@ function avatarSVG(raw) {
     star: `<path d="M73 18 L76.5 25.5 L84.5 26.5 L78.5 32 L80 40 L73 36 L66 40 L67.5 32 L61.5 26.5 L69.5 25.5 Z" fill="#FFD166" ${S}/>`,
     phones: `<path d="M21 56 C21 21 79 21 79 56" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><rect x="13" y="47" width="12" height="20" rx="5" fill="#6C63FF" ${S}/><rect x="75" y="47" width="12" height="20" rx="5" fill="#6C63FF" ${S}/>`
   };
-  return `<svg class="av" viewBox="0 0 100 100" aria-hidden="true">${back}${head}${mid}${faces[f]}${front}${items[a]}</svg>`;
+  const all = `${back}${head}${mid}${faces[f]}${front}${items[a]}`;
+  // 유령은 살짝 기울여서 떠다니는 느낌을 줘요
+  return `<svg class="av" viewBox="0 0 100 100" aria-hidden="true">${k === "ghost" ? `<g transform="rotate(-6 50 58)">${all}</g>` : all}</svg>`;
 }
 // 예전 이야기는 이모지 아바타예요
 const avatarOf = (m) => (m?.avatar ? avatarSVG(m.avatar) : `<span>${esc(m?.emoji || "🙂")}</span>`);
