@@ -824,7 +824,7 @@ function renderWrite() {
       <dl class="def-list">
         <div><dt>이주 동기</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
         <div><dt>심리적 자원</dt><dd>다른 문화 속에서 살아가도록 나를 도와준 힘 (2·3번)</dd></div>
-        <div><dt>필요했던 것</dt><dd>힘들 때 나에게 부족했던 도움 (4번)</dd></div>
+        <div><dt>적응 스트레스</dt><dd>한국 생활에서 가장 힘들었던 순간과 그때 필요했던 도움 (4번)</dd></div>
       </dl>
     </details>`;
   $("#share-btn").textContent = editingPostId ? "수정한 이야기 올리기" : "이야기 올리기";
