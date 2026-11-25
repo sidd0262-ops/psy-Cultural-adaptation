@@ -53,13 +53,17 @@ const qTitles = (post) => (post.v >= 2 ? QUESTIONS.map((q) => q.title) : OLD_TIT
 
 /* ============ 🎨 아바타 (성별 없이 모양·색·표정·꾸미기로 만들어요) ============ */
 const INK = "#2B2D42";
+// point: 두 번째 색이 칠해지는 부분 이름 (색 탭에 그대로 보여요). 모든 모양에 꼭 칠할 곳이 있어야 해요.
 const AV_KINDS = [
-  { id: "short", label: "짧은 머리", hair: true }, { id: "long", label: "긴 머리", hair: true },
-  { id: "curly", label: "곱슬머리", hair: true }, { id: "ghost", label: "유령" }, { id: "alien", label: "외계인" },
-  { id: "cat", label: "고양이" }, { id: "bear", label: "곰" }, { id: "bunny", label: "토끼" },
-  { id: "dog", label: "강아지" }, { id: "panda", label: "판다" }, { id: "fox", label: "여우" },
-  { id: "penguin", label: "펭귄" }, { id: "frog", label: "개구리" }, { id: "robot", label: "로봇" },
-  { id: "dino", label: "공룡" }, { id: "unicorn", label: "유니콘" }, { id: "pumpkin", label: "호박" }, { id: "snowman", label: "눈사람" }
+  { id: "short", label: "짧은 머리", point: "머리 색" }, { id: "long", label: "긴 머리", point: "머리 색" },
+  { id: "curly", label: "곱슬머리", point: "머리 색" }, { id: "ghost", label: "유령", point: "무늬 색" },
+  { id: "alien", label: "외계인", point: "더듬이 색" }, { id: "cat", label: "고양이", point: "귀 안쪽 색" },
+  { id: "bear", label: "곰", point: "귀 안쪽 색" }, { id: "bunny", label: "토끼", point: "귀 안쪽 색" },
+  { id: "dog", label: "강아지", point: "귀 색" }, { id: "panda", label: "판다", point: "무늬 색" },
+  { id: "fox", label: "여우", point: "귀 안쪽 색" }, { id: "penguin", label: "펭귄", point: "깃털 색" },
+  { id: "frog", label: "개구리", point: "눈 색" }, { id: "robot", label: "로봇", point: "안테나 색" },
+  { id: "dino", label: "공룡", point: "등 가시 색" }, { id: "unicorn", label: "유니콘", point: "갈기 색" },
+  { id: "pumpkin", label: "호박", point: "꼭지 색" }, { id: "snowman", label: "눈사람", point: "목도리 색" }
 ];
 const AV_COLORS = ["#FFE3CC", "#F6C9A3", "#E2A97E", "#C1855A", "#8D5A3B", "#5E3B26",
   "#FFFFFF", "#FFD166", "#FF9EC4", "#8FD694", "#7CC6FE", "#B79CFF", "#FF9F6B", "#FF8A3D", "#A7B0BE", "#4A5068"];
@@ -104,6 +108,8 @@ function avatarSVG(raw) {
       break;
     case "ghost":
       head = `<path d="M21 90 L21 52 C21 20 79 20 79 52 L79 90 L69.5 83 L60 90 L50 83 L40 90 L30.5 83 Z" fill="${c}" ${S}/>`;
+      // 아래쪽 물결 무늬 (포인트 색)
+      mid = `<path d="M22.3 77 Q36 72 50 77 Q64 82 77.7 77 L77.7 87.5 L69.5 81.5 L60 88 L50 81.5 L40 88 L30.5 81.5 L22.3 87.5 Z" fill="${h}"/>`;
       break;
     case "alien":
       back = `<path d="M39 32 L30 13 M61 32 L70 13" fill="none" ${S}/>
@@ -138,6 +144,8 @@ function avatarSVG(raw) {
       mid = `<path d="M22 60 Q30 84 50 85 Q70 84 78 60 Q66 70 50 69 Q34 70 22 60 Z" fill="#fff" opacity=".85"/>`;
       break;
     case "penguin":
+      // 머리 위 깃털 (포인트 색)
+      back = `<path d="M43 28 C41 16 47 10 50 16 C52 9 60 12 57 28 Z" fill="${h}" ${S}/>`;
       mid = `<path d="M50 40 C38 32 26 42 28 58 C30 74 40 83 50 83 C60 83 70 74 72 58 C74 42 62 32 50 40 Z" fill="#fff"/>
         <path d="M46 59.5 L54 59.5 L50 63.5 Z" fill="#FFB347" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`;
       break;
@@ -664,7 +672,7 @@ function renderBuilder() {
   const sw = (key, list) => opts(key, list, (x) => `<button type="button" class="av-sw ${x === av[key] ? "on" : ""}" style="background:${x}" data-av="${key}" data-v="${x}" aria-label="색 ${x}"></button>`, "sw");
   const panels = {
     k: pic("k", AV_KINDS),
-    c: `<div class="av-row-h">얼굴 색</div>${sw("c", AV_COLORS)}<div class="av-row-h">${kind?.hair ? "머리 색" : "포인트 색"}</div>${sw("h", AV_ACCENTS)}`,
+    c: `<div class="av-row-h">얼굴 색</div>${sw("c", AV_COLORS)}<div class="av-row-h">${kind?.point || "포인트 색"}</div>${sw("h", AV_ACCENTS)}`,
     f: pic("f", AV_FACES),
     a: pic("a", AV_ITEMS)
   };
