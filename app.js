@@ -71,7 +71,7 @@ const AV_KINDS = [
   { id: "penguin", label: "펭귄", point: "부리 색", def: { c: "#4A5068", h: "#FF8A3D" } },
   { id: "frog", label: "개구리", point: "볼 색", def: { c: "#8FD694", h: "#FFB3C7" } },
   { id: "robot", label: "로봇", point: "불빛 색", def: { c: "#A7B0BE", h: "#4D9DFF" } },
-  { id: "dino", label: "공룡", point: "등 가시 색", def: { c: "#5CC08A", h: "#FF8A3D" } },
+  { id: "dino", label: "공룡", point: "줄무늬 색", def: { c: "#5CC08A", h: "#3FB58A" } },
   { id: "unicorn", label: "유니콘", point: "갈기 색", def: { c: "#FFFFFF", h: "#B79CFF" } },
   { id: "pumpkin", label: "호박", point: "꼭지 색", def: { c: "#FF8A3D", h: "#3FB58A" } },
   { id: "snowman", label: "눈사람", point: "목도리 색", def: { c: "#FFFFFF", h: "#C8553D" } }
@@ -218,18 +218,27 @@ function avatarSVG(raw) {
       Object.assign(G, { Y: 54 });
       break;
     case "dino":
-      // 머리 위 둥근 가시 3개 + 밝은 아래턱 + 콧구멍
-      back = [[31, 31, -38], [50, 24, 0], [69, 31, 38]].map(([x, y, r]) =>
-        `<path d="M${x - 9} ${y + 8} Q${x - 2} ${y - 8} ${x} ${y - 19} Q${x + 2} ${y - 8} ${x + 9} ${y + 8} Z" transform="rotate(${r} ${x} ${y})" fill="${h}" ${S}/>`).join("");
-      mid = `<ellipse cx="50" cy="71" rx="20" ry="11" fill="#fff" opacity=".35"/>
-        <ellipse cx="45.5" cy="61" rx="1.6" ry="1.2" fill="${INK}"/><ellipse cx="54.5" cy="61" rx="1.6" ry="1.2" fill="${INK}"/>`;
+      // 티라노: 아래로 넓은 큰 턱 + 이빨을 드러낸 입 + 눈 위 굵은 눈썹뼈 + 콧구멍 + 작은 앞발 + 머리 줄무늬
+      head = `<path d="M50 18 C68 18 79 29 79 45 C79 55 85 63 84 74 C83 86 68 92 50 92 C32 92 17 86 16 74 C15 63 21 55 21 45 C21 29 32 18 50 18 Z" fill="${c}" ${S}/>`;
+      mid = `<path d="M40 24 Q44 30 42 36 M50 21 L50 33 M60 24 Q56 30 58 36" stroke="${h}" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <path d="M27 42 Q35 38 44 44 M73 42 Q65 38 56 44" stroke="${INK}" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <ellipse cx="45" cy="60" rx="2" ry="1.5" fill="${INK}"/><ellipse cx="55" cy="60" rx="2" ry="1.5" fill="${INK}"/>
+        <path d="M27 68 Q50 70 73 68 Q68 86 50 86 Q32 86 27 68 Z" fill="#7A2E3A" ${S}/>
+        <path d="M31 68.6 L34 75 L37.5 69.1 L41 75 L44.5 69.5 L48 75.5 L52 75.5 L55.5 69.5 L59 75 L62.5 69.1 L66 75 L69 68.6 Z" fill="#fff" ${S2}/>`;
+      front = `<path d="M22 84 Q16 84 16 90 Q20 92 25 88 Z M78 84 Q84 84 84 90 Q80 92 75 88 Z" fill="${c}" ${S2}/>`;
+      Object.assign(G, { L: 37, R: 63, Y: 50, noMouth: true, by: -2 });
       break;
     case "unicorn":
-      // 금색 뿔 + 옆으로 흐르는 갈기 + 앞머리
-      back = `<path d="M31 38 L32 18 L44 29 Z M69 38 L68 18 L56 29 Z" fill="${c}" ${S}/>
-        <path d="M27 36 C12 44 12 68 22 82 C24 68 25 56 31 47 Z" fill="${h}" ${S}/>`;
-      front = `<path d="M37 33 C40 23 52 20 60 27 C53 27 47 30 42 39 Z" fill="${h}" ${S}/>
-        <path d="M44 27 L50 3 L56 27 Z" fill="#FFD166" ${S}/><path d="M46.5 19 L53.5 17 M45.5 23.5 L54.5 21.5" ${S2}/>`;
+      // 말 얼굴: 위아래로 긴 얼굴 + 분홍 주둥이(콧구멍) + 쫑긋 귀 + 흐르는 갈기 + 금색 뿔
+      back = `<path d="M33 31 L29 9 L45 24 Z M67 31 L71 9 L55 24 Z" fill="${c}" ${S}/>
+        <path d="M33 21 L32 14 L39 22 Z M67 21 L68 14 L61 22 Z" fill="#FFB3C7"/>
+        <path d="M64 24 C84 28 90 52 82 76 C79 64 76 52 68 42 Z" fill="${h}" ${S}/>`;
+      head = `<path d="M50 20 C66 20 74 32 74 46 C74 56 71 62 71 70 C71 84 62 91 50 91 C38 91 29 84 29 70 C29 62 26 56 26 46 C26 32 34 20 50 20 Z" fill="${c}" ${S}/>`;
+      mid = `<ellipse cx="50" cy="78" rx="17" ry="11" fill="#FFE1EA" ${S2}/>
+        <ellipse cx="44" cy="76" rx="2.2" ry="1.6" fill="${INK}" opacity=".7"/><ellipse cx="56" cy="76" rx="2.2" ry="1.6" fill="${INK}" opacity=".7"/>`;
+      front = `<path d="M38 31 C38 19 56 16 62 25 C56 24 52 28 50 36 C48 30 44 28 38 31 Z" fill="${h}" ${S}/>
+        <path d="M45 24 L50 1 L55 24 Z" fill="#FFD166" ${S}/><path d="M46.8 16 L53.2 14 M46 20.5 L54 18.5" ${S2}/>`;
+      Object.assign(G, { L: 39, R: 61, Y: 50, my: 16, by: -4 });
       break;
     case "pumpkin":
       // 골이 진 넓은 호박 + 꼭지 + 잎
@@ -248,22 +257,24 @@ function avatarSVG(raw) {
       break;
   }
   // 표정 (눈 위치·크기·색은 캐릭터에 맞춰요)
-  const { L, R, Y, er, eye } = G;
+  const { L, R, Y, er, eye, my = 0, by = 0, noMouth = false } = G;
   const dot = (x, r = 3.6) => `<circle cx="${x}" cy="${Y}" r="${r * er}" fill="${eye}"/>` +
     (er > 1 ? `<circle cx="${x - r * er * 0.35}" cy="${Y - r * er * 0.35}" r="${r * er * 0.32}" fill="#fff"/>` : "");
   const ES = `stroke="${eye}" stroke-width="2.6" stroke-linecap="round" fill="none"`;
   const arcUp = (x) => `<path d="M${x - 5} ${Y + 1} Q${x} ${Y - 5} ${x + 5} ${Y + 1}" ${ES}/>`;
   const arcDown = (x) => `<path d="M${x - 5} ${Y - 1} Q${x} ${Y + 3} ${x + 5} ${Y - 1}" ${ES}/>`;
-  const blush = (o = 0.5) => `<ellipse cx="33" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/><ellipse cx="67" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/>`;
+  // 볼·입은 캐릭터에 따라 위아래로 옮겨요 (유니콘은 주둥이에 입, 티라노는 이빨 입을 따로 그려서 입 없음)
+  const blush = (o) => `<g transform="translate(0 ${by})"><ellipse cx="33" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/><ellipse cx="67" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/></g>`;
+  const mouth = (d) => (noMouth ? "" : `<g transform="translate(0 ${my})">${d}</g>`);
   const smileMouth = `<path d="M43 66 Q50 72 57 66" fill="none" ${S}/>`;
   const faces = {
-    smile: dot(L) + dot(R) + smileMouth + blush(0.35),
-    grin: arcUp(L) + arcUp(R) + `<path d="M41 64 Q50 64 59 64 Q58 76 50 76 Q42 76 41 64 Z" fill="#7A2E3A" ${S}/>` + blush(0.35),
-    wink: dot(L) + arcUp(R) + smileMouth + blush(0.35),
-    calm: arcDown(L) + arcDown(R) + `<path d="M46 67 Q50 69.5 54 67" fill="none" ${S}/>`,
-    wow: dot(L, 4.2) + dot(R, 4.2) + `<ellipse cx="50" cy="69" rx="4" ry="5" fill="${INK}"/>`,
-    shy: dot(L, 3) + dot(R, 3) + `<path d="M46 67 Q50 70 54 67" fill="none" ${S}/>` + blush(0.7),
-    sad: dot(L) + dot(R) + `<path d="M43 70 Q50 64 57 70" fill="none" ${S}/>`
+    smile: dot(L) + dot(R) + mouth(smileMouth) + blush(0.35),
+    grin: arcUp(L) + arcUp(R) + mouth(`<path d="M41 64 Q50 64 59 64 Q58 76 50 76 Q42 76 41 64 Z" fill="#7A2E3A" ${S}/>`) + blush(0.35),
+    wink: dot(L) + arcUp(R) + mouth(smileMouth) + blush(0.35),
+    calm: arcDown(L) + arcDown(R) + mouth(`<path d="M46 67 Q50 69.5 54 67" fill="none" ${S}/>`),
+    wow: dot(L, 4.2) + dot(R, 4.2) + mouth(`<ellipse cx="50" cy="69" rx="4" ry="5" fill="${INK}"/>`),
+    shy: dot(L, 3) + dot(R, 3) + mouth(`<path d="M46 67 Q50 70 54 67" fill="none" ${S}/>`) + blush(0.7),
+    sad: dot(L) + dot(R) + mouth(`<path d="M43 70 Q50 64 57 70" fill="none" ${S}/>`)
   };
   const items = {
     none: "",
