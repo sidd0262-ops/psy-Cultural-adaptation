@@ -469,6 +469,10 @@ new MutationObserver(() => {
 function applyLangAttrs() {
   const h = document.documentElement;
   h.lang = uiLang;
+  // 상단 언어 버튼: 지금 언어 이름(그 언어로) + 짧은 코드(작은 화면용)
+  const cur = UI_LANGS.find(([c]) => c === uiLang);
+  $("#ln-name").textContent = cur?.[1] || uiLang;
+  $("#ln-code").textContent = uiLang.split("-")[0].toUpperCase();
   if (uiLang === "ko") h.removeAttribute("translate"); else h.setAttribute("translate", "no");
 }
 async function setUiLang(code) {
@@ -586,7 +590,8 @@ const HELP_HTML = () => `<div class="big-emo">🧭</div><h2>도움말</h2>
       <div>❷ <b>한국 사람들, 한국 문화</b>와 어울리고 싶나요?</div>
     </div>
     ${typeListHTML()}${SPECTRUM_HTML}</div>
-  <div class="help-sec"><h3>편한 언어 고르기</h3>${langGridHTML()}</div>
+  <div class="help-sec"><h3>편한 언어 고르기</h3>
+    <p class="muted">화면 오른쪽 위 <span class="ui-chip notranslate" translate="no">文A ▾</span> 버튼으로도 언제든 바꿀 수 있어요.</p>${langGridHTML()}</div>
   <details class="help-sec admin">
     <summary>관리자 메뉴 (선생님용)</summary>
     <p class="muted">관리자는 이야기를 <b>삭제만</b> 할 수 있어요. 하나씩 지울 때는 카드의 ⋯ 버튼을 눌러요. 아래 버튼은 모든 이야기를 한 번에 지워요. 되돌릴 수 없어요.</p>
@@ -605,8 +610,8 @@ const GUIDES = {
   },
   lang: {
     btn: "확인",
-    html: () => `<div class="big-emo">🌐</div><h2>편한 언어 고르기</h2>
-       <p>한국어와 영어 중에서 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`
+    html: () => `<div class="big-emo">🌐</div><h2>언어 고르기 <span class="notranslate muted" translate="no">· Language</span></h2>
+       <p>편한 언어를 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`
   },
   board: {
     btn: "확인",

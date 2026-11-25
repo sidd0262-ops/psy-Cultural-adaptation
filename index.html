@@ -19,7 +19,7 @@
 
   <!-- 글꼴: 제목·본문 모두 Pretendard 하나로 통일 (한국어·영어 모두 읽기 편해요) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
   <!-- ☁️ 배경 -->
@@ -29,7 +29,10 @@
   <header class="topbar">
     <div class="brand"><span class="brand-emo">✈️</span><span>문화적응 여정</span></div>
     <div class="top-actions">
-      <button class="icon-btn" data-open-guide="lang" aria-label="언어 고르기">🌐</button>
+      <!-- 언어 버튼: 文A(세계 공통 언어 아이콘) + 지금 언어 + ▾ → 누르면 언어 목록 (언어가 늘어나도 그대로 써요) -->
+      <button type="button" class="lang-btn notranslate" translate="no" data-open-guide="lang" aria-label="Language">
+        <span class="ln-ic" aria-hidden="true">文A</span><span class="ln-name" id="ln-name">한국어</span><span class="ln-code" id="ln-code">KO</span><span class="ln-caret" aria-hidden="true">▾</span>
+      </button>
       <button class="icon-btn help-btn notranslate" translate="no" id="help-top" aria-label="Help">Help</button>
     </div>
   </header>
@@ -133,6 +136,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <script type="module" src="app.js?v=17"></script>
+  <script type="module" src="app.js?v=18"></script>
 </body>
 </html>
