@@ -699,7 +699,7 @@ const HELP_HTML = () => `<div class="big-emo">🧭</div><h2>도움말</h2>
     <button id="del-all" class="btn btn-danger">전체 삭제</button>
   </details>`;
 
-// 안내창들. 첫 팝업은 처음 한 번만 저절로 떠요 (다시 보지 않기 체크 없음, 닫기는 왼쪽 위 ✕)
+// 안내창들. 첫 팝업은 처음 한 번만 저절로 떠요 (체크 상자 없음, 닫기는 왼쪽 위 ✕)
 const GUIDES = {
   intro: {
     btn: "시작하기",
