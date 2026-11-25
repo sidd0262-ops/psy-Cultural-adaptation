@@ -22,13 +22,13 @@ const ADMIN_PW = "0530";
 // 문화적응 4단계. 순서는 기존 데이터와 같아요: 0 주변화, 1 분리, 2 동화, 3 통합
 const TYPES = [
   { key: "주변화", en: "Marginalization", emoji: "🍂", short: "어디에도 속하지 않는 느낌", tc: "#7B68C8", tbg: "#F0EDFB",
-    desc: "우리 나라 문화도, 한국 문화도 나와 조금 멀게 느껴져요. 내가 어디에 속하는지 헷갈릴 수 있어요. 이런 마음도 자연스러워요. 혼자가 아니에요." },
-  { key: "분리", en: "Separation", emoji: "🏠", short: "내 문화를 꼭 지켜요", tc: "#E07B1F", tbg: "#FFF1E2",
-    desc: "우리 나라 문화를 가장 소중하게 지켜요. 한국 문화와는 아직 조금 거리를 두고 있어요." },
+    desc: "고향 문화도, 한국 문화도 나와 조금 멀게 느껴져요. 내가 어디에 속하는지 헷갈릴 수 있어요. 이런 마음도 자연스러워요. 혼자가 아니에요." },
+  { key: "분리", en: "Separation", emoji: "🏠", short: "고향 문화를 꼭 지켜요", tc: "#E07B1F", tbg: "#FFF1E2",
+    desc: "고향 문화를 가장 소중하게 지켜요. 한국 문화와는 아직 조금 거리를 두고 있어요." },
   { key: "동화", en: "Assimilation", emoji: "🦎", short: "한국 문화에 맞춰가요", tc: "#1E9E5A", tbg: "#E3F8EC",
-    desc: "한국 생활에 맞춰 살아가려고 해요. 우리 나라 문화보다 한국 문화를 더 많이 따르고 있어요." },
-  { key: "통합", en: "Integration", emoji: "🌈", short: "두 문화 모두 소중해요", tc: "#2F7FE0", tbg: "#E6F1FF",
-    desc: "우리 나라 문화도 지키고, 한국 문화도 즐겨요. 두 문화를 함께 가지고 살아가요." }
+    desc: "한국 생활에 맞춰 살아가려고 해요. 고향 문화보다 한국 문화를 더 많이 따르고 있어요." },
+  { key: "통합", en: "Integration", emoji: "🌈", short: "두 문화 모두 즐겨요", tc: "#2F7FE0", tbg: "#E6F1FF",
+    desc: "고향 문화도, 한국 문화도 함께 즐겨요. 두 문화를 모두 가지고 살아가요." }
 ];
 // 막대 위의 자리: 1(주변화) ~ 4(통합), 0.5 단위. 1.5·2.5·3.5는 두 단계 사이(경계)예요.
 const POSITIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
@@ -56,10 +56,13 @@ const INK = "#2B2D42";
 const AV_KINDS = [
   { id: "short", label: "짧은 머리", hair: true }, { id: "long", label: "긴 머리", hair: true },
   { id: "curly", label: "곱슬머리", hair: true }, { id: "ghost", label: "유령" }, { id: "alien", label: "외계인" },
-  { id: "cat", label: "고양이" }, { id: "bear", label: "곰" }, { id: "bunny", label: "토끼" }, { id: "robot", label: "로봇" }
+  { id: "cat", label: "고양이" }, { id: "bear", label: "곰" }, { id: "bunny", label: "토끼" },
+  { id: "dog", label: "강아지" }, { id: "panda", label: "판다" }, { id: "fox", label: "여우" },
+  { id: "penguin", label: "펭귄" }, { id: "frog", label: "개구리" }, { id: "robot", label: "로봇" },
+  { id: "dino", label: "공룡" }, { id: "unicorn", label: "유니콘" }, { id: "pumpkin", label: "호박" }, { id: "snowman", label: "눈사람" }
 ];
 const AV_COLORS = ["#FFE3CC", "#F6C9A3", "#E2A97E", "#C1855A", "#8D5A3B", "#5E3B26",
-  "#FFFFFF", "#FFD166", "#FF9EC4", "#8FD694", "#7CC6FE", "#B79CFF", "#FF9F6B", "#A7B0BE"];
+  "#FFFFFF", "#FFD166", "#FF9EC4", "#8FD694", "#7CC6FE", "#B79CFF", "#FF9F6B", "#FF8A3D", "#A7B0BE", "#4A5068"];
 const AV_ACCENTS = ["#2E2420", "#6B4128", "#E3A93C", "#C8553D", "#9AA5B1", "#F2F2F2", "#6C63FF", "#FF6F9F", "#3FB58A", "#4D9DFF"];
 const AV_FACES = [
   { id: "smile", label: "웃음" }, { id: "grin", label: "활짝" }, { id: "wink", label: "윙크" }, { id: "calm", label: "차분" },
@@ -67,7 +70,9 @@ const AV_FACES = [
 ];
 const AV_ITEMS = [
   { id: "none", label: "없음" }, { id: "beanie", label: "털모자" }, { id: "ribbon", label: "리본" }, { id: "glasses", label: "안경" },
-  { id: "crown", label: "왕관" }, { id: "flower", label: "꽃" }, { id: "phones", label: "헤드폰" }
+  { id: "crown", label: "왕관" }, { id: "flower", label: "꽃" }, { id: "phones", label: "헤드폰" },
+  { id: "cap", label: "야구 모자" }, { id: "sunglasses", label: "선글라스" }, { id: "cheeks", label: "볼 터치" },
+  { id: "freckles", label: "주근깨" }, { id: "star", label: "별 장식" }
 ];
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const randomAvatar = () => ({ k: pick(AV_KINDS).id, c: pick(AV_COLORS.slice(0, 6)), h: pick(AV_ACCENTS), f: "smile", a: "none" });
@@ -119,6 +124,45 @@ function avatarSVG(raw) {
       back = `<ellipse cx="38" cy="21" rx="8" ry="19" fill="${c}" ${S}/><ellipse cx="62" cy="21" rx="8" ry="19" fill="${c}" ${S}/>
         <ellipse cx="38" cy="22" rx="3.5" ry="12" fill="${h}"/><ellipse cx="62" cy="22" rx="3.5" ry="12" fill="${h}"/>`;
       break;
+    case "dog":
+      back = `<ellipse cx="21" cy="50" rx="9" ry="18" transform="rotate(18 21 50)" fill="${h}" ${S}/><ellipse cx="79" cy="50" rx="9" ry="18" transform="rotate(-18 79 50)" fill="${h}" ${S}/>`;
+      mid = `<ellipse cx="50" cy="67" rx="12" ry="8.5" fill="#fff" opacity=".6"/><ellipse cx="50" cy="61.5" rx="4" ry="3" fill="${INK}"/>`;
+      break;
+    case "panda":
+      back = `<circle cx="27" cy="31" r="10" fill="${h}" ${S}/><circle cx="73" cy="31" r="10" fill="${h}" ${S}/>`;
+      mid = `<ellipse cx="38" cy="56" rx="8" ry="9.5" transform="rotate(-20 38 56)" fill="${h}" opacity=".45"/><ellipse cx="62" cy="56" rx="8" ry="9.5" transform="rotate(20 62 56)" fill="${h}" opacity=".45"/>`;
+      break;
+    case "fox":
+      back = `<path d="M21 46 L22 10 L46 28 Z M79 46 L78 10 L54 28 Z" fill="${c}" ${S}/>
+        <path d="M27 36 L27 20 L39 29 Z M73 36 L73 20 L61 29 Z" fill="${h}"/>`;
+      mid = `<path d="M22 60 Q30 84 50 85 Q70 84 78 60 Q66 70 50 69 Q34 70 22 60 Z" fill="#fff" opacity=".85"/>`;
+      break;
+    case "penguin":
+      mid = `<path d="M50 40 C38 32 26 42 28 58 C30 74 40 83 50 83 C60 83 70 74 72 58 C74 42 62 32 50 40 Z" fill="#fff"/>
+        <path d="M46 59.5 L54 59.5 L50 63.5 Z" fill="#FFB347" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`;
+      break;
+    case "frog":
+      back = `<circle cx="33" cy="32" r="12" fill="${c}" ${S}/><circle cx="67" cy="32" r="12" fill="${c}" ${S}/>
+        <circle cx="33" cy="31" r="5" fill="${h}"/><circle cx="67" cy="31" r="5" fill="${h}"/>`;
+      head = `<ellipse cx="50" cy="58" rx="35" ry="26" fill="${c}" ${S}/>`;
+      break;
+    case "dino":
+      back = `<path d="M28 34 L33 14 L41 28 L50 8 L59 28 L67 14 L72 34 Z" fill="${h}" ${S}/>`;
+      break;
+    case "unicorn":
+      back = `<path d="M30 38 L31 18 L43 29 Z M70 38 L69 18 L57 29 Z" fill="${c}" ${S}/>
+        <path d="M24 48 C20 28 34 20 46 26 C38 30 32 38 30 50 Z" fill="${h}" ${S}/>`;
+      front = `<path d="M44 28 L50 4 L56 28 Z" fill="#FFD166" ${S}/><path d="M46.5 20 L53.5 18 M45.5 24.5 L54.5 22.5" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>`;
+      break;
+    case "pumpkin":
+      head = `<ellipse cx="50" cy="57" rx="35" ry="28" fill="${c}" ${S}/>
+        <path d="M37 31 Q27 57 37 84 M63 31 Q73 57 63 84" fill="none" stroke="${INK}" stroke-width="1.8" opacity=".45"/>`;
+      back = `<path d="M47 31 Q46 20 52 15 L56 18 Q51 23 53 31 Z" fill="${h}" ${S}/>`;
+      break;
+    case "snowman":
+      front = `<path d="M26 76 Q50 89 74 76 L76 85 Q50 98 24 85 Z" fill="${h}" ${S}/><path d="M60 84 L63 97 L70 95 L66 82" fill="${h}" ${S}/>`;
+      mid = `<path d="M50 60 L63 62.5 L50 64.5 Z" fill="#FF9F6B" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`;
+      break;
     case "robot":
       back = `<path d="M50 26 L50 13" ${S}/><circle cx="50" cy="10" r="5" fill="${h}" ${S}/>
         <rect x="13" y="48" width="9" height="15" rx="3" fill="${h}" ${S}/><rect x="78" y="48" width="9" height="15" rx="3" fill="${h}" ${S}/>`;
@@ -149,6 +193,11 @@ function avatarSVG(raw) {
       const r = (d * Math.PI) / 180;
       return `<circle cx="${(29 + Math.cos(r) * 5.5).toFixed(1)}" cy="${(31 + Math.sin(r) * 5.5).toFixed(1)}" r="4.6" fill="#fff" stroke="${INK}" stroke-width="1.8"/>`;
     }).join("") + `<circle cx="29" cy="31" r="3.4" fill="#FFD166" stroke="${INK}" stroke-width="1.8"/>`,
+    cap: `<path d="M23 40 C23 15 77 15 77 40 Z" fill="#4D9DFF" ${S}/><path d="M60 38 Q80 34 90 40 Q80 45 60 42 Z" fill="#4D9DFF" ${S}/><circle cx="50" cy="17" r="2.5" fill="${INK}"/>`,
+    sunglasses: `<rect x="29" y="49" width="19" height="12" rx="5" fill="${INK}" ${S}/><rect x="52" y="49" width="19" height="12" rx="5" fill="${INK}" ${S}/><path d="M48 54 L52 54" ${S}/><path d="M32 52 L37 52" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>`,
+    cheeks: `<ellipse cx="33" cy="66" rx="7" ry="4.5" fill="#FF5C8A" opacity=".55"/><ellipse cx="67" cy="66" rx="7" ry="4.5" fill="#FF5C8A" opacity=".55"/>`,
+    freckles: [[31, 63], [35, 66], [29, 67], [69, 63], [65, 66], [71, 67]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="#8D5A3B"/>`).join(""),
+    star: `<path d="M73 18 L76.5 25.5 L84.5 26.5 L78.5 32 L80 40 L73 36 L66 40 L67.5 32 L61.5 26.5 L69.5 25.5 Z" fill="#FFD166" ${S}/>`,
     phones: `<path d="M21 56 C21 21 79 21 79 56" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><rect x="13" y="47" width="12" height="20" rx="5" fill="#6C63FF" ${S}/><rect x="75" y="47" width="12" height="20" rx="5" fill="#6C63FF" ${S}/>`
   };
   return `<svg class="av" viewBox="0 0 100 100" aria-hidden="true">${back}${head}${mid}${faces[f]}${front}${items[a]}</svg>`;
@@ -159,12 +208,12 @@ const avatarOf = (m) => (m?.avatar ? avatarSVG(m.avatar) : `<span>${esc(m?.emoji
 /* ============ 🧠 상태 ============ */
 const freshMe = () => ({ name: "", avatar: randomAvatar(), pos: null, answers: ["", "", "", ""] });
 let me = freshMe();
-let editingPostId = null;   // 수정 중인 이야기 (생일 4자리 확인을 마친 경우만)
+let editingPostId = null;   // 수정 중인 이야기 (이 휴대폰에서 쓴 공개 글 또는 생일 4자리 확인을 마친 글)
+let editingHasPin = false;  // 수정 중인 글에 이미 생일 4자리가 있는지 (있으면 비공개로 올릴 때 다시 묻지 않아요)
 let specStage = null;       // 단계 이름을 눌러서 보고 있는 설명 (null이면 내 위치 설명)
 let allPosts = [];
 let filterType = "all";
 let deckIdx = 0;
-let deferredInstall = null;
 
 /* ============ 🛠️ 도우미 ============ */
 const $ = (s, el = document) => el.querySelector(s);
@@ -216,12 +265,9 @@ async function hashPin(pin, salt) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${pin}`));
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-const pinInputHTML = (id) => `<input type="tel" inputmode="numeric" maxlength="4" class="pin-input notranslate" translate="no" id="${id}" placeholder="0828" autocomplete="off">`;
+const pinInputHTML = (id) => `<input type="tel" inputmode="numeric" maxlength="4" class="pin-input notranslate" translate="no" id="${id}" autocomplete="off" aria-label="생일 4자리">`;
 function bindPinInput(el) { el.addEventListener("input", () => { el.value = el.value.replace(/\D/g, "").slice(0, 4); }); }
 
-// 홈 화면에 설치한 앱으로 열었는지
-const IS_STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 /* ============ 🌐 언어 (한국어 · English) ============ */
 const UI_LANGS = [["ko", "한국어"], ["en", "English"]];
@@ -486,7 +532,8 @@ function showTab(name) {
   $(`#view-${name}`).classList.remove("hidden");
   $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (name === "board") { syncDeck(); if (!store.get("hide-guide-board-v2")) openGuide("board"); }
+  // 모두의 이야기 사용법은 처음 한 번만 저절로 떠요 (다시 보려면 ❓ 또는 Help)
+  if (name === "board") { syncDeck(); if (!store.get("seen-guide-board-v3")) { store.set("seen-guide-board-v3", true); openGuide("board"); } }
 }
 $$(".tab").forEach((t) => (t.onclick = () => showTab(t.dataset.tab)));
 
@@ -505,17 +552,6 @@ const SPECTRUM_HTML = `<div class="info-box">
   </ul>
 </div>`;
 
-const INSTALL_FLOW_HTML = `<ol class="flow">
-  <li><b>크롬(Chrome) 앱</b>으로 이 링크를 열어요.</li>
-  <li><span><b>홈 화면에 추가</b>해요. 내 휴대폰에 맞는 방법을 따라 해요.</span>
-    <div class="branch">
-      <div><div class="branch-h">아이폰</div><span>공유 버튼 ⬆️ → <b>홈 화면에 추가</b> → <b>추가</b></span></div>
-      <div><div class="branch-h">안드로이드</div><span>오른쪽 위 ⋮ 메뉴 → <b>앱 설치</b></span></div>
-    </div>
-    <small class="muted">아이폰에서 메뉴가 안 보이면 최신 버전으로 업데이트하거나 Safari로 열어 같은 방법으로 해 주세요.</small>
-  </li>
-</ol>`;
-
 // 💌 모두의 이야기 사용법: 왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명
 const BOARD_HOWTO_HTML = `<div class="howto">
   <div class="howto-group">이야기 보기</div>
@@ -524,7 +560,7 @@ const BOARD_HOWTO_HTML = `<div class="howto">
   <div class="howto-row"><span class="ui-chip">한국어 · English</span><span>여러 나라 언어로 쓴 답변을 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요.</span></div>
   <div class="howto-group">마음 나누기</div>
   <div class="howto-row"><span class="ui-chip">🤍 공감</span><span>마음을 전해요. 이야기 하나에 한 번 누를 수 있어요.</span></div>
-  <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기라면 <b>생일 4자리</b>를 넣고 다시 보기·수정·공개 바꾸기·삭제를 할 수 있어요.</span></div>
+  <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기를 <b>수정</b>해요. 공개 이야기는 쓴 휴대폰에서, 비공개 이야기는 <b>생일 4자리</b>로 열어요.</span></div>
 </div>
 <div class="info-box">
   <div class="info-title">💡 알아 두세요</div>
@@ -534,26 +570,52 @@ const BOARD_HOWTO_HTML = `<div class="howto">
   </ul>
 </div>`;
 
+// ❓ Help 창: 참여 방법 · 4단계 설명 · 언어 · 관리자 메뉴 (아래 설명서 탭 대신)
+const HELP_HTML = () => `<div class="big-emo">🧭</div><h2>도움말</h2>
+  <div class="help-sec"><h3>참여하는 방법</h3>
+    <ol class="num-steps">
+      <li><b>아바타 만들기</b><br>모양·색·표정을 골라 나의 캐릭터를 꾸미고 별명을 써요.</li>
+      <li><b>나의 지금 마음 확인하기</b><br>4단계 막대에서 지금 내 마음과 가장 가까운 곳을 눌러요.</li>
+      <li><b>나의 이야기 쓰기</b><br>한국에서의 생활을 떠올리며 질문 4개에 답해요.</li>
+      <li><b>이야기 올리기</b><br>공개로 올리거나, 생일 4자리를 넣고 비공개로 올려요.</li>
+    </ol></div>
+  <div class="help-sec"><h3>문화적응 4단계</h3>
+    <p>심리학자 <b>존 베리(John W. Berry)</b>의 문화적응 모델이에요. 두 가지 마음으로 나눠 봐요.</p>
+    <div class="q-axis">
+      <div>❶ <b>고향 문화</b>(언어·음식·전통)를 지키고 싶나요?</div>
+      <div>❷ <b>한국 사람들, 한국 문화</b>와 어울리고 싶나요?</div>
+    </div>
+    ${typeListHTML()}${SPECTRUM_HTML}</div>
+  <div class="help-sec"><h3>편한 언어 고르기</h3>${langGridHTML()}</div>
+  <details class="help-sec admin">
+    <summary>관리자 메뉴 (선생님용)</summary>
+    <p class="muted">관리자는 이야기를 <b>삭제만</b> 할 수 있어요. 하나씩 지울 때는 카드의 ⋯ 버튼을 눌러요. 아래 버튼은 모든 이야기를 한 번에 지워요. 되돌릴 수 없어요.</p>
+    <input type="password" id="admin-pw" placeholder="관리자 비밀번호" autocomplete="off">
+    <button id="del-all" class="btn btn-danger">전체 삭제</button>
+  </details>`;
+
+// 안내창들. 첫 팝업은 처음 한 번만 저절로 떠요 (다시 보지 않기 체크 없음, 닫기는 왼쪽 위 ✕)
 const GUIDES = {
   intro: {
-    flag: "hide-guide-intro-v2",
-    slides: [() => `<div class="big-emo">👋</div><h2>문화적응 여정에 오신 걸 환영해요!</h2>
+    btn: "시작하기",
+    html: () => `<div class="big-emo">👋</div><h2>문화적응 여정에 오신 걸 환영해요!</h2>
        <p>낯선 나라에서 살아가는 <b>나의 마음</b>을 돌아보고,<br>다른 사람들과 <b>이야기를 나누는</b> 곳이에요.</p>
        <p class="lang-ask">편한 언어를 골라 주세요${uiLang === "ko" ? ` <span class="notranslate muted" translate="no">· Choose your language</span>` : ""}</p>
-       ${langGridHTML()}`]
+       ${langGridHTML()}`
   },
   lang: {
-    flag: "hide-guide-lang-never", noHide: true,
-    slides: [() => `<div class="big-emo">🌐</div><h2>편한 언어 고르기</h2>
-       <p>한국어와 영어 중에서 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`]
+    btn: "확인",
+    html: () => `<div class="big-emo">🌐</div><h2>편한 언어 고르기</h2>
+       <p>한국어와 영어 중에서 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`
   },
   board: {
-    flag: "hide-guide-board-v2",
-    slides: [`<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
+    btn: "확인",
+    html: () => `<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
        <p>참여한 모든 사람의 이야기가 이곳에 모여요.</p>
        ${BOARD_HOWTO_HTML}
-       <p class="muted">다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`]
-  }
+       <p class="muted">다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`
+  },
+  help: { btn: "닫기", html: HELP_HTML }
 };
 
 // onClose: 창이 닫힐 때(✕·바깥 누르기·버튼) 한 번 실행할 일
@@ -573,30 +635,13 @@ $("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.
 
 function openGuide(name, after = null) {
   const g = GUIDES[name];
-  let i = 0;
-  const render = () => {
-    const last = i === g.slides.length - 1;
-    const s = g.slides[i];
-    openSheet(`
-      <div class="slide">${typeof s === "function" ? s() : s}</div>
-      <div class="sheet-foot">
-        ${g.noHide ? "<span></span>" : `<label><input type="checkbox" id="g-hide" ${store.get(g.flag) ? "checked" : ""}> 다시 보지 않기</label>`}
-        <div style="display:flex;gap:6px">
-          ${i > 0 ? `<button class="btn btn-ghost" id="g-prev">이전</button>` : ""}
-          <button class="btn btn-primary" id="g-next">${g.noHide ? "확인" : last ? "시작하기" : "다음 ▶"}</button>
-        </div>
-      </div>`, after);
-    if ($("#g-hide")) $("#g-hide").onchange = (e) => (e.target.checked ? store.set(g.flag, true) : store.del(g.flag));
-    $("#g-next").onclick = () => { if (last) closeSheet(); else { i++; render(); } };
-    if ($("#g-prev")) $("#g-prev").onclick = () => { i--; render(); };
-  };
-  render();
+  openSheet(`<div class="slide">${g.html()}</div>
+    <div class="sheet-foot"><span></span><button class="btn btn-primary" id="g-next">${g.btn}</button></div>`, after);
+  $("#g-next").onclick = closeSheet;
+  if (name === "help") bindAdmin();
 }
 $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.openGuide)));
-$("#help-top").onclick = () => ($("#view-board").classList.contains("hidden") ? showTab("guide") : openGuide("board"));
-$("#guide-types").innerHTML = typeListHTML() + SPECTRUM_HTML;
-$("#board-howto").innerHTML = BOARD_HOWTO_HTML;
-$("#install-flow").innerHTML = INSTALL_FLOW_HTML;
+$("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "help" : "board");
 $("#spectrum-note").innerHTML = SPECTRUM_HTML;
 
 /* ============ STEP 1: 아바타 만들기 ============ */
@@ -650,7 +695,7 @@ function renderWrite() {
     <details class="q-about">
       <summary>이 질문들은 무엇을 살펴보나요?</summary>
       <dl class="def-list">
-        <div><dt>이주 동기</dt><dd>내가 한국에 오게 된 마음 (1번)</dd></div>
+        <div><dt>이주 동기</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
         <div><dt>심리적 자원</dt><dd>다른 문화 속에서 살아가도록 나를 도와준 힘 (2·3번)</dd></div>
         <div><dt>필요했던 것</dt><dd>힘들 때 나에게 부족했던 도움 (4번)</dd></div>
       </dl>
@@ -757,10 +802,22 @@ $("#share-btn").onclick = () => {
     $("#spectrum").scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
+  // 나의 이야기 4개는 모두 꼭 써야 해요
+  const empty = me.answers.findIndex((a) => !(a || "").trim());
+  if (empty !== -1) {
+    toast(`${empty + 1}번 질문에 답해 주세요`);
+    const t = $(`#qa-write textarea[data-qidx="${empty}"]`);
+    t?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => t?.focus(), 350);
+    return;
+  }
   openShareSheet();
 };
+// 공개: 비밀번호 없이 바로 올라가요 (쓴 휴대폰에서 수정 가능)
+// 비공개: 고르면 그때 생일 4자리 칸이 열려요 (이미 생일 4자리가 있는 글을 수정할 때는 다시 묻지 않아요)
 function openShareSheet() {
   const editing = !!editingPostId;
+  const needPin = !editingHasPin;
   openSheet(`<div class="share-sheet">
     <h2>${editing ? "수정한 이야기를 올릴까요?" : "나의 이야기를 함께 나눌까요?"}</h2>
     <div class="share-msg">
@@ -768,61 +825,70 @@ function openShareSheet() {
       <p>내 이야기가 누군가에게는 '나만 그런 게 아니구나' 하는 위로가 돼요.</p>
       <p>이름 대신 아바타와 별명으로만 보여요.</p>
     </div>
-    ${editing ? "" : `<div class="pin-field">
-      <span class="field-label">내 글 비밀번호: 생일 4자리</span>
-      <small>예: 8월 28일 → 0828. 나중에 내 이야기를 다시 보거나, 수정하거나, 공개로 바꿀 때 써요.</small>
+    <button type="button" class="choice pub" id="sh-pub"><b>예, 공개할게요</b><span>모두가 읽고 🤍 공감을 보낼 수 있어요. 이 휴대폰에서 언제든 수정할 수 있어요.</span></button>
+    <button type="button" class="choice" id="sh-priv"><b>아니오, 비공개로 올릴게요</b><span>글은 흐리게 가려져서 다른 사람에게는 보이지 않아요. 아바타와 내 위치만 보여요.</span></button>
+    <div class="pin-field hidden" id="sh-pin-box">
+      <span class="field-label">비공개 비밀번호: 생일 4자리</span>
+      <small>예: 8월 28일이면 0828. 나중에 내 글을 다시 보거나, 수정하거나, 공개로 바꿀 때 써요.</small>
       ${pinInputHTML("sh-pin")}
-    </div>`}
-    <button type="button" class="choice pub" data-vis="public"><b>예, 공개할게요</b><span>모두가 읽고 🤍 공감을 보낼 수 있어요.</span></button>
-    <button type="button" class="choice" data-vis="private"><b>아니오, 비공개로 올릴게요</b><span>글은 흐리게 가려져서 다른 사람에게는 보이지 않아요. 아바타와 내 위치만 보여요. 생일 4자리로 나중에 다시 보거나 공개로 바꿀 수 있어요.</span></button>
-    <p class="share-ok">어떤 선택이든 괜찮아요.</p>
+      <button type="button" class="btn btn-primary" id="sh-priv-go">비공개로 올리기</button>
+    </div>
     <button type="button" class="link-btn share-back" id="sh-back">◀ 다시 고치기</button>
   </div>`);
-  if ($("#sh-pin")) bindPinInput($("#sh-pin"));
+  bindPinInput($("#sh-pin"));
   $("#sh-back").onclick = closeSheet;
-  $$(".share-sheet .choice").forEach((b) => (b.onclick = () => submitStory(b.dataset.vis === "private")));
-}
-async function submitStory(isPrivate) {
-  const editing = !!editingPostId;
-  let pin = "";
-  if (!editing) {
-    pin = $("#sh-pin").value;
+  $("#sh-pub").onclick = () => submitStory(false);
+  $("#sh-priv").onclick = () => {
+    if (!needPin) { submitStory(true); return; }
+    $("#sh-priv").classList.add("on");
+    $("#sh-pin-box").classList.remove("hidden");
+    $("#sh-pin-box").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setTimeout(() => $("#sh-pin").focus(), 250);
+  };
+  $("#sh-priv-go").onclick = () => {
+    const pin = $("#sh-pin").value;
     if (!PIN_RE.test(pin)) { toast("생일 4자리를 넣어 주세요 (예: 0828)"); $("#sh-pin").focus(); return; }
-  }
-  $$(".share-sheet .choice").forEach((b) => (b.disabled = true));
+    submitStory(true, pin);
+  };
+}
+async function submitStory(isPrivate, pin = "") {
+  const editing = !!editingPostId;
+  $$(".share-sheet button").forEach((b) => (b.disabled = true));
   try {
     const member = {
       name: me.name.trim(), avatar: normAv(me.avatar), pos: me.pos, type: TYPES[posStage(me.pos)].key,
       answers: me.answers.map((a) => (a || "").trim()), lang: currentLang()
     };
+    // 비공개로 올릴 때만 생일 4자리를 암호처럼 바꿔서 저장해요
+    const pinData = pin ? await (async () => { const pinSalt = randomSalt(); return { pinSalt, pinHash: await hashPin(pin, pinSalt) }; })() : {};
     if (editing) {
-      await updateDoc(doc(db, "posts", editingPostId), { family: [member], private: isPrivate, v: 2 });
+      await updateDoc(doc(db, "posts", editingPostId), { family: [member], private: isPrivate, v: 2, ...pinData });
     } else {
-      const pinSalt = randomSalt();
-      await addDoc(postsCol, {
-        v: 2, familyName: "", family: [member], private: isPrivate,
-        pinSalt, pinHash: await hashPin(pin, pinSalt), hearts: 0, timestamp: new Date()
+      const ref = await addDoc(postsCol, {
+        v: 2, familyName: "", family: [member], private: isPrivate, ...pinData, hearts: 0, timestamp: new Date()
       });
+      // 이 휴대폰에서 쓴 글로 기억해요 (공개 글은 이 휴대폰에서만 수정할 수 있어요)
+      store.set("my-posts", [...store.get("my-posts", []), ref.id]);
     }
     closeSheet();
     $("#done-avatar").innerHTML = avatarSVG(member.avatar);
     $("#done-title").textContent = editing ? "수정을 마쳤어요!" : isPrivate ? "비공개로 올라갔어요" : "이야기가 올라갔어요!";
     $("#done-text").textContent = isPrivate
       ? "글은 다른 사람에게 보이지 않고, 아바타와 내 위치만 함께 있어요. 생일 4자리로 언제든 다시 볼 수 있어요."
-      : "모두의 이야기에서 다른 사람들의 이야기도 읽어 보세요.";
+      : "이 휴대폰에서 언제든 수정할 수 있어요. 모두의 이야기에서 다른 사람들의 이야기도 읽어 보세요.";
     store.del("draft-v2");
-    me = freshMe(); editingPostId = null; specStage = null;
+    me = freshMe(); editingPostId = null; editingHasPin = false; specStage = null;
     deckIdx = 0;
     goStep("#step-done");
   } catch (err) {
     console.error(err);
-    $$(".share-sheet .choice").forEach((b) => (b.disabled = false));
+    $$(".share-sheet button").forEach((b) => (b.disabled = false));
     toast(err?.code === "permission-denied" ? "서버가 잠겨 있어 올릴 수 없어요. 관리자에게 알려 주세요" : "오류가 났어요. 인터넷 연결을 확인하고 다시 눌러 주세요");
   }
 }
 
 function resetJourney() {
-  me = freshMe(); editingPostId = null; specStage = null;
+  me = freshMe(); editingPostId = null; editingHasPin = false; specStage = null;
   store.del("draft-v2");
   renderBuilder(); goStep("#step-avatar");
 }
@@ -956,11 +1022,26 @@ $("#feed-list").addEventListener("click", async (e) => {
 });
 
 /* ============ ⋯ 내 이야기 열기 (생일 4자리) / 관리자 삭제 ============ */
+// ⋯ 메뉴: 이 휴대폰에서 쓴 공개 글 → 바로 수정 / 비공개 글 → 생일 4자리 / 그 밖 → 관리자 삭제만
 function openPostMenu(id) {
   const p = allPosts.find((x) => x.id === id); if (!p) return;
+  const mine = store.get("my-posts", []).includes(id);
+  if (mine && !p.private) {
+    openSheet(`<h3>내 이야기</h3>
+      <p class="muted center">이 휴대폰에서 쓴 공개 이야기예요.</p>
+      <div class="action-list">
+        <button class="btn btn-primary" id="pm-edit">수정하기</button>
+        <button class="btn btn-ghost" id="pm-cancel">닫기</button>
+      </div>
+      <p class="center"><button type="button" class="link-btn" id="pm-admin">관리자 삭제</button></p>`);
+    $("#pm-edit").onclick = () => { closeSheet(); startEdit(p); };
+    $("#pm-admin").onclick = () => openAdminDelete(id);
+    $("#pm-cancel").onclick = closeSheet;
+    return;
+  }
   if (!p.pinHash) {
     openSheet(`<h3>이 이야기는…</h3>
-      <p class="muted center">예전 방식으로 올린 이야기라서 관리자만 삭제할 수 있어요.</p>
+      <p class="muted center">${p.v >= 2 ? "공개 이야기는 쓴 사람의 휴대폰에서만 수정할 수 있어요." : "예전 방식으로 올린 이야기예요."}<br>관리자는 삭제만 할 수 있어요.</p>
       <div class="action-list">
         <button class="btn btn-soft" id="pm-admin">관리자 삭제</button>
         <button class="btn btn-ghost" id="pm-cancel">닫기</button>
@@ -1049,7 +1130,7 @@ function openAdminDelete(id) {
 
 function startEdit(p) {
   const m = (p.family || [])[0] || {};
-  editingPostId = p.id; specStage = null;
+  editingPostId = p.id; editingHasPin = !!p.pinHash; specStage = null;
   me = {
     name: m.name || "", avatar: normAv(m.avatar), pos: memberPos(m),
     answers: [0, 1, 2, 3].map((k) => m.answers?.[k] || "")
@@ -1059,8 +1140,8 @@ function startEdit(p) {
   toast("고친 다음 아래 '수정한 이야기 올리기'를 눌러 주세요");
 }
 
-/* ============ 🔐 관리자 전체 삭제 ============ */
-$("#del-all").onclick = async () => {
+/* ============ 🔐 관리자 전체 삭제 (Help 창 맨 아래) ============ */
+const bindAdmin = () => ($("#del-all").onclick = async () => {
   if ($("#admin-pw").value !== ADMIN_PW) { toast("관리자 비밀번호가 맞지 않아요"); return; }
   if (!confirm("모든 이야기를 지울까요? 되돌릴 수 없어요.")) return;
   try {
@@ -1069,126 +1150,16 @@ $("#del-all").onclick = async () => {
     $("#admin-pw").value = "";
     toast("전체 삭제를 마쳤어요");
   } catch (err) { console.error(err); toast("삭제 중 오류가 났어요"); }
-};
+});
 
-/* ============ 📲 앱 설치 (PWA) ============ */
+/* ============ 📲 오프라인 지원 (설치 안내는 뺐어요. 서비스 워커만 둬요) ============ */
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(console.error);
-const INSTALL_KEY = "install-asked-v2";
-const CAN_AUTO_INSTALL = "onbeforeinstallprompt" in window && !IS_IOS;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault(); deferredInstall = e;
-  $("#install-btn").classList.remove("hidden");
-});
-window.addEventListener("appinstalled", () => {
-  deferredInstall = null;
-  $("#install-btn").classList.add("hidden");
-  toast("설치됐어요! 홈 화면의 ✈️ 아이콘으로 열어 주세요");
-});
-async function runInstall() {
-  if (!deferredInstall) return false;
-  const ev = deferredInstall;
-  ev.prompt();
-  const { outcome } = await ev.userChoice;
-  deferredInstall = null;
-  $("#install-btn").classList.add("hidden");
-  if (outcome === "accepted") toast("설치하고 있어요!");
-  return true;
-}
-$("#install-btn").onclick = runInstall;
-
-function manualInstallSheet(next) {
-  openSheet(`
-    <div class="slide">
-      <div class="big-emo">📲</div><h2>이렇게 설치해 주세요</h2>
-      ${IS_IOS
-        ? `<p>아이폰은 버튼 하나로 바로 설치할 수 없어서<br>아래 순서대로 눌러 주세요.</p>
-           <ol class="num-steps">
-             <li>화면의 <b>공유 버튼 ⬆️</b> 누르기</li>
-             <li><b>홈 화면에 추가</b> 누르기</li>
-             <li>오른쪽 위 <b>추가</b> 누르기</li>
-           </ol>`
-        : (CAN_AUTO_INSTALL
-          ? `<p>크롬이 아직 설치를 허락하지 않았어요.<br>이미 설치되어 있거나 <b>시크릿 창</b>이면 이렇게 돼요.<br>아래 방법으로도 설치할 수 있어요.</p>`
-          : `<p>이 브라우저는 버튼 하나로 바로 설치할 수 없어요.<br><b>크롬(Chrome)</b>으로 열면 바로 설치돼요.</p>`)
-          + `<div class="branch">
-             <div><div class="branch-h">휴대폰</div><span>오른쪽 위 ⋮ 메뉴 → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b></span></div>
-             <div><div class="branch-h">컴퓨터</div><span>주소창 오른쪽 <b>설치 아이콘</b> 또는 ⋮ 메뉴 → <b>앱 설치</b></span></div>
-           </div>`}
-      <p class="muted">이미 설치했다면 홈 화면의 ✈️ 아이콘으로 열어 주세요.</p>
-      <button class="btn btn-primary" id="mi-ok">알겠어요</button>
-    </div>`, next);
-  $("#mi-ok").onclick = closeSheet;
-}
-// "앱으로 설치할까요?" → 아니오: 그냥 넘어가요 / 예: 바로 설치해요
-function askInstall(next) {
-  openSheet(`
-    <div class="slide">
-      <div class="big-emo">📲</div><h2>앱으로 설치할까요?</h2>
-      <p>홈 화면(컴퓨터는 바탕화면)에 ✈️ 아이콘이 생겨서<br>다음부터 바로 열 수 있어요.</p>
-      <div class="ask-btns">
-        <button class="btn btn-soft" id="ia-no">아니오</button>
-        <button class="btn btn-primary" id="ia-yes">예</button>
-      </div>
-    </div>`, () => { store.set(INSTALL_KEY, true); next(); });
-  $("#ia-no").onclick = closeSheet;
-  $("#ia-yes").onclick = () => {
-    store.set(INSTALL_KEY, true);
-    if (deferredInstall) { closeSheet(); runInstall(); }
-    else if (CAN_AUTO_INSTALL) waitInstallSheet(next);
-    else manualInstallSheet(next);
-  };
-}
-// 크롬은 처음 온 사람이 30초쯤 머문 뒤에야 설치를 허락해요. 그동안 진행 막대를 보여 줘요.
-const WAIT_MS = 32000;
-function waitInstallSheet(next) {
-  openSheet(`
-    <div class="slide">
-      <div class="big-emo">⏳</div><h2 id="iw-title">설치를 준비하고 있어요</h2>
-      <p id="iw-text">크롬이 설치를 허락할 때까지 기다리는 중이에요.<br>처음 오셨다면 <b>30초쯤</b> 걸려요. 이 화면을 그대로 두세요.</p>
-      <div class="iw-bar"><i id="iw-fill"></i></div>
-      <button class="btn btn-primary" id="iw-go" disabled>준비 중…</button>
-      <button class="link-btn hidden" id="iw-manual" type="button">설치가 안 되나요? 직접 설치하는 방법 보기</button>
-    </div>`, next);
-  const btn = $("#iw-go"), t0 = Date.now();
-  const tick = setInterval(() => {
-    if (!btn.isConnected) { clearInterval(tick); return; }
-    const ms = Date.now() - t0;
-    $("#iw-fill").style.width = `${Math.min(96, (ms / WAIT_MS) * 100)}%`;
-    if (ms > WAIT_MS + 8000) $("#iw-manual").classList.remove("hidden");
-  }, 250);
-  $("#iw-manual").onclick = () => { clearInterval(tick); manualInstallSheet(next); };
-  const ready = () => {
-    if (!btn.isConnected) return;
-    clearInterval(tick);
-    $("#iw-fill").style.width = "100%";
-    $("#iw-title").textContent = "설치 준비가 끝났어요!";
-    $("#iw-text").textContent = "아래 버튼을 누르면 바로 설치돼요.";
-    $("#iw-manual").classList.add("hidden");
-    btn.disabled = false; btn.textContent = "지금 설치하기";
-    btn.onclick = () => { closeSheet(); runInstall(); };
-  };
-  if (deferredInstall) ready();
-  else window.addEventListener("beforeinstallprompt", () => setTimeout(ready), { once: true });
-}
-async function isInstalled() {
-  try {
-    if (!navigator.getInstalledRelatedApps) return false;
-    const apps = await Promise.race([navigator.getInstalledRelatedApps(), new Promise((r) => setTimeout(() => r([]), 1500))]);
-    return apps.length > 0;
-  } catch { return false; }
-}
-function maybeAskInstall() {
-  if (IS_STANDALONE || store.get(INSTALL_KEY)) return;
-  isInstalled().then((yes) => { if (!yes) askInstall(() => {}); });
-}
 
 /* ============ 🚀 시작 ============ */
 applyLangAttrs();
 renderTrSeg();
-$("#guide-lang-grid").outerHTML = langGridHTML();
 loadDraft();
 renderBuilder();
-// 처음 들어오면: ① 환영 + 편한 언어 고르기 → ② 앱으로 설치할까요?
-if (!store.get("hide-guide-intro-v2")) openGuide("intro", maybeAskInstall);
-else maybeAskInstall();
+// 처음 들어왔을 때 한 번만: 환영 + 편한 언어 고르기
+if (!store.get("seen-intro-v3")) { store.set("seen-intro-v3", true); openGuide("intro"); }
 if (uiLang !== "ko") translatePage();

@@ -19,7 +19,7 @@
 
   <!-- 글꼴: 제목·본문 모두 Pretendard 하나로 통일 (한국어·영어 모두 읽기 편해요) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
   <!-- ☁️ 배경 -->
@@ -75,7 +75,6 @@
         <div class="card">
           <h3 class="sec-h">나의 이야기</h3>
           <p class="lead">한국에서의 생활을 떠올리며 답해 주세요.</p>
-          <p class="muted">짧게 써도, 빈칸으로 두어도 괜찮아요. 쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</p>
           <div id="qa-write"></div>
         </div>
 
@@ -119,71 +118,12 @@
       <div id="feed-list" class="deck"></div>
     </section>
 
-    <!-- ================= 📖 사용설명서 탭 ================= -->
-    <section id="view-guide" class="view hidden">
-      <div class="card">
-        <h2>사용설명서</h2>
-        <p class="muted">처음 오셨나요? 아래 순서대로 읽어 보세요.</p>
-        <button class="btn btn-soft" data-open-guide="intro">처음 안내 다시 보기</button>
-      </div>
-
-      <div class="card">
-        <h3>편한 언어 고르기</h3>
-        <p>한국어와 영어 중에서 편한 언어를 고르면 화면 전체가 바로 바뀌어요. 오른쪽 위 <span class="ui-chip">🌐</span> 버튼으로도 바꿀 수 있어요.</p>
-        <div id="guide-lang-grid"></div>
-        <ul class="dot-list mt">
-          <li>답은 <b>내 나라 언어로 편하게</b> 써도 괜찮아요.</li>
-          <li>다른 사람의 이야기는 <b>모두의 이야기</b> 탭의 번역 버튼으로 한국어나 영어로 바꿔 볼 수 있어요.</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <h3>문화적응이란?</h3>
-        <p>심리학자 <b>존 베리(John W. Berry)</b>는 새로운 나라에 사는 사람의 마음을 두 가지 질문으로 살펴봤어요.</p>
-        <div class="q-axis">
-          <div>❶ <b>내 나라의 문화</b>(언어·음식·전통)를 지키고 싶나요?</div>
-          <div>❷ <b>한국 사람들, 한국 문화</b>와 어울리고 싶나요?</div>
-        </div>
-        <p>두 질문의 답에 따라 4가지 단계가 나와요. 좋고 나쁨이 아니라 <b>지금 내 마음의 위치</b>예요. 마음은 계속 움직여요.</p>
-        <div id="guide-types"></div>
-      </div>
-
-      <div class="card">
-        <h3>참여하는 방법</h3>
-        <ol class="num-steps">
-          <li><b>아바타 만들기</b><br>모양·색·표정을 골라 나의 캐릭터를 꾸미고 별명을 써요.</li>
-          <li><b>나의 지금 마음 확인하기</b><br>문화적응 4단계 막대에서 지금 내 마음과 가장 가까운 곳을 눌러요. 내 아바타가 그 자리로 움직여요.</li>
-          <li><b>나의 이야기 쓰기</b><br>한국에서의 생활을 떠올리며 질문 4개에 답해요.</li>
-          <li><b>이야기 올리기</b><br>공개할지, 비공개로 올릴지 골라요. 내 글 비밀번호는 <b>생일 4자리</b>예요.</li>
-        </ol>
-      </div>
-
-      <div class="card">
-        <h3>모두의 이야기 사용법</h3>
-        <div id="board-howto"></div>
-      </div>
-
-      <div class="card">
-        <h3>휴대폰에 앱으로 설치하기</h3>
-        <div id="install-flow"></div>
-        <button id="install-btn" class="btn btn-primary hidden">지금 앱 설치하기</button>
-        <p class="hint">설치하면 홈 화면의 ✈️ 아이콘으로 바로 열 수 있어요.</p>
-      </div>
-
-      <details class="card admin">
-        <summary>관리자 메뉴 (선생님용)</summary>
-        <p class="muted">관리자는 이야기를 <b>삭제만</b> 할 수 있어요. 하나씩 지울 때는 이야기 카드의 ⋯ 버튼을 눌러요. 아래 버튼은 모든 이야기를 한 번에 지워요. 되돌릴 수 없어요.</p>
-        <input type="password" id="admin-pw" placeholder="관리자 비밀번호">
-        <button id="del-all" class="btn btn-danger">전체 삭제</button>
-      </details>
-    </section>
   </main>
 
   <!-- 하단 탭바 -->
   <nav class="tabbar">
     <button class="tab active" data-tab="journey"><span>🧭</span>여정</button>
     <button class="tab" data-tab="board"><span>💌</span>모두의 이야기</button>
-    <button class="tab" data-tab="guide"><span>📖</span>설명서</button>
   </nav>
 
   <!-- 모달 (안내 / 공유 / 메뉴) -->
@@ -193,6 +133,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <script type="module" src="app.js?v=16"></script>
+  <script type="module" src="app.js?v=17"></script>
 </body>
 </html>

@@ -286,7 +286,7 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
 /* ============ 하단 탭바 ============ */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: saturate(180%) blur(18px); -webkit-backdrop-filter: saturate(180%) blur(18px);
@@ -350,6 +350,14 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
 .choice.pub { border-color: #FFC2D6; background: #FFF5F9; }
 .choice.pub b { color: var(--primary-dark); }
 .choice:active { transform: scale(0.98); }
+.choice.on { border-color: var(--ink); }
+.pin-field .btn { margin-top: 12px; }
+
+/* ❓ Help 창 */
+.help-sec { text-align: left; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.help-sec h3 { text-align: left !important; }
+.help-sec.admin summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+.help-sec.admin input { margin-top: 8px; }
 .choice:disabled { opacity: .55; }
 .share-ok { text-align: center; color: var(--muted); font-size: 0.86rem; margin: 12px 0 0; }
 .share-back { display: block; margin: 6px auto 0; }
