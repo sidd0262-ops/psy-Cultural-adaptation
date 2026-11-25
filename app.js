@@ -89,6 +89,7 @@ function normAv(av) {
 }
 
 // 모든 캐릭터는 같은 그림체(둥근 얼굴 + 진한 테두리)로 그려요
+let ghostSeq = 0;
 function avatarSVG(raw) {
   const { k, c, h, f, a } = normAv(raw);
   const S = `stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`;
@@ -112,9 +113,11 @@ function avatarSVG(raw) {
       back = `<ellipse cx="50" cy="97" rx="17" ry="2.6" fill="${INK}" opacity=".13"/>
         <path d="M24 62 Q12 60 9 68 Q15 71 24 70 Z" fill="${c}" ${S}/>
         <path d="M75 60 Q84 54 86 44 Q87 37 91.5 39 Q95 41 92 50 Q88 61 76 67 Z" fill="${c}" ${S}/>`;
-      head = `<clipPath id="gh-clip"><path d="${body}"/></clipPath>
+      // 그림마다 다른 이름을 써야 해요 (숨겨진 화면의 같은 이름을 빌려 쓰면 무늬가 몸 밖으로 삐져나와요)
+      const clip = `gh-clip-${++ghostSeq}`;
+      head = `<clipPath id="${clip}"><path d="${body}"/></clipPath>
         <path d="${body}" fill="${c}"/>
-        <g clip-path="url(#gh-clip)"><path d="M10 79 Q30 72 50 78 Q70 84 90 76 L90 100 L10 100 Z" fill="${h}" opacity=".9"/></g>
+        <g clip-path="url(#${clip})"><path d="M10 79 Q30 72 50 78 Q70 84 90 76 L90 100 L10 100 Z" fill="${h}" opacity=".9"/></g>
         <path d="${body}" fill="none" ${S}/>
         <path d="M31 38 Q34 27 44 23" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity=".85"/>`;
       break;
