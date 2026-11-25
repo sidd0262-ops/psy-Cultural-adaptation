@@ -71,7 +71,7 @@ const AV_KINDS = [
   { id: "penguin", label: "펭귄", point: "부리 색", def: { c: "#4A5068", h: "#FF8A3D" } },
   { id: "frog", label: "개구리", point: "볼 색", def: { c: "#8FD694", h: "#FFB3C7" } },
   { id: "robot", label: "로봇", point: "불빛 색", def: { c: "#A7B0BE", h: "#4D9DFF" } },
-  { id: "dino", label: "공룡", point: "줄무늬 색", def: { c: "#5CC08A", h: "#3FB58A" } },
+  { id: "dino", label: "공룡", point: "등 가시 색", def: { c: "#5CC08A", h: "#FF8A3D" } },
   { id: "unicorn", label: "유니콘", point: "갈기 색", def: { c: "#FFFFFF", h: "#B79CFF" } },
   { id: "pumpkin", label: "호박", point: "꼭지 색", def: { c: "#FF8A3D", h: "#3FB58A" } },
   { id: "snowman", label: "눈사람", point: "목도리 색", def: { c: "#FFFFFF", h: "#C8553D" } }
@@ -218,15 +218,18 @@ function avatarSVG(raw) {
       Object.assign(G, { Y: 54 });
       break;
     case "dino":
-      // 티라노: 아래로 넓은 큰 턱 + 이빨을 드러낸 입 + 눈 위 굵은 눈썹뼈 + 콧구멍 + 작은 앞발 + 머리 줄무늬
-      head = `<path d="M50 18 C68 18 79 29 79 45 C79 55 85 63 84 74 C83 86 68 92 50 92 C32 92 17 86 16 74 C15 63 21 55 21 45 C21 29 32 18 50 18 Z" fill="${c}" ${S}/>`;
-      mid = `<path d="M40 24 Q44 30 42 36 M50 21 L50 33 M60 24 Q56 30 58 36" stroke="${h}" stroke-width="4" stroke-linecap="round" fill="none"/>
-        <path d="M27 42 Q35 38 44 44 M73 42 Q65 38 56 44" stroke="${INK}" stroke-width="3.2" stroke-linecap="round" fill="none"/>
-        <ellipse cx="45" cy="60" rx="2" ry="1.5" fill="${INK}"/><ellipse cx="55" cy="60" rx="2" ry="1.5" fill="${INK}"/>
-        <path d="M27 68 Q50 70 73 68 Q68 86 50 86 Q32 86 27 68 Z" fill="#7A2E3A" ${S}/>
-        <path d="M31 68.6 L34 75 L37.5 69.1 L41 75 L44.5 69.5 L48 75.5 L52 75.5 L55.5 69.5 L59 75 L62.5 69.1 L66 75 L69 68.6 Z" fill="#fff" ${S2}/>`;
-      front = `<path d="M22 84 Q16 84 16 90 Q20 92 25 88 Z M78 84 Q84 84 84 90 Q80 92 75 88 Z" fill="${c}" ${S2}/>`;
-      Object.assign(G, { L: 37, R: 63, Y: 50, noMouth: true, by: -2 });
+      // 꼬마 공룡 (몸까지 그려요): 머리~등을 따라 난 가시 + 꼬리 + 줄무늬 있는 밝은 배 + 짧은 팔·다리 + 넓은 주둥이
+      back = [[43, 17, -18], [56, 16, 14], [67, 21, 42], [74, 31, 66], [73, 70, 78]].map(([x, y, r]) =>
+          `<path d="M${x - 7.5} ${y + 5} Q${x} ${y - 19} ${x + 7.5} ${y + 5} Z" transform="rotate(${r} ${x} ${y})" fill="${h}" ${S}/>`).join("") +
+        `<path d="M66 82 Q86 86 93 70 Q97 84 86 91 Q77 95 64 93 Z" fill="${c}" ${S}/>
+        <ellipse cx="50" cy="80" rx="21" ry="15" fill="${c}" ${S}/>
+        <ellipse cx="50" cy="83" rx="12.5" ry="10.5" fill="#FFF1CC" ${S2}/>
+        <path d="M41 79 Q50 81 59 79 M40 85 Q50 87 60 85" stroke="${INK}" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".35"/>
+        <path d="M31 72 Q23 74 25 80 Q29 81 33 77 Z M69 72 Q77 74 75 80 Q71 81 67 77 Z" fill="${c}" ${S2}/>
+        <ellipse cx="40" cy="95" rx="7.5" ry="4" fill="${c}" ${S2}/><ellipse cx="60" cy="95" rx="7.5" ry="4" fill="${c}" ${S2}/>`;
+      head = `<path d="M50 15 C66 15 76 26 76 40 C76 50 79 56 75 62 C71 68 61 71 50 71 C39 71 29 68 25 62 C21 56 24 50 24 40 C24 26 34 15 50 15 Z" fill="${c}" ${S}/>`;
+      mid = `<ellipse cx="46" cy="46" rx="1.8" ry="1.3" fill="${INK}"/><ellipse cx="54" cy="46" rx="1.8" ry="1.3" fill="${INK}"/>`;
+      Object.assign(G, { L: 40, R: 60, Y: 37, my: -13, by: -14 });
       break;
     case "unicorn":
       // 말 얼굴: 위아래로 긴 얼굴 + 분홍 주둥이(콧구멍) + 쫑긋 귀 + 흐르는 갈기 + 금색 뿔
