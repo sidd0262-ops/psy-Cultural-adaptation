@@ -137,8 +137,12 @@ textarea { resize: vertical; min-height: 92px; }
 .av-panel .av-row-h { margin-top: 4px; }
 .av-panel .av-row-h + .av-opts { margin-bottom: 10px; }
 .av-opts.wrap { flex-wrap: wrap; overflow: visible; }
-.av-opts.wrap .av-opt { width: calc((100% - 40px) / 6); height: auto; aspect-ratio: 1; }
-@media (max-width: 374px) { .av-opts.wrap .av-opt { width: calc((100% - 32px) / 5); } }
+/* 그림 + 이름 칸 (모양 · 표정 · 꾸미기) */
+.av-opts.lab { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; }
+.av-opts.lab .av-opt { width: auto; height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 5px; }
+.av-pic { display: block; width: 100%; max-width: 62px; aspect-ratio: 1; }
+.av-lab { font-size: 0.74rem; font-weight: 700; color: var(--sub); line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
+.av-opt.on .av-lab { color: var(--primary-dark); }
 
 /* 진행 점 ● ○ ○ (STEP 글자 대신) */
 .steps-dots { display: flex; gap: 6px; margin-bottom: 8px; }

@@ -52,22 +52,34 @@ const OLD_TITLES = ["한국에 오게 된 이유", "나를 버티게 해준 것"
 const qTitles = (post) => (post.v >= 2 ? QUESTIONS.map((q) => q.title) : OLD_TITLES);
 
 /* ============ 🎨 아바타 (성별 없이 모양·색·표정·꾸미기로 만들어요) ============ */
+// 딱 보면 알 수 있게: 캐릭터마다 대표 색(def)과 대표 특징(판다 눈 무늬, 동물 코, 눈사람 모자…)을 가져요.
+// 모양을 고르면 대표 색이 입혀지고, 색 탭에서 언제든 바꿀 수 있어요.
+// point: 두 번째 색이 칠해지는 부분 이름 (색 탭에 그대로 보여요)
 const INK = "#2B2D42";
-// point: 두 번째 색이 칠해지는 부분 이름 (색 탭에 그대로 보여요). 모든 모양에 꼭 칠할 곳이 있어야 해요.
 const AV_KINDS = [
-  { id: "short", label: "짧은 머리", point: "머리 색" }, { id: "long", label: "긴 머리", point: "머리 색" },
-  { id: "curly", label: "곱슬머리", point: "머리 색" }, { id: "ghost", label: "유령", point: "무늬 색" },
-  { id: "alien", label: "외계인", point: "더듬이 색" }, { id: "cat", label: "고양이", point: "귀 안쪽 색" },
-  { id: "bear", label: "곰", point: "귀 안쪽 색" }, { id: "bunny", label: "토끼", point: "귀 안쪽 색" },
-  { id: "dog", label: "강아지", point: "귀 색" }, { id: "panda", label: "판다", point: "무늬 색" },
-  { id: "fox", label: "여우", point: "귀 안쪽 색" }, { id: "penguin", label: "펭귄", point: "깃털 색" },
-  { id: "frog", label: "개구리", point: "눈 색" }, { id: "robot", label: "로봇", point: "안테나 색" },
-  { id: "dino", label: "공룡", point: "등 가시 색" }, { id: "unicorn", label: "유니콘", point: "갈기 색" },
-  { id: "pumpkin", label: "호박", point: "꼭지 색" }, { id: "snowman", label: "눈사람", point: "목도리 색" }
+  { id: "short", label: "짧은 머리", point: "머리 색", human: true, def: { c: "#F6C9A3", h: "#2E2420" } },
+  { id: "long", label: "긴 머리", point: "머리 색", human: true, def: { c: "#FFE3CC", h: "#6B4128" } },
+  { id: "curly", label: "곱슬머리", point: "머리 색", human: true, def: { c: "#C1855A", h: "#2E2420" } },
+  { id: "ghost", label: "유령", point: "무늬 색", def: { c: "#FFFFFF", h: "#B79CFF" } },
+  { id: "alien", label: "외계인", point: "더듬이 색", def: { c: "#8FD694", h: "#6C63FF" } },
+  { id: "cat", label: "고양이", point: "귀 안쪽 색", def: { c: "#FF9F6B", h: "#FFB3C7" } },
+  { id: "bear", label: "곰", point: "귀 안쪽 색", def: { c: "#C1855A", h: "#6B4128" } },
+  { id: "bunny", label: "토끼", point: "귀 안쪽 색", def: { c: "#FFFFFF", h: "#FFB3C7" } },
+  { id: "dog", label: "강아지", point: "귀 색", def: { c: "#FFE3CC", h: "#6B4128" } },
+  { id: "panda", label: "판다", point: "무늬 색", def: { c: "#FFFFFF", h: "#2E2420" } },
+  { id: "fox", label: "여우", point: "귀 안쪽 색", def: { c: "#FF8A3D", h: "#F2F2F2" } },
+  { id: "penguin", label: "펭귄", point: "부리 색", def: { c: "#4A5068", h: "#FF8A3D" } },
+  { id: "frog", label: "개구리", point: "볼 색", def: { c: "#8FD694", h: "#FFB3C7" } },
+  { id: "robot", label: "로봇", point: "불빛 색", def: { c: "#A7B0BE", h: "#4D9DFF" } },
+  { id: "dino", label: "공룡", point: "등 가시 색", def: { c: "#5CC08A", h: "#FF8A3D" } },
+  { id: "unicorn", label: "유니콘", point: "갈기 색", def: { c: "#FFFFFF", h: "#B79CFF" } },
+  { id: "pumpkin", label: "호박", point: "꼭지 색", def: { c: "#FF8A3D", h: "#3FB58A" } },
+  { id: "snowman", label: "눈사람", point: "목도리 색", def: { c: "#FFFFFF", h: "#C8553D" } }
 ];
 const AV_COLORS = ["#FFE3CC", "#F6C9A3", "#E2A97E", "#C1855A", "#8D5A3B", "#5E3B26",
-  "#FFFFFF", "#FFD166", "#FF9EC4", "#8FD694", "#7CC6FE", "#B79CFF", "#FF9F6B", "#FF8A3D", "#A7B0BE", "#4A5068"];
-const AV_ACCENTS = ["#2E2420", "#6B4128", "#E3A93C", "#C8553D", "#9AA5B1", "#F2F2F2", "#6C63FF", "#FF6F9F", "#3FB58A", "#4D9DFF"];
+  "#FFFFFF", "#FFD166", "#FF9EC4", "#8FD694", "#5CC08A", "#7CC6FE", "#B79CFF", "#FF9F6B", "#FF8A3D", "#A7B0BE", "#4A5068"];
+const AV_ACCENTS = ["#2E2420", "#6B4128", "#E3A93C", "#C8553D", "#9AA5B1", "#F2F2F2",
+  "#6C63FF", "#B79CFF", "#FF6F9F", "#FFB3C7", "#FF8A3D", "#3FB58A", "#4D9DFF"];
 const AV_FACES = [
   { id: "smile", label: "웃음" }, { id: "grin", label: "활짝" }, { id: "wink", label: "윙크" }, { id: "calm", label: "차분" },
   { id: "wow", label: "깜짝" }, { id: "shy", label: "수줍음" }, { id: "sad", label: "시무룩" }
@@ -79,7 +91,8 @@ const AV_ITEMS = [
   { id: "freckles", label: "주근깨" }, { id: "star", label: "별 장식" }
 ];
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const randomAvatar = () => ({ k: pick(AV_KINDS).id, c: pick(AV_COLORS.slice(0, 6)), h: pick(AV_ACCENTS), f: "smile", a: "none" });
+const kindOf = (id) => AV_KINDS.find((x) => x.id === id) || AV_KINDS[0];
+const randomAvatar = () => { const k = pick(AV_KINDS); return { k: k.id, c: k.def.c, h: k.def.h, f: "smile", a: "none" }; };
 function normAv(av) {
   const ok = (list, v, d) => (list.some((x) => (x.id ?? x) === v) ? v : d);
   return {
@@ -87,13 +100,24 @@ function normAv(av) {
     f: ok(AV_FACES, av?.f, "smile"), a: ok(AV_ITEMS, av?.a, "none")
   };
 }
+// 모양을 바꾸면 그 캐릭터의 대표 색을 입혀요 (사람끼리 바꿀 때는 고른 피부·머리 색을 그대로 둬요)
+function switchKind(av, id) {
+  const from = kindOf(av.k), to = kindOf(id);
+  const keep = from.human && to.human;
+  return { ...av, k: id, c: keep ? av.c : to.def.c, h: keep ? av.h : to.def.h };
+}
+const isDark = (hex) => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 110; };
 
 // 모든 캐릭터는 같은 그림체(둥근 얼굴 + 진한 테두리)로 그려요
 let ghostSeq = 0;
 function avatarSVG(raw) {
   const { k, c, h, f, a } = normAv(raw);
   const S = `stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`;
+  const S2 = `stroke="${INK}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"`;
+  // 눈 위치·크기·색 (개구리는 머리 위, 외계인은 큰 눈, 판다는 까만 무늬 위 흰 눈)
+  const G = { L: 39, R: 61, Y: 55, er: 1, eye: INK };
   let back = "", head = `<circle cx="50" cy="55" r="30" fill="${c}" ${S}/>`, mid = "", front = "";
+  const nose = (fill, rx = 4, ry = 3) => `<ellipse cx="50" cy="61" rx="${rx}" ry="${ry}" fill="${fill}"/>`;
   switch (k) {
     case "short":
       front = `<path d="M20 54 C18 28 36 20 50 20 C66 20 82 28 80 54 C76 44 70 40 62 37 C56 44 42 44 35 37 C28 41 23 46 20 54 Z" fill="${h}" ${S}/>`;
@@ -108,7 +132,7 @@ function avatarSVG(raw) {
       front = [[36, 31], [50, 27], [64, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5" fill="${h}" ${S}/>`).join("");
       break;
     case "ghost": {
-      // 둥근 머리 + 물결 밑단 + 작은 팔(한쪽은 '부~' 하고 들기) + 바닥 그림자 → 둥둥 떠 있는 유령
+      // 둥근 머리 + 물결 밑단 + 손 흔드는 팔 + 바닥 그림자 → 둥둥 떠 있는 유령
       const body = "M22 58 C22 30 35 17 50 17 C65 17 78 30 78 58 L78 81 Q78 89 71.5 86.5 Q66 84.5 63 89.5 Q59 95 54.5 89.5 Q50 84.5 45.5 89.5 Q41 95 37 89.5 Q34 84.5 28.5 86.5 Q22 89 22 81 Z";
       back = `<ellipse cx="50" cy="97" rx="17" ry="2.6" fill="${INK}" opacity=".13"/>
         <path d="M24 62 Q12 60 9 68 Q15 71 24 70 Z" fill="${c}" ${S}/>
@@ -123,97 +147,136 @@ function avatarSVG(raw) {
       break;
     }
     case "alien":
-      back = `<path d="M39 32 L30 13 M61 32 L70 13" fill="none" ${S}/>
-        <circle cx="30" cy="12" r="5" fill="${h}" ${S}/><circle cx="70" cy="12" r="5" fill="${h}" ${S}/>`;
-      head = `<ellipse cx="50" cy="56" rx="33" ry="28" fill="${c}" ${S}/>`;
+      // 위가 넓은 달걀 머리 + 더듬이 2개 + 커다란 반짝 눈
+      back = `<path d="M40 27 L31 10 M60 27 L69 10" fill="none" ${S}/>
+        <circle cx="31" cy="9" r="5.5" fill="${h}" ${S}/><circle cx="69" cy="9" r="5.5" fill="${h}" ${S}/>`;
+      head = `<path d="M50 23 C71 23 85 35 84 53 C83 72 68 87 50 87 C32 87 17 72 16 53 C15 35 29 23 50 23 Z" fill="${c}" ${S}/>`;
+      Object.assign(G, { L: 37, R: 63, Y: 52, er: 1.7 });
       break;
     case "cat":
+      // 뾰족 귀 + 이마 줄무늬 + 분홍 코 + 수염
       back = `<path d="M23 44 L26 14 L47 29 Z M77 44 L74 14 L53 29 Z" fill="${c}" ${S}/>
         <path d="M29 35 L30 22 L40 29 Z M71 35 L70 22 L60 29 Z" fill="${h}"/>`;
-      front = `<path d="M20 61 L33 63 M20 68 L33 67 M80 61 L67 63 M80 68 L67 67" ${S} stroke-width="1.8" fill="none"/>`;
+      mid = `<path d="M44 28 L45.5 36 M50 26.5 L50 35 M56 28 L54.5 36" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" opacity=".3"/>
+        <path d="M46.5 60 L53.5 60 L50 63.5 Z" fill="#FF7F9F" ${S2}/>`;
+      front = `<path d="M18 60 L32 62.5 M18 67 L32 66.5 M82 60 L68 62.5 M82 67 L68 66.5" ${S2} fill="none"/>`;
       break;
     case "bear":
+      // 동그란 귀 + 밝은 주둥이 + 까만 코
       back = `<circle cx="27" cy="31" r="11" fill="${c}" ${S}/><circle cx="73" cy="31" r="11" fill="${c}" ${S}/>
-        <circle cx="27" cy="31" r="5" fill="${h}"/><circle cx="73" cy="31" r="5" fill="${h}"/>`;
-      mid = `<ellipse cx="50" cy="67" rx="12" ry="8.5" fill="#fff" opacity=".6"/>`;
+        <circle cx="27" cy="31" r="5.5" fill="${h}"/><circle cx="73" cy="31" r="5.5" fill="${h}"/>`;
+      mid = `<ellipse cx="50" cy="66" rx="13" ry="10" fill="#fff" opacity=".55"/>` + nose(INK, 4.5, 3.2);
       break;
     case "bunny":
-      back = `<ellipse cx="38" cy="21" rx="8" ry="19" fill="${c}" ${S}/><ellipse cx="62" cy="21" rx="8" ry="19" fill="${c}" ${S}/>
-        <ellipse cx="38" cy="22" rx="3.5" ry="12" fill="${h}"/><ellipse cx="62" cy="22" rx="3.5" ry="12" fill="${h}"/>`;
+      // 긴 귀 + 분홍 코
+      back = `<ellipse cx="38" cy="19" rx="8.5" ry="20" fill="${c}" ${S}/><ellipse cx="62" cy="19" rx="8.5" ry="20" fill="${c}" ${S}/>
+        <ellipse cx="38" cy="20" rx="4" ry="13" fill="${h}"/><ellipse cx="62" cy="20" rx="4" ry="13" fill="${h}"/>`;
+      mid = `<path d="M47 60 Q50 58.5 53 60 Q51.5 63 50 63 Q48.5 63 47 60 Z" fill="#FF7F9F" ${S2}/>`;
       break;
     case "dog":
-      back = `<ellipse cx="21" cy="50" rx="9" ry="18" transform="rotate(18 21 50)" fill="${h}" ${S}/><ellipse cx="79" cy="50" rx="9" ry="18" transform="rotate(-18 79 50)" fill="${h}" ${S}/>`;
-      mid = `<ellipse cx="50" cy="67" rx="12" ry="8.5" fill="#fff" opacity=".6"/><ellipse cx="50" cy="61.5" rx="4" ry="3" fill="${INK}"/>`;
+      // 축 늘어진 귀 + 한쪽 눈 얼룩 + 주둥이 + 까만 코 + 혀
+      back = `<ellipse cx="21" cy="50" rx="9.5" ry="19" transform="rotate(18 21 50)" fill="${h}" ${S}/><ellipse cx="79" cy="50" rx="9.5" ry="19" transform="rotate(-18 79 50)" fill="${h}" ${S}/>`;
+      mid = `<ellipse cx="62" cy="53" rx="9" ry="8" fill="${h}" opacity=".35"/>
+        <ellipse cx="50" cy="67" rx="13" ry="9.5" fill="#fff" opacity=".6"/>` + nose(INK, 4.5, 3.2);
       break;
-    case "panda":
-      back = `<circle cx="27" cy="31" r="10" fill="${h}" ${S}/><circle cx="73" cy="31" r="10" fill="${h}" ${S}/>`;
-      mid = `<ellipse cx="38" cy="56" rx="8" ry="9.5" transform="rotate(-20 38 56)" fill="${h}" opacity=".45"/><ellipse cx="62" cy="56" rx="8" ry="9.5" transform="rotate(20 62 56)" fill="${h}" opacity=".45"/>`;
+    case "panda": {
+      // 까만 귀 + 까만 눈 무늬(그 위에 흰 눈) + 작은 코
+      back = `<circle cx="27" cy="31" r="10.5" fill="${h}" ${S}/><circle cx="73" cy="31" r="10.5" fill="${h}" ${S}/>`;
+      mid = `<ellipse cx="38.5" cy="56" rx="8.5" ry="10" transform="rotate(-25 38.5 56)" fill="${h}"/>
+        <ellipse cx="61.5" cy="56" rx="8.5" ry="10" transform="rotate(25 61.5 56)" fill="${h}"/>` + nose(INK, 3.5, 2.6);
+      G.eye = isDark(h) ? "#fff" : INK;
       break;
+    }
     case "fox":
-      back = `<path d="M21 46 L22 10 L46 28 Z M79 46 L78 10 L54 28 Z" fill="${c}" ${S}/>
-        <path d="M27 36 L27 20 L39 29 Z M73 36 L73 20 L61 29 Z" fill="${h}"/>`;
-      mid = `<path d="M22 60 Q30 84 50 85 Q70 84 78 60 Q66 70 50 69 Q34 70 22 60 Z" fill="#fff" opacity=".85"/>`;
+      // 큰 뾰족 귀(끝이 까만) + 흰 뺨 + 까만 코
+      back = `<path d="M20 47 L21 9 L46 28 Z M80 47 L79 9 L54 28 Z" fill="${c}" ${S}/>
+        <path d="M21 9 L21.6 19 L29 15.5 Z M79 9 L78.4 19 L71 15.5 Z" fill="${INK}"/>
+        <path d="M26 37 L26.5 21 L38 29 Z M74 37 L73.5 21 L62 29 Z" fill="${h}"/>`;
+      mid = `<path d="M21 58 Q28 85 50 86 Q72 85 79 58 Q66 70 50 69 Q34 70 21 58 Z" fill="#fff"/>` + nose(INK, 3.8, 2.8);
       break;
     case "penguin":
-      // 머리 위 깃털 (포인트 색)
-      back = `<path d="M43 28 C41 16 47 10 50 16 C52 9 60 12 57 28 Z" fill="${h}" ${S}/>`;
-      mid = `<path d="M50 40 C38 32 26 42 28 58 C30 74 40 83 50 83 C60 83 70 74 72 58 C74 42 62 32 50 40 Z" fill="#fff"/>
-        <path d="M46 59.5 L54 59.5 L50 63.5 Z" fill="#FFB347" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`;
+      // 짙은 머리 + 흰 얼굴(하트 모양) + 주황 부리
+      mid = `<path d="M50 40 C38 31 25 41 27 58 C29 75 40 84 50 84 C60 84 71 75 73 58 C75 41 62 31 50 40 Z" fill="#fff"/>
+        <path d="M45 59 L55 59 L50 65 Z" fill="${h}" ${S2}/>`;
       break;
     case "frog":
-      back = `<circle cx="33" cy="32" r="12" fill="${c}" ${S}/><circle cx="67" cy="32" r="12" fill="${c}" ${S}/>
-        <circle cx="33" cy="31" r="5" fill="${h}"/><circle cx="67" cy="31" r="5" fill="${h}"/>`;
-      head = `<ellipse cx="50" cy="58" rx="35" ry="26" fill="${c}" ${S}/>`;
-      break;
-    case "dino":
-      back = `<path d="M28 34 L33 14 L41 28 L50 8 L59 28 L67 14 L72 34 Z" fill="${h}" ${S}/>`;
-      break;
-    case "unicorn":
-      back = `<path d="M30 38 L31 18 L43 29 Z M70 38 L69 18 L57 29 Z" fill="${c}" ${S}/>
-        <path d="M24 48 C20 28 34 20 46 26 C38 30 32 38 30 50 Z" fill="${h}" ${S}/>`;
-      front = `<path d="M44 28 L50 4 L56 28 Z" fill="#FFD166" ${S}/><path d="M46.5 20 L53.5 18 M45.5 24.5 L54.5 22.5" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>`;
-      break;
-    case "pumpkin":
-      head = `<ellipse cx="50" cy="57" rx="35" ry="28" fill="${c}" ${S}/>
-        <path d="M37 31 Q27 57 37 84 M63 31 Q73 57 63 84" fill="none" stroke="${INK}" stroke-width="1.8" opacity=".45"/>`;
-      back = `<path d="M47 31 Q46 20 52 15 L56 18 Q51 23 53 31 Z" fill="${h}" ${S}/>`;
-      break;
-    case "snowman":
-      front = `<path d="M26 76 Q50 89 74 76 L76 85 Q50 98 24 85 Z" fill="${h}" ${S}/><path d="M60 84 L63 97 L70 95 L66 82" fill="${h}" ${S}/>`;
-      mid = `<path d="M50 60 L63 62.5 L50 64.5 Z" fill="#FF9F6B" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`;
+      // 머리 위로 툭 튀어나온 눈 + 넓은 얼굴 + 볼
+      back = `<circle cx="33" cy="34" r="13" fill="${c}" ${S}/><circle cx="67" cy="34" r="13" fill="${c}" ${S}/>
+        <circle cx="33" cy="34" r="8.5" fill="#fff"/><circle cx="67" cy="34" r="8.5" fill="#fff"/>`;
+      head = `<ellipse cx="50" cy="61" rx="36" ry="25" fill="${c}" ${S}/>`;
+      mid = `<path d="M26 44 C30 50 36 50 40 47 M60 47 C64 50 70 50 74 44" fill="${c}"/>
+        <ellipse cx="27" cy="67" rx="6" ry="3.8" fill="${h}"/><ellipse cx="73" cy="67" rx="6" ry="3.8" fill="${h}"/>`;
+      Object.assign(G, { L: 33, R: 67, Y: 34 });
       break;
     case "robot":
-      back = `<path d="M50 26 L50 13" ${S}/><circle cx="50" cy="10" r="5" fill="${h}" ${S}/>
-        <rect x="13" y="48" width="9" height="15" rx="3" fill="${h}" ${S}/><rect x="78" y="48" width="9" height="15" rx="3" fill="${h}" ${S}/>`;
-      head = `<rect x="20" y="25" width="60" height="58" rx="16" fill="${c}" ${S}/>`;
+      // 네모 머리 + 안테나 + 얼굴 화면 + 나사
+      back = `<path d="M50 26 L50 13" ${S}/><circle cx="50" cy="10" r="5.5" fill="${h}" ${S}/>
+        <rect x="12" y="47" width="10" height="17" rx="3" fill="${h}" ${S}/><rect x="78" y="47" width="10" height="17" rx="3" fill="${h}" ${S}/>`;
+      head = `<rect x="20" y="25" width="60" height="58" rx="15" fill="${c}" ${S}/>`;
+      mid = `<rect x="27" y="40" width="46" height="36" rx="10" fill="#EAF6FF" ${S2}/>
+        <circle cx="27" cy="32" r="2" fill="${INK}" opacity=".5"/><circle cx="73" cy="32" r="2" fill="${INK}" opacity=".5"/>`;
+      Object.assign(G, { Y: 54 });
+      break;
+    case "dino":
+      // 머리 위 둥근 가시 3개 + 밝은 아래턱 + 콧구멍
+      back = [[31, 31, -38], [50, 24, 0], [69, 31, 38]].map(([x, y, r]) =>
+        `<path d="M${x - 9} ${y + 8} Q${x - 2} ${y - 8} ${x} ${y - 19} Q${x + 2} ${y - 8} ${x + 9} ${y + 8} Z" transform="rotate(${r} ${x} ${y})" fill="${h}" ${S}/>`).join("");
+      mid = `<ellipse cx="50" cy="71" rx="20" ry="11" fill="#fff" opacity=".35"/>
+        <ellipse cx="45.5" cy="61" rx="1.6" ry="1.2" fill="${INK}"/><ellipse cx="54.5" cy="61" rx="1.6" ry="1.2" fill="${INK}"/>`;
+      break;
+    case "unicorn":
+      // 금색 뿔 + 옆으로 흐르는 갈기 + 앞머리
+      back = `<path d="M31 38 L32 18 L44 29 Z M69 38 L68 18 L56 29 Z" fill="${c}" ${S}/>
+        <path d="M27 36 C12 44 12 68 22 82 C24 68 25 56 31 47 Z" fill="${h}" ${S}/>`;
+      front = `<path d="M37 33 C40 23 52 20 60 27 C53 27 47 30 42 39 Z" fill="${h}" ${S}/>
+        <path d="M44 27 L50 3 L56 27 Z" fill="#FFD166" ${S}/><path d="M46.5 19 L53.5 17 M45.5 23.5 L54.5 21.5" ${S2}/>`;
+      break;
+    case "pumpkin":
+      // 골이 진 넓은 호박 + 꼭지 + 잎
+      head = `<ellipse cx="50" cy="58" rx="36" ry="28" fill="${c}" ${S}/>
+        <path d="M37 32 Q26 58 37 85 M63 32 Q74 58 63 85" fill="none" stroke="${INK}" stroke-width="1.8" opacity=".4"/>`;
+      back = `<path d="M47 32 Q46 20 52 14 L57 17 Q51 23 53 32 Z" fill="${h}" ${S}/>
+        <path d="M54 22 Q64 12 72 18 Q64 26 54 22 Z" fill="#3FB58A" ${S2}/>`;
+      break;
+    case "snowman":
+      // 하얀 눈덩이 + 까만 모자 + 당근 코 + 목도리
+      front = `<rect x="30" y="26" width="40" height="6" rx="3" fill="${INK}"/>
+        <rect x="37" y="6" width="26" height="22" rx="3" fill="${INK}"/><rect x="37" y="21" width="26" height="5" fill="${h}"/>
+        <path d="M26 76 Q50 89 74 76 L76 85 Q50 98 24 85 Z" fill="${h}" ${S}/><path d="M60 84 L63 97 L70 95 L66 82" fill="${h}" ${S}/>`;
+      mid = `<path d="M50 59.5 L64 62.5 L50 65 Z" fill="#FF8A3D" ${S2}/>`;
+      Object.assign(G, { Y: 53 });
       break;
   }
-  const dot = (x, r = 3.6) => `<circle cx="${x}" cy="55" r="${r}" fill="${INK}"/>`;
-  const arcUp = (x) => `<path d="M${x - 5} 56 Q${x} 50 ${x + 5} 56" fill="none" ${S}/>`;
-  const arcDown = (x) => `<path d="M${x - 5} 54 Q${x} 58 ${x + 5} 54" fill="none" ${S}/>`;
+  // 표정 (눈 위치·크기·색은 캐릭터에 맞춰요)
+  const { L, R, Y, er, eye } = G;
+  const dot = (x, r = 3.6) => `<circle cx="${x}" cy="${Y}" r="${r * er}" fill="${eye}"/>` +
+    (er > 1 ? `<circle cx="${x - r * er * 0.35}" cy="${Y - r * er * 0.35}" r="${r * er * 0.32}" fill="#fff"/>` : "");
+  const ES = `stroke="${eye}" stroke-width="2.6" stroke-linecap="round" fill="none"`;
+  const arcUp = (x) => `<path d="M${x - 5} ${Y + 1} Q${x} ${Y - 5} ${x + 5} ${Y + 1}" ${ES}/>`;
+  const arcDown = (x) => `<path d="M${x - 5} ${Y - 1} Q${x} ${Y + 3} ${x + 5} ${Y - 1}" ${ES}/>`;
   const blush = (o = 0.5) => `<ellipse cx="33" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/><ellipse cx="67" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/>`;
-  const smileMouth = `<path d="M43 65 Q50 71 57 65" fill="none" ${S}/>`;
+  const smileMouth = `<path d="M43 66 Q50 72 57 66" fill="none" ${S}/>`;
   const faces = {
-    smile: dot(39) + dot(61) + smileMouth + blush(0.35),
-    grin: arcUp(39) + arcUp(61) + `<path d="M41 63 Q50 63 59 63 Q58 75 50 75 Q42 75 41 63 Z" fill="#7A2E3A" ${S}/>` + blush(0.35),
-    wink: dot(39) + arcUp(61) + smileMouth + blush(0.35),
-    calm: arcDown(39) + arcDown(61) + `<path d="M46 66 Q50 68.5 54 66" fill="none" ${S}/>`,
-    wow: dot(39, 4.2) + dot(61, 4.2) + `<ellipse cx="50" cy="68" rx="4" ry="5" fill="${INK}"/>`,
-    shy: dot(39, 3) + dot(61, 3) + `<path d="M46 66 Q50 69 54 66" fill="none" ${S}/>` + blush(0.7),
-    sad: dot(39) + dot(61) + `<path d="M43 69 Q50 63 57 69" fill="none" ${S}/>`
+    smile: dot(L) + dot(R) + smileMouth + blush(0.35),
+    grin: arcUp(L) + arcUp(R) + `<path d="M41 64 Q50 64 59 64 Q58 76 50 76 Q42 76 41 64 Z" fill="#7A2E3A" ${S}/>` + blush(0.35),
+    wink: dot(L) + arcUp(R) + smileMouth + blush(0.35),
+    calm: arcDown(L) + arcDown(R) + `<path d="M46 67 Q50 69.5 54 67" fill="none" ${S}/>`,
+    wow: dot(L, 4.2) + dot(R, 4.2) + `<ellipse cx="50" cy="69" rx="4" ry="5" fill="${INK}"/>`,
+    shy: dot(L, 3) + dot(R, 3) + `<path d="M46 67 Q50 70 54 67" fill="none" ${S}/>` + blush(0.7),
+    sad: dot(L) + dot(R) + `<path d="M43 70 Q50 64 57 70" fill="none" ${S}/>`
   };
   const items = {
     none: "",
     beanie: `<path d="M24 40 C24 15 76 15 76 40 Z" fill="#FF7A7A" ${S}/><rect x="21" y="35" width="58" height="9" rx="4.5" fill="#FFB3B3" ${S}/><circle cx="50" cy="14" r="5" fill="#fff" ${S}/>`,
     ribbon: `<path d="M71 30 L60 22 L60 38 Z M71 30 L82 22 L82 38 Z" fill="#FF6F9F" ${S}/><circle cx="71" cy="30" r="3.5" fill="#FF6F9F" ${S}/>`,
-    glasses: `<circle cx="39" cy="55" r="9" fill="rgba(255,255,255,.25)" ${S}/><circle cx="61" cy="55" r="9" fill="rgba(255,255,255,.25)" ${S}/><path d="M48 55 L52 55" ${S}/>`,
+    glasses: `<circle cx="${L}" cy="${Y}" r="9" fill="rgba(255,255,255,.25)" ${S}/><circle cx="${R}" cy="${Y}" r="9" fill="rgba(255,255,255,.25)" ${S}/><path d="M${L + 9} ${Y} L${R - 9} ${Y}" ${S}/>`,
     crown: `<path d="M33 32 L35 14 L44 24 L50 10 L56 24 L65 14 L67 32 Z" fill="#FFD166" ${S}/>`,
     flower: [0, 72, 144, 216, 288].map((d) => {
       const r = (d * Math.PI) / 180;
       return `<circle cx="${(29 + Math.cos(r) * 5.5).toFixed(1)}" cy="${(31 + Math.sin(r) * 5.5).toFixed(1)}" r="4.6" fill="#fff" stroke="${INK}" stroke-width="1.8"/>`;
     }).join("") + `<circle cx="29" cy="31" r="3.4" fill="#FFD166" stroke="${INK}" stroke-width="1.8"/>`,
     cap: `<path d="M23 40 C23 15 77 15 77 40 Z" fill="#4D9DFF" ${S}/><path d="M60 38 Q80 34 90 40 Q80 45 60 42 Z" fill="#4D9DFF" ${S}/><circle cx="50" cy="17" r="2.5" fill="${INK}"/>`,
-    sunglasses: `<rect x="29" y="49" width="19" height="12" rx="5" fill="${INK}" ${S}/><rect x="52" y="49" width="19" height="12" rx="5" fill="${INK}" ${S}/><path d="M48 54 L52 54" ${S}/><path d="M32 52 L37 52" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>`,
+    sunglasses: `<rect x="${L - 10}" y="${Y - 6}" width="19" height="12" rx="5" fill="${INK}" ${S}/><rect x="${R - 9}" y="${Y - 6}" width="19" height="12" rx="5" fill="${INK}" ${S}/><path d="M${L + 9} ${Y - 1} L${R - 9} ${Y - 1}" ${S}/><path d="M${L - 7} ${Y - 3} L${L - 2} ${Y - 3}" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>`,
     cheeks: `<ellipse cx="33" cy="66" rx="7" ry="4.5" fill="#FF5C8A" opacity=".55"/><ellipse cx="67" cy="66" rx="7" ry="4.5" fill="#FF5C8A" opacity=".55"/>`,
     freckles: [[31, 63], [35, 66], [29, 67], [69, 63], [65, 66], [71, 67]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="#8D5A3B"/>`).join(""),
     star: `<path d="M73 18 L76.5 25.5 L84.5 26.5 L78.5 32 L80 40 L73 36 L66 40 L67.5 32 L61.5 26.5 L69.5 25.5 Z" fill="#FFD166" ${S}/>`,
@@ -223,6 +286,7 @@ function avatarSVG(raw) {
   // 유령은 살짝 기울여서 떠다니는 느낌을 줘요
   return `<svg class="av" viewBox="0 0 100 100" aria-hidden="true">${k === "ghost" ? `<g transform="rotate(-6 50 58)">${all}</g>` : all}</svg>`;
 }
+
 // 예전 이야기는 이모지 아바타예요
 const avatarOf = (m) => (m?.avatar ? avatarSVG(m.avatar) : `<span>${esc(m?.emoji || "🙂")}</span>`);
 
@@ -681,11 +745,15 @@ function renderBuilder() {
   const kind = AV_KINDS.find((x) => x.id === av.k);
   const keep = Object.fromEntries($$("#av-options .av-opts").map((r) => [r.dataset.row, r.scrollLeft]));
   const opts = (row, list, make, cls = "") => `<div class="av-opts wrap ${cls}" data-row="${row}">${list.map(make).join("")}</div>`;
-  const pic = (key, list) => opts(key, list, (x) => `<button type="button" class="av-opt ${x.id === av[key] ? "on" : ""}" data-av="${key}" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, [key]: x.id })}</button>`);
+  // 그림 아래에 이름을 붙여서 딱 보면 알 수 있게 해요.
+  // 모양 칸은 각 캐릭터를 '대표 색'으로 보여 줘요 (지금 고른 색으로 칠하면 다 비슷해 보여요)
+  const tile = (key, x, svg) => `<button type="button" class="av-opt ${x.id === av[key] ? "on" : ""}" data-av="${key}" data-v="${x.id}" title="${x.label}">
+      <span class="av-pic">${svg}</span><span class="av-lab">${x.label}</span></button>`;
+  const pic = (key, list) => opts(key, list, (x) => tile(key, x, avatarSVG(key === "k" ? switchKind({ ...av, a: "none" }, x.id) : { ...av, [key]: x.id })), "lab");
   const sw = (key, list) => opts(key, list, (x) => `<button type="button" class="av-sw ${x === av[key] ? "on" : ""}" style="background:${x}" data-av="${key}" data-v="${x}" aria-label="색 ${x}"></button>`, "sw");
   const panels = {
     k: pic("k", AV_KINDS),
-    c: `<div class="av-row-h">얼굴 색</div>${sw("c", AV_COLORS)}<div class="av-row-h">${kind?.point || "포인트 색"}</div>${sw("h", AV_ACCENTS)}`,
+    c: `<div class="av-row-h">${kind?.human ? "피부색" : "몸 색"}</div>${sw("c", AV_COLORS)}<div class="av-row-h">${kind?.point || "포인트 색"}</div>${sw("h", AV_ACCENTS)}`,
     f: pic("f", AV_FACES),
     a: pic("a", AV_ITEMS)
   };
@@ -701,7 +769,8 @@ $("#av-options").onclick = (e) => {
   const t = e.target.closest("[data-avtab]");
   if (t) { avTab = t.dataset.avtab; renderBuilder(); return; }
   const b = e.target.closest("[data-av]"); if (!b) return;
-  me.avatar[b.dataset.av] = b.dataset.v;
+  if (b.dataset.av === "k") me.avatar = switchKind(me.avatar, b.dataset.v);
+  else me.avatar[b.dataset.av] = b.dataset.v;
   renderBuilder(); saveDraft();
 };
 $("#user-name").addEventListener("input", (e) => { me.name = e.target.value; saveDraft(); });
