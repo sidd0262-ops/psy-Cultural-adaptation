@@ -129,6 +129,40 @@ textarea { resize: vertical; min-height: 92px; }
 .me-row { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; }
 .me-row b { font-size: 1.05rem; }
 
+/* 아바타 꾸미기 탭 [모양 | 색 | 표정 | 꾸미기] — 한 번에 한 가지만 보여요 */
+.av-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: var(--soft); border-radius: 14px; padding: 4px; margin-top: 14px; }
+.av-tabs button { border: 0; background: transparent; border-radius: 10px; padding: 8px 2px; font-size: 0.92rem; font-weight: 700; color: var(--muted); cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.av-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.av-panel { margin-top: 12px; min-height: 140px; }
+.av-panel .av-row-h { margin-top: 4px; }
+.av-panel .av-row-h + .av-opts { margin-bottom: 10px; }
+.av-opts.wrap { flex-wrap: wrap; overflow: visible; }
+.av-opts.wrap .av-opt { width: calc((100% - 40px) / 6); height: auto; aspect-ratio: 1; }
+@media (max-width: 374px) { .av-opts.wrap .av-opt { width: calc((100% - 32px) / 5); } }
+
+/* 진행 점 ● ○ ○ (STEP 글자 대신) */
+.steps-dots { display: flex; gap: 6px; margin-bottom: 8px; }
+.steps-dots i { width: 8px; height: 8px; border-radius: 4px; background: #DADDE8; transition: width .2s; }
+.steps-dots i.done { background: #FFC2D6; }
+.steps-dots i.on { width: 24px; background: var(--primary); }
+
+/* 접어 둔 알아 두세요 */
+details.note-fold { margin-top: 18px; }
+details.note-fold summary { cursor: pointer; margin: 0; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+details.note-fold summary::-webkit-details-marker { display: none; }
+details.note-fold summary::after { content: "▾"; font-size: 0.8rem; transition: transform .2s; }
+details.note-fold[open] summary::after { transform: rotate(180deg); }
+details.note-fold[open] summary { margin-bottom: 6px; }
+
+/* 완료 화면: 큰 버튼 하나 + 작은 글자 버튼 */
+.done-links { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); flex-wrap: wrap; }
+
+/* 이야기 번역 작은 버튼 */
+.tr-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tr-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 6px; border: 1.5px solid #DDE1EE; background: #fff; border-radius: 999px; font-size: 0.86rem; font-weight: 600; color: var(--sub); cursor: pointer; }
+.tr-btn b { color: var(--ink); }
+.tr-btn:active { transform: scale(0.96); }
+
 /* 수정 중 표시 */
 .edit-banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #EEF3FF; color: #3D4AA8; border-radius: 16px; padding: 8px 14px; margin-bottom: 12px; font-size: 0.92rem; font-weight: 600; }
 

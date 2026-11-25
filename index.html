@@ -19,7 +19,7 @@
 
   <!-- 글꼴: 제목·본문 모두 Pretendard 하나로 통일 (한국어·영어 모두 읽기 편해요) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
   <!-- ☁️ 배경 -->
@@ -43,7 +43,7 @@
 
       <!-- STEP 1: 아바타 만들기 -->
       <div id="step-avatar" class="card">
-        <div class="step-pill">STEP 1 · 아바타 만들기</div>
+        <div class="steps-dots" aria-label="1 / 3"><i class="on"></i><i></i><i></i></div>
         <h2>나의 아바타를 만들어요</h2>
         <p class="muted">모양·색·표정을 골라 나를 닮은 캐릭터를 꾸며 보세요.</p>
 
@@ -58,43 +58,53 @@
         <button id="start-btn" class="btn btn-primary">여정 시작하기</button>
       </div>
 
-      <!-- STEP 2: 나의 지금 마음 확인하기 + 나의 이야기 -->
-      <div id="step-write" class="hidden">
-        <div id="edit-banner" class="edit-banner hidden">
-          <span>내 이야기를 수정하고 있어요</span>
-          <button type="button" id="edit-cancel" class="link-btn">수정 그만두기</button>
-        </div>
+      <!-- 수정 중 표시 (2·3단계 위) -->
+      <div id="edit-banner" class="edit-banner hidden">
+        <span>내 이야기를 수정하고 있어요</span>
+        <button type="button" id="edit-cancel" class="link-btn">수정 그만두기</button>
+      </div>
 
+      <!-- STEP 2: 나의 지금 마음 확인하기 (한 화면에 한 가지 일만) -->
+      <div id="step-pos" class="hidden">
         <div class="card">
-          <div class="step-pill">STEP 2 · 나의 지금 마음 확인하기</div>
+          <div class="steps-dots" aria-label="2 / 3"><i class="done"></i><i class="on"></i><i></i></div>
+          <h2>나는 어디에 있을까요?</h2>
           <div class="me-row" id="me-row"></div>
-
-          <h3 class="sec-h">나는 어디에 있을까요?</h3>
-          <p class="muted">문화적응 4단계 막대에서 <b>지금 내 마음과 가장 가까운 곳</b>을 눌러 주세요. 두 단계 사이(경계)도 고를 수 있어요.</p>
+          <p class="muted">막대에서 <b>지금 내 마음과 가장 가까운 곳</b>을 눌러 주세요. 두 단계 사이(경계)도 고를 수 있어요.</p>
           <div id="spectrum"></div>
-          <div id="spectrum-note"></div>
+          <details class="note-fold" id="spectrum-note"></details>
         </div>
+        <div class="row-btns">
+          <button id="back-btn" class="btn btn-ghost">◀ 이전</button>
+          <button id="pos-next" class="btn btn-primary">다음</button>
+        </div>
+      </div>
 
+      <!-- STEP 3: 나의 이야기 -->
+      <div id="step-write" class="hidden">
         <div class="card">
-          <h3 class="sec-h">나의 이야기</h3>
+          <div class="steps-dots" aria-label="3 / 3"><i class="done"></i><i class="done"></i><i class="on"></i></div>
+          <h2>나의 이야기</h2>
           <p class="lead">한국에서의 생활을 떠올리며 답해 주세요.</p>
           <div id="qa-write"></div>
         </div>
-
         <div class="row-btns">
-          <button id="back-btn" class="btn btn-ghost">◀ 아바타</button>
+          <button id="back-pos" class="btn btn-ghost">◀ 이전</button>
           <button id="share-btn" class="btn btn-primary">이야기 올리기</button>
         </div>
       </div>
 
-      <!-- STEP 3: 완료 -->
+      <!-- 완료 -->
       <div id="step-done" class="card center hidden">
         <div id="done-avatar" class="av-big"></div>
         <h2 id="done-title">이야기가 올라갔어요!</h2>
         <p id="done-text" class="muted"></p>
         <button id="go-board" class="btn btn-primary">모두의 이야기 보러 가기</button>
-        <button id="ext-share" class="btn btn-soft">친구에게 링크 보내기</button>
-        <button id="new-story" class="btn btn-ghost">새 이야기 쓰기</button>
+        <div class="done-links">
+          <button id="ext-share" class="link-btn">친구에게 링크 보내기</button>
+          <span aria-hidden="true">·</span>
+          <button id="new-story" class="link-btn">새 이야기 쓰기</button>
+        </div>
       </div>
     </section>
 
@@ -107,9 +117,10 @@
         </div>
         <p class="muted" id="board-count">이야기를 불러오는 중이에요…</p>
         <div class="filter-chips" id="filter-chips"></div>
-        <div class="tr-bar">
-          <div class="tr-title">이야기 번역 <span id="tr-status" class="tr-status"></span></div>
-          <div class="seg" id="tr-seg"></div>
+        <!-- 이야기 번역: 작은 버튼 하나 → 누르면 원문 / 한국어 / English 고르기 -->
+        <div class="tr-row">
+          <button type="button" class="tr-btn" id="tr-btn"><span class="ln-ic notranslate" translate="no" aria-hidden="true">文A</span><span>이야기 번역</span><b id="tr-cur">원문</b><span class="ln-caret" aria-hidden="true">▾</span></button>
+          <span id="tr-status" class="tr-status"></span>
         </div>
       </div>
 
@@ -136,6 +147,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <script type="module" src="app.js?v=18"></script>
+  <script type="module" src="app.js?v=19"></script>
 </body>
 </html>

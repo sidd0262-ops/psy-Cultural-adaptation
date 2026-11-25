@@ -487,15 +487,18 @@ document.addEventListener("click", (e) => {
   if (b) setUiLang(b.dataset.uiLang);
 });
 
-function renderTrSeg() {
-  const opts = [{ v: "orig", label: "원문" }, { v: "ko", label: "한국어" }, { v: "en", label: "English" }];
-  $("#tr-seg").innerHTML = opts.map((o) =>
-    `<button type="button" class="${o.v === trMode ? "on" : ""}" data-tr="${o.v}">${o.label}</button>`).join("");
-}
-$("#tr-seg").onclick = (e) => {
-  const b = e.target.closest("[data-tr]"); if (!b) return;
-  trMode = b.dataset.tr; store.set("tr-mode", trMode);
-  renderTrSeg(); renderFeed();
+// 이야기 번역: 작은 버튼 → 누르면 고르는 창 (원문 / 한국어 / English)
+const TR_OPTS = [{ v: "orig", label: "원문" }, { v: "ko", label: "한국어" }, { v: "en", label: "English" }];
+function renderTrSeg() { $("#tr-cur").textContent = TR_OPTS.find((o) => o.v === trMode)?.label || "원문"; }
+$("#tr-btn").onclick = () => {
+  openSheet(`<h3>이야기 번역</h3>
+    <p class="muted center">여러 나라 언어로 쓴 이야기를 한 언어로 모아 봐요. (Google 번역)</p>
+    <div class="action-list">${TR_OPTS.map((o) =>
+      `<button type="button" class="btn ${o.v === trMode ? "btn-primary" : "btn-soft"}" data-tr="${o.v}">${o.label}</button>`).join("")}</div>`);
+  $$("#sheet-body [data-tr]").forEach((b) => (b.onclick = () => {
+    trMode = b.dataset.tr; store.set("tr-mode", trMode);
+    closeSheet(); renderTrSeg(); renderFeed();
+  }));
 };
 
 let trRun = 0;
@@ -546,15 +549,13 @@ const typeListHTML = () => `<ul class="type-list">${TYPES.map((t, k) =>
   `<li style="${typeStyle(k)}"><b>${t.emoji} ${t.key}</b><small> (${t.en})</small><br>${t.desc}</li>`).join("")}</ul>`;
 
 // 💡 알아 두세요 (안내 = 노란 상자)
-const SPECTRUM_HTML = `<div class="info-box">
-  <div class="info-title">💡 알아 두세요</div>
-  <ul class="dot-list">
+const SPECTRUM_LIST = `<ul class="dot-list">
     <li>4단계에 <b>좋고 나쁜 것은 없어요.</b></li>
     <li><span>문화적응은 하나로 딱 정해지지 않아요. 생활 속에서 <b>여러 모습이 섞여</b> 나타나요.</span>
       <div class="info-ex"><span class="ex-label">예</span>라면이나 불고기 같은 한국 음식은 좋아하지만, K-POP 같은 음악은 싫어해요.</div></li>
     <li>그래서 <b>나의 지금 마음 확인하기</b>는 지금 내가 가장 많이 느끼는 마음을 알아보는 거예요. 마음은 시간이 지나면 바뀔 수 있어요.</li>
-  </ul>
-</div>`;
+  </ul>`;
+const SPECTRUM_HTML = `<div class="info-box"><div class="info-title">💡 알아 두세요</div>${SPECTRUM_LIST}</div>`;
 
 // 💌 모두의 이야기 사용법: 왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명
 const BOARD_HOWTO_HTML = `<div class="howto">
@@ -647,27 +648,37 @@ function openGuide(name, after = null) {
 }
 $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.openGuide)));
 $("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "help" : "board");
-$("#spectrum-note").innerHTML = SPECTRUM_HTML;
+// 2단계의 알아 두세요는 접어 둬요 (누르면 펼쳐져요)
+$("#spectrum-note").innerHTML = `<summary class="info-title">💡 알아 두세요</summary>${SPECTRUM_LIST}`;
+$("#spectrum-note").classList.add("info-box");
 
-/* ============ STEP 1: 아바타 만들기 ============ */
+/* ============ STEP 1: 아바타 만들기 (탭: 모양 | 색 | 표정 | 꾸미기) ============ */
+const AV_TABS = [["k", "모양"], ["c", "색"], ["f", "표정"], ["a", "꾸미기"]];
+let avTab = "k";
 function renderBuilder() {
   const av = (me.avatar = normAv(me.avatar));
   const kind = AV_KINDS.find((x) => x.id === av.k);
   const keep = Object.fromEntries($$("#av-options .av-opts").map((r) => [r.dataset.row, r.scrollLeft]));
-  const optRow = (row, title, list, make, cls = "") => `<div class="av-row"><div class="av-row-h">${title}</div>
-    <div class="av-opts ${cls}" data-row="${row}">${list.map(make).join("")}</div></div>`;
+  const opts = (row, list, make, cls = "") => `<div class="av-opts wrap ${cls}" data-row="${row}">${list.map(make).join("")}</div>`;
+  const pic = (key, list) => opts(key, list, (x) => `<button type="button" class="av-opt ${x.id === av[key] ? "on" : ""}" data-av="${key}" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, [key]: x.id })}</button>`);
+  const sw = (key, list) => opts(key, list, (x) => `<button type="button" class="av-sw ${x === av[key] ? "on" : ""}" style="background:${x}" data-av="${key}" data-v="${x}" aria-label="색 ${x}"></button>`, "sw");
+  const panels = {
+    k: pic("k", AV_KINDS),
+    c: `<div class="av-row-h">얼굴 색</div>${sw("c", AV_COLORS)}<div class="av-row-h">${kind?.hair ? "머리 색" : "포인트 색"}</div>${sw("h", AV_ACCENTS)}`,
+    f: pic("f", AV_FACES),
+    a: pic("a", AV_ITEMS)
+  };
   $("#av-preview").innerHTML = avatarSVG(av);
-  $("#av-options").innerHTML =
-    optRow("k", "모양", AV_KINDS, (x) => `<button type="button" class="av-opt ${x.id === av.k ? "on" : ""}" data-av="k" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, k: x.id })}</button>`) +
-    optRow("c", "색", AV_COLORS, (x) => `<button type="button" class="av-sw ${x === av.c ? "on" : ""}" style="background:${x}" data-av="c" data-v="${x}" aria-label="색 ${x}"></button>`, "sw") +
-    optRow("h", kind?.hair ? "머리 색" : "포인트 색", AV_ACCENTS, (x) => `<button type="button" class="av-sw ${x === av.h ? "on" : ""}" style="background:${x}" data-av="h" data-v="${x}" aria-label="색 ${x}"></button>`, "sw") +
-    optRow("f", "표정", AV_FACES, (x) => `<button type="button" class="av-opt ${x.id === av.f ? "on" : ""}" data-av="f" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, f: x.id })}</button>`) +
-    optRow("a", "꾸미기", AV_ITEMS, (x) => `<button type="button" class="av-opt ${x.id === av.a ? "on" : ""}" data-av="a" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, a: x.id })}</button>`);
+  $("#av-options").innerHTML = `<div class="av-tabs" role="tablist">${AV_TABS.map(([k, l]) =>
+    `<button type="button" role="tab" class="${k === avTab ? "on" : ""}" data-avtab="${k}" aria-selected="${k === avTab}">${l}</button>`).join("")}</div>
+    <div class="av-panel">${panels[avTab]}</div>`;
   $$("#av-options .av-opts").forEach((r) => { if (keep[r.dataset.row]) r.scrollLeft = keep[r.dataset.row]; });
   $("#user-name").value = me.name;
   $("#start-btn").textContent = editingPostId ? "다음" : "여정 시작하기";
 }
 $("#av-options").onclick = (e) => {
+  const t = e.target.closest("[data-avtab]");
+  if (t) { avTab = t.dataset.avtab; renderBuilder(); return; }
   const b = e.target.closest("[data-av]"); if (!b) return;
   me.avatar[b.dataset.av] = b.dataset.v;
   renderBuilder(); saveDraft();
@@ -677,18 +688,25 @@ $("#user-name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e
 $("#start-btn").onclick = () => {
   me.name = $("#user-name").value.trim();
   if (!me.name) { toast("별명을 먼저 써 주세요"); $("#user-name").focus(); return; }
-  saveDraft(); goWrite();
+  saveDraft(); goPos();
 };
 
+// 여정은 3단계: ① 아바타 → ② 내 위치 → ③ 나의 이야기 (+ 완료)
 function goStep(id) {
-  ["#step-avatar", "#step-write", "#step-done"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  ["#step-avatar", "#step-pos", "#step-write", "#step-done"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  $("#edit-banner").classList.toggle("hidden", !editingPostId || !["#step-pos", "#step-write"].includes(id));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+function goPos() { goStep("#step-pos"); renderWrite(); }
 function goWrite() { goStep("#step-write"); renderWrite(); }
+$("#pos-next").onclick = () => {
+  if (me.pos === null) { toast("막대에서 지금 내 위치를 골라 주세요"); return; }
+  goWrite();
+};
+$("#back-pos").onclick = goPos;
 
 /* ============ STEP 2: 나의 지금 마음 확인하기 ============ */
 function renderWrite() {
-  $("#edit-banner").classList.toggle("hidden", !editingPostId);
   $("#me-row").innerHTML = `<div class="av-sm">${avatarSVG(me.avatar)}</div><b class="notranslate" translate="no">${esc(me.name)}</b>`;
   renderSpectrum();
   $("#qa-write").innerHTML = QUESTIONS.map((q, qi) => `
@@ -804,7 +822,7 @@ $("#share-btn").onclick = () => {
   if (!me.name.trim()) { toast("별명을 먼저 써 주세요"); goStep("#step-avatar"); renderBuilder(); return; }
   if (me.pos === null) {
     toast("막대에서 지금 내 위치를 골라 주세요");
-    $("#spectrum").scrollIntoView({ behavior: "smooth", block: "center" });
+    goPos();
     return;
   }
   // 나의 이야기 4개는 모두 꼭 써야 해요
@@ -1141,8 +1159,8 @@ function startEdit(p) {
     answers: [0, 1, 2, 3].map((k) => m.answers?.[k] || "")
   };
   showTab("journey");
-  goWrite();
-  toast("고친 다음 아래 '수정한 이야기 올리기'를 눌러 주세요");
+  goPos();
+  toast("고친 다음 마지막 화면에서 '수정한 이야기 올리기'를 눌러 주세요");
 }
 
 /* ============ 🔐 관리자 전체 삭제 (Help 창 맨 아래) ============ */
