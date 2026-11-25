@@ -17,22 +17,19 @@
   <meta name="apple-mobile-web-app-title" content="문화적응여정">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=15">
+  <!-- 글꼴: 제목·본문 모두 Pretendard 하나로 통일 (한국어·영어 모두 읽기 편해요) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
   <!-- ☁️ 배경 -->
-  <div class="sky" aria-hidden="true">
-    <span class="cloud c1">☁️</span><span class="cloud c2">☁️</span><span class="plane">✈️</span>
-  </div>
+  <div class="sky" aria-hidden="true"></div>
 
   <!-- 상단 바 -->
   <header class="topbar">
     <div class="brand"><span class="brand-emo">✈️</span><span>문화적응 여정</span></div>
     <div class="top-actions">
-      <button class="icon-btn" data-open-guide="lang" aria-label="내 나라 언어로 보기">🌐</button>
+      <button class="icon-btn" data-open-guide="lang" aria-label="언어 고르기">🌐</button>
       <button class="icon-btn help-btn notranslate" translate="no" id="help-top" aria-label="Help">Help</button>
     </div>
   </header>
@@ -41,104 +38,102 @@
     <!-- ================= 🧭 여정 탭 ================= -->
     <section id="view-journey" class="view">
 
-      <!-- STEP 1: 누구의 이야기? -->
-      <div id="step-who" class="card">
-        <div class="step-pill">STEP 1 · 참여자 정하기</div>
-        <h2>누구의 이야기인가요?</h2>
+      <!-- STEP 1: 아바타 만들기 -->
+      <div id="step-avatar" class="card">
+        <div class="step-pill">STEP 1 · 아바타 만들기</div>
+        <h2>나의 아바타를 만들어요</h2>
+        <p class="muted">모양·색·표정을 골라 나를 닮은 캐릭터를 꾸며 보세요.</p>
 
-        <div class="who-grid">
-          <button class="who-opt selected" data-char="남자"><span class="emo">🙋‍♂️</span><b>남자</b></button>
-          <button class="who-opt" data-char="여자"><span class="emo">🙋‍♀️</span><b>여자</b></button>
-          <button class="who-opt" data-char="가족"><span class="emo">🏡</span><b>가족</b></button>
-        </div>
+        <div class="av-stage"><div id="av-preview" class="av-big"></div></div>
+
+        <div id="av-options"></div>
 
         <label class="field">
-          <span class="field-label">이름 (별명도 좋아요)</span>
-          <input type="text" id="user-name" placeholder="이름을 입력하세요" autocomplete="off" enterkeyhint="done">
+          <span class="field-label">별명</span>
+          <input type="text" id="user-name" placeholder="다른 사람에게 보일 이름" autocomplete="off" enterkeyhint="done" maxlength="20">
         </label>
-
-        <div id="family-form" class="family-box hidden">
-          <label class="field">
-            <span class="field-label">우리 가족 이름</span>
-            <input type="text" id="family-name-in" placeholder="예: 주호진, 차무희네 가족" autocomplete="off">
-          </label>
-          <p class="fam-tip">가족이 <b>각자 폰</b>에서 써도 괜찮아요!<br>가족 이름을 <b>똑같이</b> 쓰면 <b>하나의 가족 카드</b>로 모여요.<br><small>"차무희네 가족", "차무희 가족", "차무희네"는 같은 이름으로 봐요.</small></p>
-          <span class="field-label">나는 가족 중에서…</span>
-          <div class="avatar-row" id="avatar-row"></div>
-          <label class="field">
-            <span class="field-label">가족 안에서의 역할</span>
-            <input type="text" id="role-in" placeholder="예: 첫째 딸, 엄마" autocomplete="off">
-          </label>
-        </div>
-
-        <button id="add-btn" class="btn btn-soft">➕ 내 아바타 만들기</button>
-        <div id="member-chips" class="chips"></div>
         <button id="start-btn" class="btn btn-primary">여정 시작하기</button>
-        <p class="hint">혼자라면 이름만 쓰고 <b>여정 시작하기</b>를 누르세요.<br>여러 명이 함께라면 한 명씩 <b>내 아바타 만들기</b>를 눌러 주세요.</p>
       </div>
 
-      <!-- STEP 2: 유형 + 질문 -->
+      <!-- STEP 2: 나의 지금 마음 확인하기 + 나의 이야기 -->
       <div id="step-write" class="hidden">
-        <div class="card slim">
-          <div class="step-pill">STEP 2 · 나의 마음 적기</div>
-          <p class="muted">먼저 <b>마음 체크 질문 4개</b>에 답하고, 이어서 <b>나의 이야기</b>를 편하게 써 주세요. 쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</p>
-          <div id="spectrum-write"></div>
-          <div id="family-edit"></div>
+        <div id="edit-banner" class="edit-banner hidden">
+          <span>내 이야기를 수정하고 있어요</span>
+          <button type="button" id="edit-cancel" class="link-btn">수정 그만두기</button>
         </div>
-        <div id="member-cards"></div>
+
+        <div class="card">
+          <div class="step-pill">STEP 2 · 나의 지금 마음 확인하기</div>
+          <div class="me-row" id="me-row"></div>
+
+          <h3 class="sec-h">나는 어디에 있을까요?</h3>
+          <p class="muted">문화적응 4단계 막대에서 <b>지금 내 마음과 가장 가까운 곳</b>을 눌러 주세요. 두 단계 사이(경계)도 고를 수 있어요.</p>
+          <div id="spectrum"></div>
+          <div id="spectrum-note"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="sec-h">나의 이야기</h3>
+          <p class="lead">한국에서의 생활을 떠올리며 답해 주세요.</p>
+          <p class="muted">짧게 써도, 빈칸으로 두어도 괜찮아요. 쓰는 내용은 이 기기에 자동으로 임시 저장돼요.</p>
+          <div id="qa-write"></div>
+        </div>
+
         <div class="row-btns">
-          <button id="back-btn" class="btn btn-ghost">◀ 처음으로</button>
-          <button id="share-btn" class="btn btn-primary">이야기 공유하기</button>
+          <button id="back-btn" class="btn btn-ghost">◀ 아바타</button>
+          <button id="share-btn" class="btn btn-primary">이야기 올리기</button>
         </div>
       </div>
 
       <!-- STEP 3: 완료 -->
       <div id="step-done" class="card center hidden">
-        <div class="big-emo bounce">🎉</div>
-        <h2 id="done-title">이야기가 광장에 올라갔어요!</h2>
-        <div id="done-summary" class="done-summary"></div>
+        <div id="done-avatar" class="av-big"></div>
+        <h2 id="done-title">이야기가 올라갔어요!</h2>
+        <p id="done-text" class="muted"></p>
         <button id="go-board" class="btn btn-primary">모두의 이야기 보러 가기</button>
         <button id="ext-share" class="btn btn-soft">친구에게 링크 보내기</button>
         <button id="new-story" class="btn btn-ghost">새 이야기 쓰기</button>
       </div>
     </section>
 
-    <!-- ================= 💌 이야기 광장 탭 ================= -->
+    <!-- ================= 💌 모두의 이야기 탭 ================= -->
     <section id="view-board" class="view hidden">
       <div class="card slim">
         <div class="title-row">
           <h2>모두의 이야기</h2>
-          <button class="icon-btn" data-open-guide="board" aria-label="이야기 광장 사용법">❓</button>
+          <button class="icon-btn" data-open-guide="board" aria-label="모두의 이야기 사용법">❓</button>
         </div>
         <p class="muted" id="board-count">이야기를 불러오는 중이에요…</p>
         <div class="filter-chips" id="filter-chips"></div>
         <div class="tr-bar">
           <div class="tr-title">이야기 번역 <span id="tr-status" class="tr-status"></span></div>
           <div class="seg" id="tr-seg"></div>
-          <p class="tr-note">여러 나라 언어로 쓴 이야기를 <b>한 언어로 모아</b> 볼 수 있어요. 답변마다 언어를 따로 알아내서 번역해요. (Google 번역 사용)</p>
         </div>
       </div>
-      <div id="feed-list"></div>
-      <button id="more-btn" class="btn btn-soft hidden">이야기 더 보기</button>
+
+      <div class="deck-nav" id="deck-nav">
+        <button type="button" class="deck-arrow" id="deck-prev" aria-label="이전 이야기">◀</button>
+        <span class="deck-count notranslate" translate="no" id="deck-count">0 / 0</span>
+        <button type="button" class="deck-arrow" id="deck-next" aria-label="다음 이야기">▶</button>
+      </div>
+      <div id="feed-list" class="deck"></div>
     </section>
 
     <!-- ================= 📖 사용설명서 탭 ================= -->
     <section id="view-guide" class="view hidden">
       <div class="card">
         <h2>사용설명서</h2>
-        <p class="muted">처음 오셨나요? 아래 순서대로 읽어 보세요. 언제든 오른쪽 위 <span class="ui-chip notranslate" translate="no">Help</span> 버튼을 누르면 다시 볼 수 있어요.</p>
+        <p class="muted">처음 오셨나요? 아래 순서대로 읽어 보세요.</p>
         <button class="btn btn-soft" data-open-guide="intro">처음 안내 다시 보기</button>
       </div>
 
       <div class="card">
-        <h3>내 나라 언어로 보기</h3>
-        <p class="lang-ask"><b>자신이 편한 모국어나 영어를 골라서 진행해 주세요.</b></p>
-        <p>아래에서 언어를 누르면 화면 전체가 바로 바뀌어요. <b>앱으로 설치해도 똑같이</b> 쓸 수 있어요.<br>오른쪽 위 <span class="ui-chip">🌐</span> 버튼으로도 바꿀 수 있어요.</p>
+        <h3>편한 언어 고르기</h3>
+        <p>한국어와 영어 중에서 편한 언어를 고르면 화면 전체가 바로 바뀌어요. 오른쪽 위 <span class="ui-chip">🌐</span> 버튼으로도 바꿀 수 있어요.</p>
         <div id="guide-lang-grid"></div>
-        <ul class="dot-list" style="margin-top:12px">
-          <li>답은 <b>내 나라 언어로 편하게</b> 써도 괜찮아요. 내가 고른 언어가 이야기에 함께 기록돼요.</li>
-          <li>다른 사람의 이야기도 <b>내가 고른 언어로</b> 바뀌어 보여요.</li>
-          <li>이름은 번역되지 않고 그대로 보여요.</li>
+        <ul class="dot-list mt">
+          <li>답은 <b>내 나라 언어로 편하게</b> 써도 괜찮아요.</li>
+          <li>다른 사람의 이야기는 <b>모두의 이야기</b> 탭의 번역 버튼으로 한국어나 영어로 바꿔 볼 수 있어요.</li>
         </ul>
       </div>
 
@@ -149,19 +144,17 @@
           <div>❶ <b>내 나라의 문화</b>(언어·음식·전통)를 지키고 싶나요?</div>
           <div>❷ <b>한국 사람들, 한국 문화</b>와 어울리고 싶나요?</div>
         </div>
-        <p>두 질문의 답에 따라 4가지 유형이 나와요. 좋고 나쁨이 아니라 <b>지금 내 마음의 위치</b>예요. 마음은 계속 움직여요.</p>
-        <div id="guide-matrix"></div>
+        <p>두 질문의 답에 따라 4가지 단계가 나와요. 좋고 나쁨이 아니라 <b>지금 내 마음의 위치</b>예요. 마음은 계속 움직여요.</p>
+        <div id="guide-types"></div>
       </div>
 
       <div class="card">
-        <h3>나의 이야기 쓰는 법</h3>
+        <h3>참여하는 방법</h3>
         <ol class="num-steps">
-          <li><b>누구인지 고르기</b><br>남자·여자·가족 중 하나를 눌러요.</li>
-          <li><b>이름 쓰기</b><br>가족이라면 가족 이름과 역할도 적어요. 여러 명이면 <b>내 아바타 만들기</b>를 눌러요.</li>
-          <li><b>여정 시작하기</b><br>버튼을 누르면 질문 화면으로 넘어가요.</li>
-          <li><b>마음 체크 질문 4개 답하기</b><br>그래요 · 조금 · 아니에요 중에서 골라요. 다 답하면 <b>지금 내 마음과 가장 가까운 모양</b>을 알려 줘요. 결과가 내 마음과 다르면 직접 바꿀 수도 있어요.</li>
-          <li><b>나의 이야기 질문 4개 쓰기</b><br>한국에 온 이유와, 나에게 힘이 되어 준 것(심리적 자원)을 돌아봐요. 짧게 써도, 빈칸으로 두어도 괜찮아요.</li>
-          <li><b>이야기 공유하기</b><br>버튼을 누르면 <b>모두의 이야기</b>에 올라가요.</li>
+          <li><b>아바타 만들기</b><br>모양·색·표정을 골라 나의 캐릭터를 꾸미고 별명을 써요.</li>
+          <li><b>나의 지금 마음 확인하기</b><br>문화적응 4단계 막대에서 지금 내 마음과 가장 가까운 곳을 눌러요. 내 아바타가 그 자리로 움직여요.</li>
+          <li><b>나의 이야기 쓰기</b><br>한국에서의 생활을 떠올리며 질문 4개에 답해요.</li>
+          <li><b>이야기 올리기</b><br>공개할지, 비공개로 올릴지 골라요. 내 글 비밀번호는 <b>생일 4자리</b>예요.</li>
         </ol>
       </div>
 
@@ -179,7 +172,7 @@
 
       <details class="card admin">
         <summary>관리자 메뉴 (선생님용)</summary>
-        <p class="muted">모든 이야기를 한 번에 지워요. 되돌릴 수 없어요.</p>
+        <p class="muted">관리자는 이야기를 <b>삭제만</b> 할 수 있어요. 하나씩 지울 때는 이야기 카드의 ⋯ 버튼을 눌러요. 아래 버튼은 모든 이야기를 한 번에 지워요. 되돌릴 수 없어요.</p>
         <input type="password" id="admin-pw" placeholder="관리자 비밀번호">
         <button id="del-all" class="btn btn-danger">전체 삭제</button>
       </details>
@@ -193,13 +186,13 @@
     <button class="tab" data-tab="guide"><span>📖</span>설명서</button>
   </nav>
 
-  <!-- 모달 (사용설명서 / 설치 / 메뉴) -->
+  <!-- 모달 (안내 / 공유 / 메뉴) -->
   <div id="sheet" class="sheet-backdrop hidden" role="dialog" aria-modal="true">
     <div class="sheet" id="sheet-body"></div>
   </div>
 
   <div id="toast" class="toast"></div>
 
-  <script type="module" src="app.js?v=15"></script>
+  <script type="module" src="app.js?v=16"></script>
 </body>
 </html>

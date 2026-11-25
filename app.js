@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy,
-  deleteDoc, doc, getDocs, updateDoc, increment, arrayUnion
+  deleteDoc, doc, getDocs, updateDoc, increment
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 /* ============ 🔥 Firebase (기존과 동일 — 기존 이야기가 그대로 보여요) ============ */
@@ -15,10 +15,11 @@ const firebaseConfig = {
 };
 const db = getFirestore(initializeApp(firebaseConfig));
 const postsCol = collection(db, "posts");
+// 관리자는 '삭제'만 할 수 있어요 (내용 보기·공개로 바꾸기는 글쓴이만)
 const ADMIN_PW = "0530";
 
 /* ============ 📚 내용 ============ */
-// 순서는 기존 데이터와 같아요: 0 주변화, 1 분리, 2 동화, 3 통합
+// 문화적응 4단계. 순서는 기존 데이터와 같아요: 0 주변화, 1 분리, 2 동화, 3 통합
 const TYPES = [
   { key: "주변화", en: "Marginalization", emoji: "🍂", short: "어디에도 속하지 않는 느낌", tc: "#7B68C8", tbg: "#F0EDFB",
     desc: "우리 나라 문화도, 한국 문화도 나와 조금 멀게 느껴져요. 내가 어디에 속하는지 헷갈릴 수 있어요. 이런 마음도 자연스러워요. 혼자가 아니에요." },
@@ -29,64 +30,140 @@ const TYPES = [
   { key: "통합", en: "Integration", emoji: "🌈", short: "두 문화 모두 소중해요", tc: "#2F7FE0", tbg: "#E6F1FF",
     desc: "우리 나라 문화도 지키고, 한국 문화도 즐겨요. 두 문화를 함께 가지고 살아가요." }
 ];
+// 막대 위의 자리: 1(주변화) ~ 4(통합), 0.5 단위. 1.5·2.5·3.5는 두 단계 사이(경계)예요.
+const POSITIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
+const posLeft = (p) => 12.5 + (p - 1) * 25;              // 막대에서의 가로 위치(%)
+const posStage = (p) => Math.min(3, Math.floor(p) - 1);  // 예전 방식 저장용 (경계면 앞 단계)
+const isHalf = (p) => p % 1 !== 0;
 
-// 🧭 마음 체크: 베리의 두 질문(내 나라 문화 지키기 a / 한국 문화와 어울리기 b)을 2문항씩
-const CHECK_QS = [
-  // '말'은 '말(동물)'로 잘못 번역되기 쉬워서 '언어'·'한국어'로 써요
-  { axis: "a", t: "우리 나라의 <b>언어·음식·명절</b>을 지키는 것이 나에게 중요해요." },
-  { axis: "a", t: "<b>우리 나라 사람들</b>과 만나면 마음이 편하고 좋아요." },
-  { axis: "b", t: "<b>한국 사람들</b>과 친해지고 함께 어울리고 싶어요." },
-  { axis: "b", t: "<b>한국어와 한국 음식·문화</b>를 배우고 즐기는 것이 좋아요." }
-];
-const CHECK_OPTS = [{ v: 2, label: "👍 그래요" }, { v: 1, label: "🙂 조금" }, { v: 0, label: "👎 아니에요" }];
-// 각 쪽 점수(0~4)가 2 이상이면 '그 쪽 마음이 있어요'로 봐요
-function checkResult(c) {
-  if (!c || c.some((v) => v === null || v === undefined)) return null;
-  const sum = (ax) => CHECK_QS.reduce((n, q, i) => n + (q.axis === ax ? c[i] : 0), 0);
-  const a = sum("a") >= 2, b = sum("b") >= 2;
-  return a ? (b ? 3 : 1) : (b ? 2 : 0);
-}
-// 베리의 2×2 그림 배치(단계 순서): [주변화, 분리] / [동화, 통합]
-const MATRIX_ORDER = [0, 1, 2, 3];
-
-// 답변은 순서(0~3)로 짝을 맞춰 저장돼요. 순서는 바꾸지 말고, 뜻이 같은 문구로만 고쳐요.
-// tag: 이 질문이 무엇을 살펴보는지 (이주 동기 / 심리적 자원 / 어려움)
+// 나의 이야기 질문 (2026-11 리뉴얼). 답은 순서(0~3)로 저장돼요.
 const QUESTIONS = [
-  { q: "한국에 오게 된 이유", icon: "🧳", tag: "이주 동기", ph: "예: 일을 하려고, 가족과 함께 살려고…" },
-  { q: "나를 버티게 해준 것", icon: "💪", tag: "심리적 자원", ph: "예: 아이들의 웃음, 고향 음식, 친구…" },
-  { q: "나에게 힘이 되는 응원의 한마디", icon: "💬", tag: "심리적 자원", ph: "예: \"괜찮아, 잘하고 있어\"" },
-  { q: "그만두고 싶었던 순간", icon: "🌧️", tag: "힘들었던 순간", ph: "예: 한국어가 잘 통하지 않아 답답했을 때…" }
+  { title: "한국행을 결심하던 날", q: "한국에 오기로 마음먹었을 때, 어떤 마음이었나요? 무엇을 기대했나요?",
+    ph: "예: 설레기도 하고, 걱정도 많이 됐어요…" },
+  { title: "나를 버티게 해준 것", q: "한국 생활이 지칠 때 나를 다시 일어서게 하는 것은 무엇인가요?",
+    ph: "예: 아이들의 웃음, 고향 음식, 친구…" },
+  { title: "내 마음에 남은 한마디", q: "누군가에게 들은 말 중에 가장 힘이 되었던 말은 무엇인가요?",
+    ph: "예: \"괜찮아, 잘하고 있어\"" },
+  { title: "가장 어려웠던 순간", q: "한국 생활에서 가장 어려웠던 순간은 언제였나요? 그때 나에게 가장 필요했던 것은 무엇이었나요?",
+    ph: "예: 병원에서 말이 통하지 않았을 때, 함께 가 줄 사람이 필요했어요" }
 ];
-// 나의 이야기 질문이 무엇을 살펴보는지 알려 주는 상자
-const STORY_INTRO_HTML = `<div class="story-intro">
-  <p>이 질문들은 두 가지를 돌아봐요.</p>
-  <dl class="def-list">
-    <div><dt>이주 동기</dt><dd>내가 한국에 오게 된 이유</dd></div>
-    <div><dt>심리적 자원</dt><dd>다른 문화 속에서 살아가도록 나를 도와준 힘</dd></div>
-  </dl>
-  <div class="info-box">
-    <div class="info-title">💡 심리적 자원이란?</div>
-    <span>살아가면서 나에게 힘이 되는 것이에요. 예를 들면 <b>나를 아껴 주는 관계</b>, <b>응원의 말</b>, <b>다른 사람의 공감</b> 같은 것이에요.</span>
-  </div>
-</div>`;
+// 예전 버전(v1) 이야기는 그때 질문 제목으로 보여 줘요
+const OLD_TITLES = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 응원의 한마디", "그만두고 싶었던 순간"];
+const qTitles = (post) => (post.v >= 2 ? QUESTIONS.map((q) => q.title) : OLD_TITLES);
 
-const CHAR_EMOJI = { "남자": "🙋‍♂️", "여자": "🙋‍♀️", "가족": "🏡" };
-const FAMILY_AVATARS = [
-  { e: "👨", label: "남성", g: "남성" }, { e: "👩", label: "여성", g: "여성" },
-  { e: "👴", label: "할아버지", g: "남성" }, { e: "👵", label: "할머니", g: "여성" },
-  { e: "👦", label: "남자아이", g: "남성" }, { e: "👧", label: "여자아이", g: "여성" },
-  { e: "👶", label: "아기", g: "" }
+/* ============ 🎨 아바타 (성별 없이 모양·색·표정·꾸미기로 만들어요) ============ */
+const INK = "#2B2D42";
+const AV_KINDS = [
+  { id: "short", label: "짧은 머리", hair: true }, { id: "long", label: "긴 머리", hair: true },
+  { id: "curly", label: "곱슬머리", hair: true }, { id: "ghost", label: "유령" }, { id: "alien", label: "외계인" },
+  { id: "cat", label: "고양이" }, { id: "bear", label: "곰" }, { id: "bunny", label: "토끼" }, { id: "robot", label: "로봇" }
 ];
+const AV_COLORS = ["#FFE3CC", "#F6C9A3", "#E2A97E", "#C1855A", "#8D5A3B", "#5E3B26",
+  "#FFFFFF", "#FFD166", "#FF9EC4", "#8FD694", "#7CC6FE", "#B79CFF", "#FF9F6B", "#A7B0BE"];
+const AV_ACCENTS = ["#2E2420", "#6B4128", "#E3A93C", "#C8553D", "#9AA5B1", "#F2F2F2", "#6C63FF", "#FF6F9F", "#3FB58A", "#4D9DFF"];
+const AV_FACES = [
+  { id: "smile", label: "웃음" }, { id: "grin", label: "활짝" }, { id: "wink", label: "윙크" }, { id: "calm", label: "차분" },
+  { id: "wow", label: "깜짝" }, { id: "shy", label: "수줍음" }, { id: "sad", label: "시무룩" }
+];
+const AV_ITEMS = [
+  { id: "none", label: "없음" }, { id: "beanie", label: "털모자" }, { id: "ribbon", label: "리본" }, { id: "glasses", label: "안경" },
+  { id: "crown", label: "왕관" }, { id: "flower", label: "꽃" }, { id: "phones", label: "헤드폰" }
+];
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randomAvatar = () => ({ k: pick(AV_KINDS).id, c: pick(AV_COLORS.slice(0, 6)), h: pick(AV_ACCENTS), f: "smile", a: "none" });
+function normAv(av) {
+  const ok = (list, v, d) => (list.some((x) => (x.id ?? x) === v) ? v : d);
+  return {
+    k: ok(AV_KINDS, av?.k, "short"), c: ok(AV_COLORS, av?.c, "#F6C9A3"), h: ok(AV_ACCENTS, av?.h, "#2E2420"),
+    f: ok(AV_FACES, av?.f, "smile"), a: ok(AV_ITEMS, av?.a, "none")
+  };
+}
+
+// 모든 캐릭터는 같은 그림체(둥근 얼굴 + 진한 테두리)로 그려요
+function avatarSVG(raw) {
+  const { k, c, h, f, a } = normAv(raw);
+  const S = `stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`;
+  let back = "", head = `<circle cx="50" cy="55" r="30" fill="${c}" ${S}/>`, mid = "", front = "";
+  switch (k) {
+    case "short":
+      front = `<path d="M20 54 C18 28 36 20 50 20 C66 20 82 28 80 54 C76 44 70 40 62 37 C56 44 42 44 35 37 C28 41 23 46 20 54 Z" fill="${h}" ${S}/>`;
+      break;
+    case "long":
+      back = `<path d="M18 52 C16 24 34 18 50 18 C66 18 84 24 82 52 L84 90 Q50 96 16 90 Z" fill="${h}" ${S}/>`;
+      front = `<path d="M21 50 C22 30 36 22 50 22 C64 22 78 30 79 50 C72 40 62 35 50 35 C38 35 28 40 21 50 Z" fill="${h}" ${S}/>`;
+      break;
+    case "curly":
+      back = [[24, 46], [27, 32], [37, 22], [50, 18], [63, 22], [73, 32], [76, 46]]
+        .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="11" fill="${h}" ${S}/>`).join("");
+      front = [[36, 31], [50, 27], [64, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8.5" fill="${h}" ${S}/>`).join("");
+      break;
+    case "ghost":
+      head = `<path d="M21 90 L21 52 C21 20 79 20 79 52 L79 90 L69.5 83 L60 90 L50 83 L40 90 L30.5 83 Z" fill="${c}" ${S}/>`;
+      break;
+    case "alien":
+      back = `<path d="M39 32 L30 13 M61 32 L70 13" fill="none" ${S}/>
+        <circle cx="30" cy="12" r="5" fill="${h}" ${S}/><circle cx="70" cy="12" r="5" fill="${h}" ${S}/>`;
+      head = `<ellipse cx="50" cy="56" rx="33" ry="28" fill="${c}" ${S}/>`;
+      break;
+    case "cat":
+      back = `<path d="M23 44 L26 14 L47 29 Z M77 44 L74 14 L53 29 Z" fill="${c}" ${S}/>
+        <path d="M29 35 L30 22 L40 29 Z M71 35 L70 22 L60 29 Z" fill="${h}"/>`;
+      front = `<path d="M20 61 L33 63 M20 68 L33 67 M80 61 L67 63 M80 68 L67 67" ${S} stroke-width="1.8" fill="none"/>`;
+      break;
+    case "bear":
+      back = `<circle cx="27" cy="31" r="11" fill="${c}" ${S}/><circle cx="73" cy="31" r="11" fill="${c}" ${S}/>
+        <circle cx="27" cy="31" r="5" fill="${h}"/><circle cx="73" cy="31" r="5" fill="${h}"/>`;
+      mid = `<ellipse cx="50" cy="67" rx="12" ry="8.5" fill="#fff" opacity=".6"/>`;
+      break;
+    case "bunny":
+      back = `<ellipse cx="38" cy="21" rx="8" ry="19" fill="${c}" ${S}/><ellipse cx="62" cy="21" rx="8" ry="19" fill="${c}" ${S}/>
+        <ellipse cx="38" cy="22" rx="3.5" ry="12" fill="${h}"/><ellipse cx="62" cy="22" rx="3.5" ry="12" fill="${h}"/>`;
+      break;
+    case "robot":
+      back = `<path d="M50 26 L50 13" ${S}/><circle cx="50" cy="10" r="5" fill="${h}" ${S}/>
+        <rect x="13" y="48" width="9" height="15" rx="3" fill="${h}" ${S}/><rect x="78" y="48" width="9" height="15" rx="3" fill="${h}" ${S}/>`;
+      head = `<rect x="20" y="25" width="60" height="58" rx="16" fill="${c}" ${S}/>`;
+      break;
+  }
+  const dot = (x, r = 3.6) => `<circle cx="${x}" cy="55" r="${r}" fill="${INK}"/>`;
+  const arcUp = (x) => `<path d="M${x - 5} 56 Q${x} 50 ${x + 5} 56" fill="none" ${S}/>`;
+  const arcDown = (x) => `<path d="M${x - 5} 54 Q${x} 58 ${x + 5} 54" fill="none" ${S}/>`;
+  const blush = (o = 0.5) => `<ellipse cx="33" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/><ellipse cx="67" cy="66" rx="5" ry="3" fill="#FF7F9F" opacity="${o}"/>`;
+  const smileMouth = `<path d="M43 65 Q50 71 57 65" fill="none" ${S}/>`;
+  const faces = {
+    smile: dot(39) + dot(61) + smileMouth + blush(0.35),
+    grin: arcUp(39) + arcUp(61) + `<path d="M41 63 Q50 63 59 63 Q58 75 50 75 Q42 75 41 63 Z" fill="#7A2E3A" ${S}/>` + blush(0.35),
+    wink: dot(39) + arcUp(61) + smileMouth + blush(0.35),
+    calm: arcDown(39) + arcDown(61) + `<path d="M46 66 Q50 68.5 54 66" fill="none" ${S}/>`,
+    wow: dot(39, 4.2) + dot(61, 4.2) + `<ellipse cx="50" cy="68" rx="4" ry="5" fill="${INK}"/>`,
+    shy: dot(39, 3) + dot(61, 3) + `<path d="M46 66 Q50 69 54 66" fill="none" ${S}/>` + blush(0.7),
+    sad: dot(39) + dot(61) + `<path d="M43 69 Q50 63 57 69" fill="none" ${S}/>`
+  };
+  const items = {
+    none: "",
+    beanie: `<path d="M24 40 C24 15 76 15 76 40 Z" fill="#FF7A7A" ${S}/><rect x="21" y="35" width="58" height="9" rx="4.5" fill="#FFB3B3" ${S}/><circle cx="50" cy="14" r="5" fill="#fff" ${S}/>`,
+    ribbon: `<path d="M71 30 L60 22 L60 38 Z M71 30 L82 22 L82 38 Z" fill="#FF6F9F" ${S}/><circle cx="71" cy="30" r="3.5" fill="#FF6F9F" ${S}/>`,
+    glasses: `<circle cx="39" cy="55" r="9" fill="rgba(255,255,255,.25)" ${S}/><circle cx="61" cy="55" r="9" fill="rgba(255,255,255,.25)" ${S}/><path d="M48 55 L52 55" ${S}/>`,
+    crown: `<path d="M33 32 L35 14 L44 24 L50 10 L56 24 L65 14 L67 32 Z" fill="#FFD166" ${S}/>`,
+    flower: [0, 72, 144, 216, 288].map((d) => {
+      const r = (d * Math.PI) / 180;
+      return `<circle cx="${(29 + Math.cos(r) * 5.5).toFixed(1)}" cy="${(31 + Math.sin(r) * 5.5).toFixed(1)}" r="4.6" fill="#fff" stroke="${INK}" stroke-width="1.8"/>`;
+    }).join("") + `<circle cx="29" cy="31" r="3.4" fill="#FFD166" stroke="${INK}" stroke-width="1.8"/>`,
+    phones: `<path d="M21 56 C21 21 79 21 79 56" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><rect x="13" y="47" width="12" height="20" rx="5" fill="#6C63FF" ${S}/><rect x="75" y="47" width="12" height="20" rx="5" fill="#6C63FF" ${S}/>`
+  };
+  return `<svg class="av" viewBox="0 0 100 100" aria-hidden="true">${back}${head}${mid}${faces[f]}${front}${items[a]}</svg>`;
+}
+// 예전 이야기는 이모지 아바타예요
+const avatarOf = (m) => (m?.avatar ? avatarSVG(m.avatar) : `<span>${esc(m?.emoji || "🙂")}</span>`);
 
 /* ============ 🧠 상태 ============ */
-let members = [];
-let selectedChar = "남자";
-let selectedAvatar = FAMILY_AVATARS[1];
-let currentFamilyName = "";
-let editingPostId = null;
+const freshMe = () => ({ name: "", avatar: randomAvatar(), pos: null, answers: ["", "", "", ""] });
+let me = freshMe();
+let editingPostId = null;   // 수정 중인 이야기 (생일 4자리 확인을 마친 경우만)
+let specStage = null;       // 단계 이름을 눌러서 보고 있는 설명 (null이면 내 위치 설명)
 let allPosts = [];
 let filterType = "all";
-let visibleCount = 5;
+let deckIdx = 0;
 let deferredInstall = null;
 
 /* ============ 🛠️ 도우미 ============ */
@@ -104,16 +181,10 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
 const typeStyle = (i) => `--tc:${TYPES[i].tc};--tbg:${TYPES[i].tbg}`;
 const typeIndex = (key) => TYPES.findIndex((t) => t.key === key);
-
-function memberEmoji(m) {
-  if (m.emoji) return m.emoji;
-  if (m.char === "가족") return String(m.role || "").startsWith("여성") ? "👩" : String(m.role || "").startsWith("남성") ? "👨" : "🙂";
-  return CHAR_EMOJI[m.char] || "🙂";
-}
 function fmtDate(ts) {
   try {
     const d = ts?.toDate ? ts.toDate() : new Date(ts);
@@ -121,56 +192,58 @@ function fmtDate(ts) {
     return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   } catch { return ""; }
 }
-
-// 가족 이름 비교: 띄어쓰기·끝의 "네 / 가족 / 식구"만 빼고 똑같으면 같은 가족
-// (예: "차무희네 가족" = "차무희 가족" = "차무희네" = "차무희")
-const famKey = (s) => String(s || "").toLowerCase().replace(/[\s,.\/\-_]/g, "").replace(/(가족|식구|family)$/, "").replace(/네$/, "");
-function isSameFamily(a, b) {
-  const x = famKey(a), y = famKey(b);
-  return !!x && x === y;
+// 이야기 속 한 사람의 위치 (예전 이야기는 단계 이름만 있어서 그 단계 자리로 봐요)
+function memberPos(m) {
+  if (typeof m?.pos === "number" && POSITIONS.includes(m.pos)) return m.pos;
+  const i = typeIndex(m?.type);
+  return i >= 0 ? i + 1 : null;
 }
+// 경계(.5)에 있으면 양쪽 단계 모두에 들어가요
+const inStage = (m, i) => { const p = memberPos(m); return p !== null && Math.abs(p - (i + 1)) <= 0.5; };
+function posBadge(p) {
+  if (p === null) return "";
+  if (!isHalf(p)) { const i = p - 1; return `<span class="pos-badge" style="${typeStyle(i)}">${TYPES[i].emoji} <span>${TYPES[i].key}</span></span>`; }
+  const a = Math.floor(p) - 1, b = a + 1;
+  return `<span class="pos-badge" style="${typeStyle(a)}">${TYPES[a].emoji} <span>${TYPES[a].key}</span> · ${TYPES[b].emoji} <span>${TYPES[b].key}</span> <span>사이</span></span>`;
+}
+const miniSpec = (p) => `<div class="mini-spec">${TYPES.map((_, i) => `<i style="${typeStyle(i)}"></i>`).join("")}${p !== null ? `<span class="dot" style="left:${posLeft(p)}%"></span>` : ""}</div>
+  <div class="mini-labels">${TYPES.map((t) => `<span>${t.key}</span>`).join("")}</div>`;
 
-// 홈 화면에 설치한 앱으로 열었는지 (설치 앱에는 크롬 메뉴가 없어서 크롬 번역을 쓸 수 없어요)
+// 🔐 내 글 비밀번호 = 생일 4자리 (월월일일, 예: 0828). 그대로 저장하지 않고 암호처럼 바꿔서 저장해요.
+const PIN_RE = /^(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$/;
+const randomSalt = () => [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, "0")).join("");
+async function hashPin(pin, salt) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${pin}`));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+const pinInputHTML = (id) => `<input type="tel" inputmode="numeric" maxlength="4" class="pin-input notranslate" translate="no" id="${id}" placeholder="0828" autocomplete="off">`;
+function bindPinInput(el) { el.addEventListener("input", () => { el.value = el.value.replace(/\D/g, "").slice(0, 4); }); }
+
+// 홈 화면에 설치한 앱으로 열었는지
 const IS_STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-/* ============ 🌐 언어 ============ */
-// 앱 안에서 고른 언어 (설치 앱·브라우저 모두에서 똑같이 동작해요)
+/* ============ 🌐 언어 (한국어 · English) ============ */
+const UI_LANGS = [["ko", "한국어"], ["en", "English"]];
 let uiLang = store.get("ui-lang", "ko");
-const UI_LANGS = [
-  ["ko", "한국어"], ["en", "English"], ["vi", "Tiếng Việt"], ["zh-CN", "简体中文"], ["zh-TW", "繁體中文"],
-  ["ja", "日本語"], ["th", "ไทย"], ["km", "ខ្មែរ"], ["my", "မြန်မာ"], ["ne", "नेपाली"], ["mn", "Монгол"],
-  ["uz", "Oʻzbek"], ["ru", "Русский"], ["kk", "Қазақ"], ["ky", "Кыргызча"], ["id", "Indonesia"],
-  ["tl", "Filipino"], ["si", "සිංහල"], ["bn", "বাংলা"], ["ur", "اردو"], ["hi", "हिन्दी"],
-  ["lo", "ລາວ"], ["ar", "العربية"], ["fr", "Français"], ["es", "Español"], ["pt", "Português"]
-];
+if (!UI_LANGS.some(([c]) => c === uiLang)) { uiLang = "en"; store.set("ui-lang", uiLang); }
 const langGridHTML = () => `<div class="lang-grid notranslate" translate="no">${UI_LANGS.map(([c, n]) =>
   `<button type="button" data-ui-lang="${c}" class="${c === uiLang ? "on" : ""}">${n}</button>`).join("")}</div>`;
-
-function currentLang() {
-  if (uiLang !== "ko") return uiLang;
-  // 크롬 번역이 켜져 있으면 <html>에 translated-ltr/rtl 표시와 번역 언어가 붙어요.
-  const h = document.documentElement;
-  const translated = /translated-(ltr|rtl)/.test(h.className) && h.lang && h.lang !== "ko";
-  const raw = (translated ? h.lang : navigator.language) || "ko";
-  const [base, region] = raw.split(/[-_]/);
-  return base.toLowerCase() === "zh" && region ? `zh-${region.toUpperCase()}` : base.toLowerCase();
-}
+const currentLang = () => uiLang;
 function langName(code) {
-  try { return new Intl.DisplayNames(["ko"], { type: "language" }).of(code) || code; } catch { return code; }
+  try { return new Intl.DisplayNames([uiLang === "ko" ? "ko" : "en"], { type: "language" }).of(code) || code; } catch { return code; }
 }
 
 /* ============ 🔤 이야기 번역 ============ */
-// 크롬 페이지 번역은 페이지 전체를 한 언어로 보고 번역해서, 여러 언어가 섞이면 일부가 안 바뀌어요.
-// 그래서 답변을 하나씩 따로 보내 언어를 각각 알아낸 뒤 번역해요.
+// 답변을 하나씩 따로 보내 언어를 각각 알아낸 뒤 번역해요.
 let trMode = store.get("tr-mode", "orig");
+if (!["orig", "ko", "en"].includes(trMode)) trMode = "orig";
 const trCache = new Map(store.get("tr-cache", []));
 let saveTimer;
 function saveTrCache() { clearTimeout(saveTimer); saveTimer = setTimeout(() => store.set("tr-cache", [...trCache.entries()].slice(-2500)), 400); }
 const trKey = (tl, sl, text) => (sl === "auto" ? `${tl}|${text}` : `${tl}|${sl}>${text}`);
 const inflight = new Map();
 
-// 여러 문장을 줄바꿈으로 묶어 한 번에 보내요 (빠르게). 줄 수가 안 맞으면 하나씩 다시 보내요.
 async function fetchTr(texts, tl, sl) {
   const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${encodeURIComponent(tl)}&dt=t`, {
     method: "POST", body: new URLSearchParams({ q: texts.join("\n") })
@@ -184,7 +257,6 @@ async function fetchTr(texts, tl, sl) {
   if (lines.length !== texts.length) throw new Error("line mismatch");
   return lines.map((t) => ({ t: t.trim(), src }));
 }
-// 문장 목록 → 번역 결과 Promise 목록 (저장본·진행 중인 요청을 다시 써요)
 function translateMany(texts, tl, sl = "auto") {
   const out = new Array(texts.length), todo = [];
   texts.forEach((x, i) => {
@@ -214,12 +286,11 @@ function translateMany(texts, tl, sl = "auto") {
 const translateText = (text, tl) => translateMany([text], tl)[0];
 
 /* ============ 🌐 앱 화면 번역 ============ */
-// 화면의 글자를 하나씩 찾아 고른 언어로 바꿔요. 새로 생기는 글자(안내창·알림 등)도 자동으로 바꿔요.
-// 이름·입력 중인 글(textarea)·notranslate 표시가 있는 곳은 그대로 둬요.
+// 화면의 글자를 하나씩 찾아 고른 언어로 바꿔요. 새로 생기는 글자도 자동으로 바꿔요.
 const tState = new WeakMap(), aState = new WeakMap();
 const TR_ATTRS = ["placeholder", "aria-label"];
 function skipEl(el) {
-  const c = el.closest('[translate="no"], .notranslate, script, style, textarea');
+  const c = el.closest('[translate="no"], .notranslate, script, style, textarea, svg');
   return !!c && c !== document.documentElement;
 }
 function collectItems() {
@@ -252,9 +323,7 @@ function collectItems() {
   return items;
 }
 /* ============ 📚 검수한 번역 사전 (i18n/<언어>.json) ============ */
-// 문장을 통째로(굵은 글씨 같은 꾸밈까지) 번역해 둔 사전이에요.
-// 번역은 직접 쓰고, Chrome에서 DeepL·Gemini 사이트로 뜻을 확인한 뒤 넣었어요. (원문 목록: i18n/source.json)
-// 사전에 있는 문장은 사전대로, 없는 글자만 예전처럼 Google 번역으로 바로 번역해요.
+// 사전에 있는 문장은 사전대로, 없는 글자만 Google 번역으로 바로 번역해요. (원문 목록: i18n/source.json)
 const dicts = new Map();
 async function loadDict(tl) {
   if (!dicts.has(tl)) dicts.set(tl, fetch(`i18n/${tl}.json`).then((r) => (r.ok ? r.json() : null))
@@ -264,7 +333,6 @@ async function loadDict(tl) {
 const normKey = (s) => String(s).replace(/\s+/g, " ").trim();
 const HANGUL = /[가-힣]/;
 const INLINE_TAGS = new Set(["B", "STRONG", "SMALL", "SPAN", "BR", "I", "EM"]);
-// 글자와 꾸밈 태그(b·small·span·br)만 들어 있는 '문장 덩어리'인지 (태그가 하나도 없으면 글자 단위로 처리해요)
 function isBlockOnly(el) {
   if (!el.firstElementChild || ["SCRIPT", "STYLE", "TEXTAREA"].includes(el.tagName)) return false;
   for (const c of el.querySelectorAll("*")) {
@@ -272,7 +340,6 @@ function isBlockOnly(el) {
   }
   return HANGUL.test(el.textContent);
 }
-// 가장 바깥쪽 문장 덩어리만 써요 (부모가 이미 덩어리면 그 안쪽은 건너뛰어요)
 const isSentenceBlock = (el) => isBlockOnly(el) && !(el.parentElement && isBlockOnly(el.parentElement));
 const bState = new WeakMap();
 function applyDictBlocks(tl, dict) {
@@ -286,7 +353,7 @@ function applyDictBlocks(tl, dict) {
         else if (want !== st.tr) { el.innerHTML = want; st.tr = want; st.shown = el.innerHTML; }
         continue;
       }
-      delete el.dataset.trDict; bState.delete(el); // 앱이 내용을 새로 바꿨어요 → 처음부터 다시
+      delete el.dataset.trDict; bState.delete(el);
     }
     if (tl === "ko" || !dict || el.closest("[data-tr-dict]") || !isSentenceBlock(el)) continue;
     const key = normKey(el.innerHTML), tr = dict.get(key);
@@ -297,13 +364,11 @@ function applyDictBlocks(tl, dict) {
     bState.set(el, { orig, key, tr, shown: el.innerHTML });
   }
 }
-// 사전의 한 줄짜리 글자(태그 없는 문장·placeholder 등)는 번역 저장본에 미리 넣어 둬요
 function seedDictTexts(tl, dict) {
   if (!dict || dict.__seeded) return;
   for (const [k, v] of dict) if (!k.includes("<")) trCache.set(trKey(tl, "ko", k), { t: v, src: "ko" });
   dict.__seeded = true;
 }
-
 async function translatePage() {
   const tl = uiLang;
   const dict = tl === "ko" ? null : await loadDict(tl);
@@ -316,27 +381,25 @@ async function translatePage() {
   seedDictTexts(tl, dict);
   await seedTypeNames(tl);
   const ps = translateMany(ui.map((it) => it.core), tl, "ko").map((p, i) => p.then((r) => apply(ui[i], r.t)));
-  // 답변은 어느 나라 말인지 모르니 하나씩 언어를 알아내서 번역해요
   answers.forEach((it) => ps.push(translateText(it.core, tl).then((r) => {
     const same = !r.src || r.src.split("-")[0] === tl.split("-")[0];
     apply(it, same ? it.core : r.t);
   })));
   return Promise.allSettled(ps);
 }
-// 유형 이름(동화·분리…)은 한 단어라 잘못 번역되기 쉬워서, 영어 이름(Assimilation…)을 번역해 써요
+// 단계 이름(동화·분리…)은 한 단어라 잘못 번역되기 쉬워서, 영어 이름(Assimilation…)을 써요
 async function seedTypeNames(tl) {
   if (TYPES.every((t) => trCache.has(trKey(tl, "ko", t.key)))) return;
   const rs = await Promise.allSettled(translateMany(TYPES.map((t) => t.en), tl, "en"));
   rs.forEach((r, i) => r.status === "fulfilled" && trCache.set(trKey(tl, "ko", TYPES[i].key), { t: r.value.t, src: "ko" }));
 }
-// 🧺 번역할 글자 모으기 (개발용: 주소 끝에 ?harvest 를 붙이면 켜져요)
-// 화면을 하나씩 열면서 window.__harvest() 를 부르면, 사전에 넣을 한국어 문장을 모아 줘요.
+// 🧺 번역할 글자 모으기 (개발용: 주소 끝에 ?harvest)
 if (new URLSearchParams(location.search).has("harvest")) {
   const seen = new Map();
-  const ctxOf = (el) => normKey((el.closest("p, li, h1, h2, h3, dt, dd, summary, button, label, .q, .bubble, .check-q, .toast, div") || el).textContent).split(/(?:)/u).slice(0, 300).join("");
+  const ctxOf = (el) => normKey((el.closest("p, li, h1, h2, h3, dt, dd, summary, button, label, .toast, div") || el).textContent).slice(0, 300);
   window.__harvest = () => {
     for (const el of document.body.querySelectorAll("*")) {
-      if (skipEl(el) || el.closest("[data-tr-dict], .member-top, .fam-banner, .chip, .qb, .f-chip, #board-count") || !isSentenceBlock(el)) continue;
+      if (skipEl(el) || el.closest("[data-tr-dict], .qb, .f-chip, #board-count, .post-head") || !isSentenceBlock(el)) continue;
       const k = normKey(el.innerHTML);
       if (!seen.has(k)) seen.set(k, { key: k, kind: "html", ctx: ctxOf(el.parentElement || el) });
     }
@@ -360,7 +423,6 @@ new MutationObserver(() => {
 function applyLangAttrs() {
   const h = document.documentElement;
   h.lang = uiLang;
-  // 앱 번역을 쓰는 동안에는 크롬 번역이 겹치지 않게 막아요
   if (uiLang === "ko") h.removeAttribute("translate"); else h.setAttribute("translate", "no");
 }
 async function setUiLang(code) {
@@ -368,7 +430,6 @@ async function setUiLang(code) {
   uiLang = code; store.set("ui-lang", code);
   applyLangAttrs();
   $$("[data-ui-lang]").forEach((b) => b.classList.toggle("on", b.dataset.uiLang === code));
-  renderTrSeg();
   await translatePage();
 }
 document.addEventListener("click", (e) => {
@@ -376,16 +437,10 @@ document.addEventListener("click", (e) => {
   if (b) setUiLang(b.dataset.uiLang);
 });
 
-function trOptions() {
-  const opts = [{ v: "orig", label: "📝 원문" }, { v: "ko", label: "🇰🇷 한국어" }, { v: "en", label: "🇺🇸 English" }];
-  const mine = currentLang();
-  if (!["ko", "en"].includes(mine.split("-")[0])) opts.push({ v: mine, label: `🌐 ${langName(mine)}` });
-  if (!opts.some((o) => o.v === trMode)) opts.push({ v: trMode, label: `🌐 ${langName(trMode)}` });
-  return opts;
-}
 function renderTrSeg() {
-  $("#tr-seg").innerHTML = trOptions().map((o) =>
-    `<button type="button" class="${o.v === trMode ? "on" : ""}" data-tr="${esc(o.v)}">${esc(o.label)}</button>`).join("");
+  const opts = [{ v: "orig", label: "원문" }, { v: "ko", label: "한국어" }, { v: "en", label: "English" }];
+  $("#tr-seg").innerHTML = opts.map((o) =>
+    `<button type="button" class="${o.v === trMode ? "on" : ""}" data-tr="${o.v}">${o.label}</button>`).join("");
 }
 $("#tr-seg").onclick = (e) => {
   const b = e.target.closest("[data-tr]"); if (!b) return;
@@ -414,11 +469,11 @@ async function applyTranslations() {
           : `<span translate="no" class="notranslate">${esc(r.t)}</span><span class="orig">원문 · ${esc(langName(r.src))}<br><span translate="no" class="notranslate">${esc(orig)}</span></span>`;
       } catch (err) {
         console.error(err); failed++;
-        if (el.isConnected) el.innerHTML = `${esc(orig)}<span class="orig">⚠️ 번역하지 못했어요 (인터넷 연결 확인)</span>`;
+        if (el.isConnected) el.innerHTML = `${esc(orig)}<span class="orig">번역하지 못했어요 (인터넷 연결 확인)</span>`;
       } finally {
         el.classList.remove("tr-loading");
         done++;
-        if (run === trRun) status.textContent = done < els.length ? `번역 중… ${done}/${els.length}` : failed ? `⚠️ ${failed}개 번역 실패` : "✅ 번역 완료";
+        if (run === trRun) status.textContent = done < els.length ? `번역 중… ${done}/${els.length}` : failed ? `${failed}개 번역 실패` : "번역 완료";
       }
     }
   };
@@ -431,40 +486,25 @@ function showTab(name) {
   $(`#view-${name}`).classList.remove("hidden");
   $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (name === "board" && !store.get("hide-guide-board")) openGuide("board");
+  if (name === "board") { syncDeck(); if (!store.get("hide-guide-board-v2")) openGuide("board"); }
 }
 $$(".tab").forEach((t) => (t.onclick = () => showTab(t.dataset.tab)));
 
-/* ============ 📖 사용설명서 (바텀 시트) ============ */
-function matrixHTML({ selected = null, interactive = false, midx = "" } = {}) {
-  const cells = MATRIX_ORDER.map((i) => {
-    const t = TYPES[i];
-    const cls = ["type-opt", selected === i ? "selected" : "", selected !== null && selected !== i ? "dim" : ""].join(" ");
-    const tag = interactive ? "button" : "div";
-    return `<${tag} class="${cls}" style="${typeStyle(i)}" ${interactive ? `data-type="${i}" data-midx="${midx}" type="button"` : ""}>
-      <span class="emo">${t.emoji}</span><b>${t.key}</b><small>${t.short}</small></${tag}>`;
-  });
-  return `<div class="axis-note">4가지 모양은 두 가지로 나눠져요<br><b>내 문화</b>를 얼마나 지키는지 · <b>한국 문화</b>와 얼마나 어울리는지</div>
-  <div class="matrix ${interactive ? "" : "static"}">${cells.join("")}</div>`;
-}
+/* ============ 📖 안내 문구 ============ */
+const typeListHTML = () => `<ul class="type-list">${TYPES.map((t, k) =>
+  `<li style="${typeStyle(k)}"><b>${t.emoji} ${t.key}</b><small> (${t.en})</small><br>${t.desc}</li>`).join("")}</ul>`;
 
-// 4가지 모양 설명 목록
-const typeListHTML = () => `<ul class="type-list">${MATRIX_ORDER.map((k) =>
-  `<li style="${typeStyle(k)}"><b>${TYPES[k].emoji} ${TYPES[k].key}</b><small> (${TYPES[k].en})</small><br>${TYPES[k].desc}</li>`).join("")}</ul>`;
-
-// 💡 알아 두세요: 문화적응은 스펙트럼이에요 (여러 곳에서 같이 보여 줘요)
-// 안내(Info)라서 노란색 상자로 보여 줘요. 아이콘은 제목에만 써요.
+// 💡 알아 두세요 (안내 = 노란 상자)
 const SPECTRUM_HTML = `<div class="info-box">
   <div class="info-title">💡 알아 두세요</div>
   <ul class="dot-list">
-    <li>4가지 모양에 <b>좋고 나쁜 것은 없어요.</b></li>
-    <li><span>문화적응은 하나로 딱 정해지지 않아요. 생활 속에서 <b>여러 모양이 섞여</b> 나타나요.</span>
-      <div class="info-ex"><span class="ex-label">예</span>라면·불고기는 좋아하지만, 김밥은 잘 안 먹어요.<br><span class="ex-label">예</span>K-POP은 좋아하지만, 트로트는 잘 안 들어요.</div></li>
-    <li>그래서 마음 체크는 <b>지금 내가 가장 많이 느끼는 마음</b>을 알아보는 거예요. 마음은 시간이 지나면 바뀔 수 있어요.</li>
+    <li>4단계에 <b>좋고 나쁜 것은 없어요.</b></li>
+    <li><span>문화적응은 하나로 딱 정해지지 않아요. 생활 속에서 <b>여러 모습이 섞여</b> 나타나요.</span>
+      <div class="info-ex"><span class="ex-label">예</span>라면이나 불고기 같은 한국 음식은 좋아하지만, K-POP 같은 음악은 싫어해요.</div></li>
+    <li>그래서 <b>나의 지금 마음 확인하기</b>는 지금 내가 가장 많이 느끼는 마음을 알아보는 거예요. 마음은 시간이 지나면 바뀔 수 있어요.</li>
   </ul>
 </div>`;
 
-// 📲 설치 방법: ① 크롬으로 열기 → ② 내 폰에 맞는 방법으로 홈 화면에 추가 (②에서 아이폰/안드로이드로 나뉘어요)
 const INSTALL_FLOW_HTML = `<ol class="flow">
   <li><b>크롬(Chrome) 앱</b>으로 이 링크를 열어요.</li>
   <li><span><b>홈 화면에 추가</b>해요. 내 휴대폰에 맞는 방법을 따라 해요.</span>
@@ -476,60 +516,43 @@ const INSTALL_FLOW_HTML = `<ol class="flow">
   </li>
 </ol>`;
 
-// 💌 모두의 이야기 사용법: 왼쪽은 화면에 있는 '버튼 모양' 그대로, 오른쪽은 설명만 (아이콘을 섞지 않아요)
+// 💌 모두의 이야기 사용법: 왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명
 const BOARD_HOWTO_HTML = `<div class="howto">
   <div class="howto-group">이야기 보기</div>
-  <div class="howto-row"><span class="ui-chip">🍂 주변화 3</span><span>같은 유형의 이야기만 모아 봐요.</span></div>
+  <div class="howto-row"><span class="ui-chip">◀ ▶</span><span>옆으로 밀거나 눌러서 이야기를 <b>한 장씩</b> 넘겨 봐요.</span></div>
+  <div class="howto-row"><span class="ui-chip">🍂 주변화 3</span><span>같은 단계의 이야기만 모아 봐요. 두 단계 사이에 있는 이야기는 양쪽 모두에 나와요.</span></div>
   <div class="howto-row"><span class="ui-chip">한국어 · English</span><span>여러 나라 언어로 쓴 답변을 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요.</span></div>
   <div class="howto-group">마음 나누기</div>
   <div class="howto-row"><span class="ui-chip">🤍 공감</span><span>마음을 전해요. 이야기 하나에 한 번 누를 수 있어요.</span></div>
-  <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기를 <b>수정</b>하거나 <b>삭제</b>해요. 삭제는 비밀번호가 필요해요.</span></div>
+  <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기라면 <b>생일 4자리</b>를 넣고 다시 보기·수정·공개 바꾸기·삭제를 할 수 있어요.</span></div>
 </div>
 <div class="info-box">
   <div class="info-title">💡 알아 두세요</div>
   <ul class="dot-list">
-    <li>가족 이름이 같으면, 각자 휴대폰에서 써도 <b>하나의 가족 카드</b>로 모여요.</li>
-    <li>내 이야기를 올리려면 아래 <b>여정</b> 탭으로 가요.</li>
+    <li>비공개 이야기는 글이 흐리게 가려져 있어요. 쓴 사람만 생일 4자리로 볼 수 있어요.</li>
+    <li>관리자는 이야기를 <b>삭제만</b> 할 수 있어요.</li>
   </ul>
 </div>`;
 
-const LANG_SLIDE = () => `<div class="big-emo">🌐</div><h2>내 나라 언어로 보기</h2>
-       <p class="lang-ask"><b>자신이 편한 모국어나 영어를 골라서 진행해 주세요.</b></p>
-       <p>언어를 누르면 화면이 바로 바뀌어요. 앱으로 설치해도 똑같이 쓸 수 있어요.</p>
-       ${langGridHTML()}
-       <p class="muted">언제든 오른쪽 위 <span class="ui-chip">🌐</span> 버튼으로 바꿀 수 있어요. 답은 내 나라 언어로 써도 괜찮아요.</p>`;
-
 const GUIDES = {
   intro: {
-    flag: "hide-guide-intro",
-    slides: [
-      `<div class="big-emo">👋</div><h2>문화적응 여정에 오신 걸 환영해요!</h2>
+    flag: "hide-guide-intro-v2",
+    slides: [() => `<div class="big-emo">👋</div><h2>문화적응 여정에 오신 걸 환영해요!</h2>
        <p>낯선 나라에서 살아가는 <b>나의 마음</b>을 돌아보고,<br>다른 사람들과 <b>이야기를 나누는</b> 곳이에요.</p>
-       <p><b>자신이 편한 모국어나 영어를 골라서 진행해 주세요.</b><br>다음 장에서 방법을 알려 드릴게요.</p>`,
-      LANG_SLIDE,
-      `<div class="big-emo">🧭</div><h2>4가지 마음의 모양</h2>
-       <p>존 베리의 문화적응 모델이에요.</p>${matrixHTML()}${SPECTRUM_HTML}`,
-      `<div class="big-emo">✍️</div><h2>이렇게 참여해요</h2>
-       <ol class="num-steps">
-         <li><b>누구인지 고르고 이름 쓰기</b></li>
-         <li><b>마음 체크 질문 4개에 답하기</b><br>지금 내 마음과 가장 가까운 모양을 알려 줘요.</li>
-         <li><b>나의 이야기 질문 4개 쓰기</b><br>짧게 써도 괜찮아요.</li>
-         <li><b>공유하기</b><br>모두의 이야기에 올라가요.</li>
-       </ol>`,
-      ...(IS_STANDALONE ? [] : [`<div class="big-emo">📲</div><h2>앱처럼 설치할 수 있어요</h2>
-       ${INSTALL_FLOW_HTML}
-       <p>아래 <b>설명서</b> 탭에서 언제든 다시 볼 수 있어요.</p>`])
-    ]
+       <p class="lang-ask">편한 언어를 골라 주세요${uiLang === "ko" ? ` <span class="notranslate muted" translate="no">· Choose your language</span>` : ""}</p>
+       ${langGridHTML()}`]
   },
-  lang: { flag: "hide-guide-lang-never", slides: [LANG_SLIDE], noHide: true },
+  lang: {
+    flag: "hide-guide-lang-never", noHide: true,
+    slides: [() => `<div class="big-emo">🌐</div><h2>편한 언어 고르기</h2>
+       <p>한국어와 영어 중에서 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`]
+  },
   board: {
-    flag: "hide-guide-board",
-    slides: [
-      `<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
+    flag: "hide-guide-board-v2",
+    slides: [`<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
        <p>참여한 모든 사람의 이야기가 이곳에 모여요.</p>
        ${BOARD_HOWTO_HTML}
-       <p class="muted">다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`
-    ]
+       <p class="muted">다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`]
   }
 };
 
@@ -548,7 +571,7 @@ function closeSheet() {
 }
 $("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.target.closest(".sheet-x")) closeSheet(); });
 
-function openGuide(name) {
+function openGuide(name, after = null) {
   const g = GUIDES[name];
   let i = 0;
   const render = () => {
@@ -556,14 +579,13 @@ function openGuide(name) {
     const s = g.slides[i];
     openSheet(`
       <div class="slide">${typeof s === "function" ? s() : s}</div>
-      ${g.slides.length > 1 ? `<div class="dots">${g.slides.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
       <div class="sheet-foot">
         ${g.noHide ? "<span></span>" : `<label><input type="checkbox" id="g-hide" ${store.get(g.flag) ? "checked" : ""}> 다시 보지 않기</label>`}
         <div style="display:flex;gap:6px">
           ${i > 0 ? `<button class="btn btn-ghost" id="g-prev">이전</button>` : ""}
           <button class="btn btn-primary" id="g-next">${g.noHide ? "확인" : last ? "시작하기" : "다음 ▶"}</button>
         </div>
-      </div>`);
+      </div>`, after);
     if ($("#g-hide")) $("#g-hide").onchange = (e) => (e.target.checked ? store.set(g.flag, true) : store.del(g.flag));
     $("#g-next").onclick = () => { if (last) closeSheet(); else { i++; render(); } };
     if ($("#g-prev")) $("#g-prev").onclick = () => { i--; render(); };
@@ -571,376 +593,486 @@ function openGuide(name) {
   render();
 }
 $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.openGuide)));
-$("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "intro" : "board");
-$("#guide-matrix").innerHTML = matrixHTML() + typeListHTML() + SPECTRUM_HTML;
-$("#spectrum-write").innerHTML = SPECTRUM_HTML;
+$("#help-top").onclick = () => ($("#view-board").classList.contains("hidden") ? showTab("guide") : openGuide("board"));
+$("#guide-types").innerHTML = typeListHTML() + SPECTRUM_HTML;
 $("#board-howto").innerHTML = BOARD_HOWTO_HTML;
 $("#install-flow").innerHTML = INSTALL_FLOW_HTML;
+$("#spectrum-note").innerHTML = SPECTRUM_HTML;
 
-/* ============ STEP 1: 누구? ============ */
-$("#avatar-row").innerHTML = FAMILY_AVATARS.map((a, i) =>
-  `<button type="button" class="avatar-opt ${a === selectedAvatar ? "selected" : ""}" data-av="${i}"><span>${a.e}</span>${a.label}</button>`).join("");
-$("#avatar-row").onclick = (e) => {
-  const b = e.target.closest(".avatar-opt"); if (!b) return;
-  selectedAvatar = FAMILY_AVATARS[+b.dataset.av];
-  $$(".avatar-opt").forEach((x) => x.classList.toggle("selected", x === b));
-};
-
-$$(".who-opt").forEach((opt) => (opt.onclick = () => {
-  $$(".who-opt").forEach((o) => o.classList.remove("selected"));
-  opt.classList.add("selected");
-  selectedChar = opt.dataset.char;
-  $("#family-form").classList.toggle("hidden", selectedChar !== "가족");
-}));
-
-function addMember() {
-  const name = $("#user-name").value.trim();
-  if (!name) { toast("✏️ 이름을 먼저 써 주세요"); $("#user-name").focus(); return false; }
-  let role = "", emoji = CHAR_EMOJI[selectedChar];
-  if (selectedChar === "가족") {
-    const fam = $("#family-name-in").value.trim();
-    if (!fam) { toast("🏡 가족 이름을 써 주세요 (예: 차무희네 가족)"); $("#family-name-in").focus(); return false; }
-    currentFamilyName = fam;
-    const r = $("#role-in").value.trim();
-    role = [selectedAvatar.g, r].filter(Boolean).join(" / ");
-    emoji = selectedAvatar.e;
-  }
-  members.push({ name, char: selectedChar, role, emoji, typeIdx: null, check: [null, null, null, null], tempAnswers: ["", "", "", ""] });
-  $("#user-name").value = ""; $("#role-in").value = "";
-  renderChips(); saveDraft();
-  toast(`${emoji} ${name} 님의 아바타가 만들어졌어요`);
-  return true;
+/* ============ STEP 1: 아바타 만들기 ============ */
+function renderBuilder() {
+  const av = (me.avatar = normAv(me.avatar));
+  const kind = AV_KINDS.find((x) => x.id === av.k);
+  const keep = Object.fromEntries($$("#av-options .av-opts").map((r) => [r.dataset.row, r.scrollLeft]));
+  const optRow = (row, title, list, make, cls = "") => `<div class="av-row"><div class="av-row-h">${title}</div>
+    <div class="av-opts ${cls}" data-row="${row}">${list.map(make).join("")}</div></div>`;
+  $("#av-preview").innerHTML = avatarSVG(av);
+  $("#av-options").innerHTML =
+    optRow("k", "모양", AV_KINDS, (x) => `<button type="button" class="av-opt ${x.id === av.k ? "on" : ""}" data-av="k" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, k: x.id })}</button>`) +
+    optRow("c", "색", AV_COLORS, (x) => `<button type="button" class="av-sw ${x === av.c ? "on" : ""}" style="background:${x}" data-av="c" data-v="${x}" aria-label="색 ${x}"></button>`, "sw") +
+    optRow("h", kind?.hair ? "머리 색" : "포인트 색", AV_ACCENTS, (x) => `<button type="button" class="av-sw ${x === av.h ? "on" : ""}" style="background:${x}" data-av="h" data-v="${x}" aria-label="색 ${x}"></button>`, "sw") +
+    optRow("f", "표정", AV_FACES, (x) => `<button type="button" class="av-opt ${x.id === av.f ? "on" : ""}" data-av="f" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, f: x.id })}</button>`) +
+    optRow("a", "꾸미기", AV_ITEMS, (x) => `<button type="button" class="av-opt ${x.id === av.a ? "on" : ""}" data-av="a" data-v="${x.id}" aria-label="${x.label}" title="${x.label}">${avatarSVG({ ...av, a: x.id })}</button>`);
+  $$("#av-options .av-opts").forEach((r) => { if (keep[r.dataset.row]) r.scrollLeft = keep[r.dataset.row]; });
+  $("#user-name").value = me.name;
+  $("#start-btn").textContent = editingPostId ? "다음" : "여정 시작하기";
 }
-function renderChips() {
-  $("#member-chips").innerHTML = members.map((m, i) =>
-    `<span class="chip">${memberEmoji(m)} <b>${esc(m.name)}</b>${m.role ? ` <small>(${esc(m.role)})</small>` : ""}<button data-rm="${i}" aria-label="빼기">✕</button></span>`).join("");
-}
-$("#member-chips").onclick = (e) => {
-  const b = e.target.closest("[data-rm]"); if (!b) return;
-  members.splice(+b.dataset.rm, 1); renderChips(); saveDraft();
+$("#av-options").onclick = (e) => {
+  const b = e.target.closest("[data-av]"); if (!b) return;
+  me.avatar[b.dataset.av] = b.dataset.v;
+  renderBuilder(); saveDraft();
 };
-$("#add-btn").onclick = addMember;
-$("#user-name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); addMember(); } });
-
+$("#user-name").addEventListener("input", (e) => { me.name = e.target.value; saveDraft(); });
+$("#user-name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); $("#start-btn").click(); } });
 $("#start-btn").onclick = () => {
-  if ($("#user-name").value.trim() && !addMember()) return;
-  if (!members.length) { toast("✏️ 이름을 먼저 써 주세요"); $("#user-name").focus(); return; }
-  goWrite();
+  me.name = $("#user-name").value.trim();
+  if (!me.name) { toast("별명을 먼저 써 주세요"); $("#user-name").focus(); return; }
+  saveDraft(); goWrite();
 };
 
 function goStep(id) {
-  ["#step-who", "#step-write", "#step-done"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  ["#step-avatar", "#step-write", "#step-done"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function goWrite() { goStep("#step-write"); renderSurvey(); }
+function goWrite() { goStep("#step-write"); renderWrite(); }
 
-/* ============ STEP 2: 유형 + 질문 ============ */
-function renderSurvey() {
-  $("#family-edit").innerHTML = currentFamilyName !== "" ? `
-    <label class="field" style="margin:12px 0 0">
-      <span class="field-label">우리 가족 이름 (고칠 수 있어요)</span>
-      <input type="text" id="edit-family-name" value="${esc(currentFamilyName)}">
-    </label>` : "";
-
-  $("#member-cards").innerHTML = members.map((m, i) => `
-    <div class="member-card" data-midx="${i}">
-      <div class="m-head">
-        <div class="avatar">${memberEmoji(m)}</div>
-        <div class="inputs">
-          <input type="text" data-f="name" data-midx="${i}" value="${esc(m.name)}" placeholder="이름">
-          ${m.char === "가족" ? `<input type="text" data-f="role" data-midx="${i}" value="${esc(m.role)}" placeholder="역할 (예: 여성 / 첫째 딸)">` : ""}
-        </div>
-      </div>
-      ${checkHTML(m, i)}
-      <div class="qa-write">
-        <div class="sec-title">나의 이야기</div>
-        ${STORY_INTRO_HTML}
-        ${QUESTIONS.map((q, qi) => `
-          <div class="q"><span class="qi">${q.icon}</span><span>Q${qi + 1}. ${q.q} <span class="q-tag">${q.tag}</span></span></div>
-          <textarea data-f="ans" data-midx="${i}" data-qidx="${qi}" placeholder="${esc(q.ph)}">${esc(m.tempAnswers?.[qi] || "")}</textarea>`).join("")}
-      </div>
-    </div>`).join("");
-
-  $("#share-btn").textContent = editingPostId ? "수정 완료하기" : "이야기 공유하기";
-}
-
-// 입력할 때마다 상태에 바로 저장 (다시 그려도 글이 사라지지 않아요)
-$("#step-write").addEventListener("input", (e) => {
-  const el = e.target;
-  if (el.id === "edit-family-name") { currentFamilyName = el.value; saveDraft(); return; }
-  const m = members[el.dataset.midx]; if (!m) return;
-  if (el.dataset.f === "name") m.name = el.value;
-  if (el.dataset.f === "role") m.role = el.value;
-  if (el.dataset.f === "ans") m.tempAnswers[+el.dataset.qidx] = el.value;
-  saveDraft();
-});
-$("#member-cards").addEventListener("click", (e) => {
-  const t = e.target.closest(".type-opt[data-type]");
-  if (t) { members[+t.dataset.midx].typeIdx = +t.dataset.type; saveDraft(); renderSurvey(); return; }
-  const q = e.target.closest("[data-cq]");
-  if (q) {
-    const m = members[+q.dataset.midx];
-    m.check = m.check || [null, null, null, null];
-    m.check[+q.dataset.cq] = +q.dataset.cv;
-    const r = checkResult(m.check);
-    if (r !== null) m.typeIdx = r;
-    saveDraft(); renderSurvey();
-  }
-});
-// '4가지 모양 모두 보기'를 열어 둔 상태를 기억해요 (다시 그려도 닫히지 않게)
-$("#member-cards").addEventListener("toggle", (e) => {
-  const d = e.target;
-  if (d.matches?.("details.all-types")) { const m = members[+d.dataset.midx]; if (m) { m.showAll = d.open; saveDraft(); } }
-}, true);
-
-function checkHTML(m, i) {
-  const c = m.check || [null, null, null, null];
-  const done = c.filter((v) => v !== null && v !== undefined).length;
-  const t = m.typeIdx !== null ? TYPES[m.typeIdx] : null;
-  return `
-    <div class="sec-title">나의 마음 체크</div>
-    <p class="muted" style="margin-top:0">질문 4개에 답하면, <b>지금 내 마음</b>이 4가지 모양 중 어디에 가장 가까운지 알려 드려요.</p>
-    ${CHECK_QS.map((q, qi) => `
-      <div class="check-q"><span class="cq-n">${qi + 1}</span> <span class="cq-t">${q.t}</span>
-        <div class="yn3">${CHECK_OPTS.map((o) =>
-          `<button type="button" data-cq="${qi}" data-cv="${o.v}" data-midx="${i}" class="${c[qi] === o.v ? "selected" : ""}">${o.label}</button>`).join("")}</div>
-      </div>`).join("")}
-    ${t
-      ? `<div class="bubble result" style="${typeStyle(m.typeIdx)}"><span>지금 나는 <b>${t.emoji} ${t.key}</b><small> (${t.en})</small>에 가장 가까워요</span><br><span>${t.desc}</span>
-           <div class="r-note">이건 '지금 가장 많이 느끼는 마음'이에요. 좋고 나쁜 모양은 없어요.</div></div>`
-      : `<div class="bubble">질문에 모두 답하면 결과가 나와요 (${done}/4)</div>`}
-    <details class="all-types" data-midx="${i}" ${m.showAll ? "open" : ""}>
-      <summary>4가지 모양 모두 보기 · 직접 고르기</summary>
-      ${typeListHTML()}
-      <p class="muted">결과가 내 마음과 다르면, 더 가까운 모양을 직접 눌러 바꿀 수 있어요.</p>
-      ${matrixHTML({ selected: m.typeIdx, interactive: true, midx: i })}
+/* ============ STEP 2: 나의 지금 마음 확인하기 ============ */
+function renderWrite() {
+  $("#edit-banner").classList.toggle("hidden", !editingPostId);
+  $("#me-row").innerHTML = `<div class="av-sm">${avatarSVG(me.avatar)}</div><b class="notranslate" translate="no">${esc(me.name)}</b>`;
+  renderSpectrum();
+  $("#qa-write").innerHTML = QUESTIONS.map((q, qi) => `
+    <div class="qw">
+      <div class="qw-h"><span class="qw-n">${qi + 1}</span><span class="qw-title">${q.title}</span></div>
+      <p class="qw-q">${q.q}</p>
+      <textarea data-qidx="${qi}" placeholder="${esc(q.ph)}">${esc(me.answers[qi] || "")}</textarea>
+    </div>`).join("") + `
+    <details class="q-about">
+      <summary>이 질문들은 무엇을 살펴보나요?</summary>
+      <dl class="def-list">
+        <div><dt>이주 동기</dt><dd>내가 한국에 오게 된 마음 (1번)</dd></div>
+        <div><dt>심리적 자원</dt><dd>다른 문화 속에서 살아가도록 나를 도와준 힘 (2·3번)</dd></div>
+        <div><dt>필요했던 것</dt><dd>힘들 때 나에게 부족했던 도움 (4번)</dd></div>
+      </dl>
     </details>`;
+  $("#share-btn").textContent = editingPostId ? "수정한 이야기 올리기" : "이야기 올리기";
 }
+$("#qa-write").addEventListener("input", (e) => {
+  const t = e.target.closest("textarea[data-qidx]"); if (!t) return;
+  me.answers[+t.dataset.qidx] = t.value; saveDraft();
+});
 
-$("#back-btn").onclick = () => {
-  if (editingPostId) {
-    if (!confirm("수정을 그만둘까요? 바꾼 내용은 저장되지 않아요.")) return;
-    resetJourney(); return;
+// 🧭 4단계 막대: 막대를 누르거나 밀면 내 아바타가 그 자리(0.5 단위)로 움직여요
+function renderSpectrum() {
+  const p = me.pos;
+  $("#spectrum").innerHTML = `<div class="spec">
+    <div class="spec-track" id="spec-track">
+      <div class="spec-zones">${TYPES.map((_, i) => `<i style="${typeStyle(i)}"></i>`).join("")}</div>
+      <div class="spec-stops">${POSITIONS.map((x) => `<button type="button" class="spec-stop ${isHalf(x) ? "half" : ""} ${x === p ? "on" : ""}" style="left:${posLeft(x)}%" data-pos="${x}" aria-label="${isHalf(x) ? `${TYPES[Math.floor(x) - 1].key}와 ${TYPES[Math.floor(x)].key} 사이` : TYPES[x - 1].key}"></button>`).join("")}</div>
+      <div class="spec-avatar ${p === null ? "wait" : ""}" id="spec-avatar" style="left:${posLeft(p ?? 2.5)}%">${avatarSVG(me.avatar)}</div>
+    </div>
+    <div class="spec-labels">${TYPES.map((t, i) => `<button type="button" class="spec-label ${specStage === i ? "on" : ""}" style="${typeStyle(i)}" data-stage="${i}"><span class="emo">${t.emoji}</span><b>${t.key}</b></button>`).join("")}</div>
+    <p class="spec-help">단계 이름을 누르면 아래에 설명이 나와요.</p>
+    <div id="spec-desc">${specDescHTML()}</div>
+  </div>`;
+}
+function specDescHTML() {
+  const p = me.pos;
+  const one = (i, mine) => `<div class="spec-desc" style="${typeStyle(i)}"><div class="sd-h">${TYPES[i].emoji} ${TYPES[i].key} <small>(${TYPES[i].en})</small>${mine ? `<span class="sd-mine">내 위치</span>` : ""}</div>${TYPES[i].desc}</div>`;
+  if (specStage !== null) return one(specStage, p === specStage + 1);
+  if (p === null) return "";
+  if (!isHalf(p)) return one(p - 1, true);
+  const a = Math.floor(p) - 1, b = a + 1;
+  return `<div class="spec-desc both" style="--a-bg:${TYPES[a].tbg};--b-bg:${TYPES[b].tbg};--a-c:${TYPES[a].tc}">
+    <div class="sd-h">${TYPES[a].emoji} ${TYPES[a].key} · ${TYPES[b].emoji} ${TYPES[b].key} 사이<span class="sd-mine">내 위치</span></div>
+    <p style="margin:2px 0 6px">두 단계의 마음이 함께 있어요.</p>
+    <ul class="dot-list"><li><b>${TYPES[a].key}</b>: ${TYPES[a].short}</li><li><b>${TYPES[b].key}</b>: ${TYPES[b].short}</li></ul>
+  </div>`;
+}
+function setPos(p, { final = true } = {}) {
+  me.pos = p;
+  const av = $("#spec-avatar");
+  if (av) { av.style.left = `${posLeft(p)}%`; av.classList.remove("wait"); }
+  $$("#spectrum .spec-stop").forEach((s) => s.classList.toggle("on", +s.dataset.pos === p));
+  if (final) {
+    specStage = null;
+    $$("#spectrum .spec-label").forEach((l) => l.classList.remove("on"));
+    $("#spec-desc").innerHTML = specDescHTML();
+    saveDraft();
   }
-  goStep("#step-who"); renderChips();
-};
+}
+function posFromX(clientX) {
+  const r = $("#spec-track").getBoundingClientRect();
+  const pct = ((clientX - r.left) / r.width) * 100;
+  const p = Math.round((1 + (pct - 12.5) / 25) * 2) / 2;
+  return Math.min(4, Math.max(1, p));
+}
+let dragging = false;
+$("#spectrum").addEventListener("pointerdown", (e) => {
+  const track = e.target.closest("#spec-track"); if (!track) return;
+  dragging = true;
+  track.setPointerCapture?.(e.pointerId);
+  setPos(posFromX(e.clientX), { final: false });
+});
+$("#spectrum").addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  const p = posFromX(e.clientX);
+  if (p !== me.pos) setPos(p, { final: false });
+});
+const endDrag = () => { if (!dragging) return; dragging = false; if (me.pos !== null) setPos(me.pos); };
+$("#spectrum").addEventListener("pointerup", endDrag);
+$("#spectrum").addEventListener("pointercancel", endDrag);
+$("#spectrum").addEventListener("click", (e) => {
+  const s = e.target.closest("[data-pos]");
+  if (s) { setPos(+s.dataset.pos); return; }
+  const l = e.target.closest("[data-stage]");
+  if (l) {
+    const i = +l.dataset.stage;
+    specStage = specStage === i ? null : i;
+    $$("#spectrum .spec-label").forEach((x) => x.classList.toggle("on", +x.dataset.stage === specStage));
+    $("#spec-desc").innerHTML = specDescHTML();
+  }
+});
+
+$("#back-btn").onclick = () => { goStep("#step-avatar"); renderBuilder(); };
+$("#edit-cancel").onclick = () => { resetJourney(); toast("수정을 그만뒀어요"); };
 
 /* ============ 💾 임시 저장 ============ */
-function saveDraft() {
-  if (editingPostId) return;
-  store.set("draft", { members, currentFamilyName });
-}
+function saveDraft() { if (!editingPostId) store.set("draft-v2", me); }
 function loadDraft() {
-  const d = store.get("draft");
-  if (d?.members?.length) {
-    members = d.members; currentFamilyName = d.currentFamilyName || "";
-    renderChips();
-    toast("📝 쓰던 이야기를 불러왔어요");
+  const d = store.get("draft-v2");
+  if (d && (d.name || d.answers?.some(Boolean))) {
+    me = { ...freshMe(), ...d, avatar: normAv(d.avatar), answers: [0, 1, 2, 3].map((k) => d.answers?.[k] || "") };
+    if (!POSITIONS.includes(me.pos)) me.pos = null;
+    toast("쓰던 이야기를 불러왔어요");
   }
 }
 
-/* ============ 💌 공유 ============ */
-$("#share-btn").onclick = async () => {
-  const missing = members.findIndex((m) => m.typeIdx === null);
-  if (missing !== -1) {
-    toast(`🧭 ${members[missing].name || "참여자"} 님의 마음 체크 질문에 답해 주세요`);
-    $(`.member-card[data-midx="${missing}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+/* ============ 📮 이야기 올리기 (공유 창) ============ */
+const peopleCount = () => allPosts.reduce((n, p) => n + (p.family || []).length, 0);
+$("#share-btn").onclick = () => {
+  if (!me.name.trim()) { toast("별명을 먼저 써 주세요"); goStep("#step-avatar"); renderBuilder(); return; }
+  if (me.pos === null) {
+    toast("막대에서 지금 내 위치를 골라 주세요");
+    $("#spectrum").scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
-  if (members.some((m) => !m.name.trim())) { toast("✏️ 이름이 비어 있어요"); return; }
-
-  const btn = $("#share-btn");
-  btn.disabled = true; btn.textContent = "⏳ 올리는 중…";
+  openShareSheet();
+};
+function openShareSheet() {
+  const editing = !!editingPostId;
+  openSheet(`<div class="share-sheet">
+    <h2>${editing ? "수정한 이야기를 올릴까요?" : "나의 이야기를 함께 나눌까요?"}</h2>
+    <div class="share-msg">
+      <p class="sm-strong">지금 ${peopleCount()}명의 이야기가 모여 있어요.</p>
+      <p>내 이야기가 누군가에게는 '나만 그런 게 아니구나' 하는 위로가 돼요.</p>
+      <p>이름 대신 아바타와 별명으로만 보여요.</p>
+    </div>
+    ${editing ? "" : `<div class="pin-field">
+      <span class="field-label">내 글 비밀번호: 생일 4자리</span>
+      <small>예: 8월 28일 → 0828. 나중에 내 이야기를 다시 보거나, 수정하거나, 공개로 바꿀 때 써요.</small>
+      ${pinInputHTML("sh-pin")}
+    </div>`}
+    <button type="button" class="choice pub" data-vis="public"><b>예, 공개할게요</b><span>모두가 읽고 🤍 공감을 보낼 수 있어요.</span></button>
+    <button type="button" class="choice" data-vis="private"><b>아니오, 비공개로 올릴게요</b><span>글은 흐리게 가려져서 다른 사람에게는 보이지 않아요. 아바타와 내 위치만 보여요. 생일 4자리로 나중에 다시 보거나 공개로 바꿀 수 있어요.</span></button>
+    <p class="share-ok">어떤 선택이든 괜찮아요.</p>
+    <button type="button" class="link-btn share-back" id="sh-back">◀ 다시 고치기</button>
+  </div>`);
+  if ($("#sh-pin")) bindPinInput($("#sh-pin"));
+  $("#sh-back").onclick = closeSheet;
+  $$(".share-sheet .choice").forEach((b) => (b.onclick = () => submitStory(b.dataset.vis === "private")));
+}
+async function submitStory(isPrivate) {
+  const editing = !!editingPostId;
+  let pin = "";
+  if (!editing) {
+    pin = $("#sh-pin").value;
+    if (!PIN_RE.test(pin)) { toast("생일 4자리를 넣어 주세요 (예: 0828)"); $("#sh-pin").focus(); return; }
+  }
+  $$(".share-sheet .choice").forEach((b) => (b.disabled = true));
   try {
-    currentFamilyName = currentFamilyName.trim();
-    const finalData = members.map((m) => ({
-      name: m.name.trim(), char: m.char, role: (m.role || "").trim(), emoji: memberEmoji(m),
-      type: TYPES[m.typeIdx].key, answers: m.tempAnswers.map((a) => (a || "").trim()),
-      lang: m.lang || currentLang()
-    }));
-
-    // 같은 가족 이름이 이미 있으면 (다른 폰에서 쓴 것도) 그 가족 카드에 저절로 합쳐요
-    let target = null;
-    if (currentFamilyName) {
-      target = allPosts.find((p) => p.familyName && p.id !== editingPostId && isSameFamily(p.familyName, currentFamilyName)) || null;
-    }
-
-    let msg;
-    if (target) {
-      await updateDoc(doc(db, "posts", target.id), { family: arrayUnion(...finalData), timestamp: new Date() });
-      if (editingPostId) await deleteDoc(doc(db, "posts", editingPostId));
-      msg = `'${target.familyName}' 가족과 하나로 합쳐졌어요! 🏡`;
-    } else if (editingPostId) {
-      await updateDoc(doc(db, "posts", editingPostId), { family: finalData, familyName: currentFamilyName, timestamp: new Date() });
-      msg = "수정이 완료됐어요! ✏️";
+    const member = {
+      name: me.name.trim(), avatar: normAv(me.avatar), pos: me.pos, type: TYPES[posStage(me.pos)].key,
+      answers: me.answers.map((a) => (a || "").trim()), lang: currentLang()
+    };
+    if (editing) {
+      await updateDoc(doc(db, "posts", editingPostId), { family: [member], private: isPrivate, v: 2 });
     } else {
-      await addDoc(postsCol, { familyName: currentFamilyName, family: finalData, timestamp: new Date() });
-      msg = "이야기가 광장에 올라갔어요!";
+      const pinSalt = randomSalt();
+      await addDoc(postsCol, {
+        v: 2, familyName: "", family: [member], private: isPrivate,
+        pinSalt, pinHash: await hashPin(pin, pinSalt), hearts: 0, timestamp: new Date()
+      });
     }
-
-    $("#done-title").textContent = msg;
-    $("#done-summary").innerHTML = finalData.map((m) => {
-      const i = typeIndex(m.type);
-      return `<span class="badge" style="${typeStyle(i)}">${esc(m.emoji)} ${esc(m.name)} · ${TYPES[i].emoji} <span>${m.type}</span></span>`;
-    }).join("");
-    store.del("draft");
-    members = []; currentFamilyName = ""; editingPostId = null;
-    renderChips();
+    closeSheet();
+    $("#done-avatar").innerHTML = avatarSVG(member.avatar);
+    $("#done-title").textContent = editing ? "수정을 마쳤어요!" : isPrivate ? "비공개로 올라갔어요" : "이야기가 올라갔어요!";
+    $("#done-text").textContent = isPrivate
+      ? "글은 다른 사람에게 보이지 않고, 아바타와 내 위치만 함께 있어요. 생일 4자리로 언제든 다시 볼 수 있어요."
+      : "모두의 이야기에서 다른 사람들의 이야기도 읽어 보세요.";
+    store.del("draft-v2");
+    me = freshMe(); editingPostId = null; specStage = null;
+    deckIdx = 0;
     goStep("#step-done");
   } catch (err) {
     console.error(err);
-    toast(err?.code === "permission-denied" ? "🔒 서버가 잠겨 있어 올릴 수 없어요. 관리자에게 알려 주세요" : "😢 오류가 났어요. 인터넷 연결을 확인하고 다시 눌러 주세요");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = editingPostId ? "수정 완료하기" : "이야기 공유하기";
+    $$(".share-sheet .choice").forEach((b) => (b.disabled = false));
+    toast(err?.code === "permission-denied" ? "서버가 잠겨 있어 올릴 수 없어요. 관리자에게 알려 주세요" : "오류가 났어요. 인터넷 연결을 확인하고 다시 눌러 주세요");
   }
-};
+}
 
 function resetJourney() {
-  members = []; currentFamilyName = ""; editingPostId = null;
-  $("#family-name-in").value = "";
-  renderChips(); goStep("#step-who");
+  me = freshMe(); editingPostId = null; specStage = null;
+  store.del("draft-v2");
+  renderBuilder(); goStep("#step-avatar");
 }
 $("#new-story").onclick = resetJourney;
 $("#go-board").onclick = () => { resetJourney(); showTab("board"); };
 $("#ext-share").onclick = async () => {
-  const data = { title: "문화적응 여정 ✈️", text: "나의 문화적응 이야기를 나눴어요. 당신의 이야기도 들려주세요 💌", url: location.href.split("#")[0] };
+  const data = { title: "문화적응 여정", text: "나의 문화적응 이야기를 나눴어요. 당신의 이야기도 들려주세요.", url: location.href.split("#")[0] };
   try {
     if (navigator.share) await navigator.share(data);
-    else { await navigator.clipboard.writeText(data.url); toast("🔗 링크를 복사했어요"); }
+    else { await navigator.clipboard.writeText(data.url); toast("링크를 복사했어요"); }
   } catch {}
 };
 
-/* ============ 📰 이야기 광장 ============ */
+/* ============ 💌 모두의 이야기 (카드 한 장씩) ============ */
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
   allPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   renderFeed();
 }, (err) => {
   console.error(err);
   $("#board-count").textContent = err?.code === "permission-denied"
-    ? "🔒 서버가 잠겨 있어 이야기를 불러올 수 없어요. 관리자에게 알려 주세요. (Firebase 보안 규칙)"
-    : "😢 이야기를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.";
+    ? "서버가 잠겨 있어 이야기를 불러올 수 없어요. 관리자에게 알려 주세요. (Firebase 보안 규칙)"
+    : "이야기를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.";
 });
 
 function renderFilters() {
-  const counts = [0, 0, 0, 0];
-  let people = 0;
-  allPosts.forEach((p) => (p.family || []).forEach((m) => { people++; const i = typeIndex(m.type); if (i >= 0) counts[i]++; }));
-  $("#board-count").innerHTML = `지금까지 <b>${people}명</b>이 <b>${allPosts.length}개</b>의 이야기를 나눴어요.`;
+  const counts = TYPES.map((_, i) => allPosts.reduce((n, p) => n + (p.family || []).filter((m) => inStage(m, i)).length, 0));
+  const people = peopleCount();
+  $("#board-count").innerHTML = `지금까지 <b>${people}명</b>이 이야기를 나눴어요.`;
   $("#filter-chips").innerHTML =
-    `<button class="f-chip ${filterType === "all" ? "active" : ""}" data-filter="all">✨ 전체 <b>${people}</b></button>` +
-    TYPES.map((t, i) => `<button class="f-chip ${filterType === t.key ? "active" : ""}" data-filter="${t.key}">${t.emoji} <span>${t.key}</span> <b>${counts[i]}</b></button>`).join("");
+    `<button class="f-chip ${filterType === "all" ? "active" : ""}" data-filter="all">전체 <b>${people}</b></button>` +
+    TYPES.map((t, i) => `<button class="f-chip ${filterType === String(i) ? "active" : ""}" data-filter="${i}">${t.emoji} <span>${t.key}</span> <b>${counts[i]}</b></button>`).join("");
 }
 $("#filter-chips").onclick = (e) => {
   const b = e.target.closest("[data-filter]"); if (!b) return;
-  filterType = b.dataset.filter; visibleCount = 5; renderFeed();
+  filterType = b.dataset.filter; deckIdx = 0; renderFeed();
 };
+const filteredPosts = () => (filterType === "all" ? allPosts : allPosts.filter((p) => (p.family || []).some((m) => inStage(m, +filterType))));
+
+function postHTML(post, liked) {
+  const titles = qTitles(post);
+  const members = (post.family || []).map((m) => {
+    const p = memberPos(m);
+    const answers = post.private ? "" : (m.answers || []).map((a, qi) => a ? `
+      <div class="qa"><div class="ql">${esc(titles[qi] || "")}</div><div class="qb" data-orig="${esc(a)}"${m.lang ? ` lang="${esc(m.lang)}"` : ""}>${esc(a)}</div></div>` : "").join("");
+    return `<div class="member">
+      <div class="post-head">
+        <div class="av-sm">${avatarOf(m)}</div>
+        <div class="who"><b translate="no" class="notranslate">${esc(m.name)}</b>${m.role ? `<small>${esc(m.role)}</small>` : ""}</div>
+      </div>
+      ${posBadge(p)}
+      ${miniSpec(p)}
+      ${post.private ? "" : answers || `<div class="no-ans">작성된 답변이 없어요</div>`}
+    </div>`;
+  }).join("");
+  const privateBox = post.private ? `<div class="private-box">
+      <div class="fake" aria-hidden="true">${"<i></i>".repeat(7)}</div>
+      <div class="private-cover"><b>🔒 비공개 이야기예요</b><small>쓴 사람만 볼 수 있어요</small></div>
+    </div>` : "";
+  return `<article class="post">
+    ${post.familyName ? `<div class="fam-banner">🏡 <span translate="no" class="notranslate">${esc(post.familyName)}</span></div>` : ""}
+    ${members}${privateBox}
+    <div class="post-foot">
+      <button class="heart ${liked.includes(post.id) ? "on" : ""}" data-heart="${post.id}">${liked.includes(post.id) ? "❤️" : "🤍"} 공감 ${post.hearts || 0}</button>
+      <span class="date">${fmtDate(post.timestamp)}</span>
+      <button class="more" data-more="${post.id}" aria-label="더보기">⋯</button>
+    </div>
+  </article>`;
+}
 
 function renderFeed() {
   renderFilters();
-  const list = filterType === "all" ? allPosts : allPosts.filter((p) => (p.family || []).some((m) => m.type === filterType));
+  const list = filteredPosts();
+  const deck = $("#feed-list");
+  $("#deck-nav").classList.toggle("hidden", list.length < 2);
   if (!list.length) {
-    $("#feed-list").innerHTML = `<div class="card empty"><div class="big-emo">🌱</div>
-      <p>${filterType === "all" ? "아직 이야기가 없어요.<br>첫 번째 이야기를 들려주세요!" : "이 유형의 이야기는 아직 없어요."}</p></div>`;
-    $("#more-btn").classList.add("hidden");
+    deck.innerHTML = `<div class="card empty"><div class="big-emo">🌱</div>
+      <p>${filterType === "all" ? "아직 이야기가 없어요.<br>첫 번째 이야기를 들려주세요!" : "이 단계의 이야기는 아직 없어요."}</p></div>`;
+    deckIdx = 0;
     return;
   }
   const liked = store.get("liked", []);
-  $("#feed-list").innerHTML = list.slice(0, visibleCount).map((post) => `
-    <article class="post">
-      ${post.familyName ? `<div class="fam-banner">🏡 <span translate="no" class="notranslate">${esc(post.familyName)}</span></div>` : ""}
-      ${(post.family || []).map((m) => {
-        const i = typeIndex(m.type);
-        const answers = (m.answers || []).map((a, qi) => a ? `
-          <div class="qa"><div class="ql">${QUESTIONS[qi]?.icon || "💭"} ${esc(QUESTIONS[qi]?.q || "")}</div><div class="qb" data-orig="${esc(a)}"${m.lang ? ` lang="${esc(m.lang)}"` : ""}>${esc(a)}</div></div>` : "").join("");
-        return `<div class="member">
-          <div class="member-top">
-            <div class="avatar sm">${esc(memberEmoji(m))}</div>
-            <div class="who"><b translate="no" class="notranslate">${esc(m.name)}</b>${m.role ? `<small>${esc(m.role)}</small>` : ""}${m.lang && m.lang !== "ko" ? `<br><span class="lang-tag">🌐 ${esc(langName(m.lang))}로 작성</span>` : ""}</div>
-            ${i >= 0 ? `<span class="badge" style="${typeStyle(i)}">${TYPES[i].emoji} <span>${TYPES[i].key}</span></span>` : ""}
-          </div>
-          ${answers || `<div class="no-ans">작성된 답변이 없어요</div>`}
-        </div>`;
-      }).join("")}
-      <div class="post-foot">
-        <button class="heart ${liked.includes(post.id) ? "on" : ""}" data-heart="${post.id}">${liked.includes(post.id) ? "❤️" : "🤍"} 공감 ${post.hearts || 0}</button>
-        <span class="date">${fmtDate(post.timestamp)}</span>
-        <button class="more" data-more="${post.id}" aria-label="더보기">⋯</button>
-      </div>
-    </article>`).join("");
-  $("#more-btn").classList.toggle("hidden", list.length <= visibleCount);
+  deck.innerHTML = list.map((p) => postHTML(p, liked)).join("");
+  deckIdx = Math.min(deckIdx, list.length - 1);
+  syncDeck();
   applyTranslations();
 }
-$("#more-btn").onclick = () => { visibleCount += 5; renderFeed(); };
+// 지금 보고 있는 카드로 다시 맞춰요 (새 이야기가 들어와도 보던 카드를 유지)
+function syncDeck() {
+  const deck = $("#feed-list"), card = deck.children[deckIdx];
+  if (card) { deck.style.scrollBehavior = "auto"; deck.scrollLeft = card.offsetLeft - deck.offsetLeft; deck.style.scrollBehavior = ""; }
+  updateDeckNav();
+}
+function updateDeckNav() {
+  const n = $("#feed-list").querySelectorAll(".post").length;
+  $("#deck-count").textContent = n ? `${deckIdx + 1} / ${n}` : "0 / 0";
+  $("#deck-prev").disabled = deckIdx <= 0;
+  $("#deck-next").disabled = deckIdx >= n - 1;
+}
+let deckRaf;
+$("#feed-list").addEventListener("scroll", () => {
+  cancelAnimationFrame(deckRaf);
+  deckRaf = requestAnimationFrame(() => {
+    const deck = $("#feed-list"), w = deck.children[0]?.offsetWidth || 1;
+    deckIdx = Math.max(0, Math.round(deck.scrollLeft / (w + 14)));
+    updateDeckNav();
+  });
+});
+const goCard = (d) => {
+  const deck = $("#feed-list"), n = deck.querySelectorAll(".post").length;
+  const i = Math.max(0, Math.min(n - 1, deckIdx + d));
+  const card = deck.children[i];
+  if (card) deck.scrollTo({ left: card.offsetLeft - deck.offsetLeft, behavior: "smooth" });
+};
+$("#deck-prev").onclick = () => goCard(-1);
+$("#deck-next").onclick = () => goCard(1);
 
 $("#feed-list").addEventListener("click", async (e) => {
   const h = e.target.closest("[data-heart]");
   if (h) {
     const id = h.dataset.heart, liked = store.get("liked", []);
-    if (liked.includes(id)) { toast("❤️ 이미 공감했어요"); return; }
+    if (liked.includes(id)) { toast("이미 공감했어요"); return; }
     try {
       await updateDoc(doc(db, "posts", id), { hearts: increment(1) });
       store.set("liked", [...liked, id]);
-      toast("❤️ 마음을 전했어요");
-    } catch (err) { console.error(err); toast("😢 공감을 보내지 못했어요"); }
+      toast("마음을 전했어요");
+    } catch (err) { console.error(err); toast("공감을 보내지 못했어요"); }
     return;
   }
   const m = e.target.closest("[data-more]");
   if (m) openPostMenu(m.dataset.more);
 });
 
+/* ============ ⋯ 내 이야기 열기 (생일 4자리) / 관리자 삭제 ============ */
 function openPostMenu(id) {
-  openSheet(`
-    <h3 style="text-align:center">이 이야기를…</h3>
+  const p = allPosts.find((x) => x.id === id); if (!p) return;
+  if (!p.pinHash) {
+    openSheet(`<h3>이 이야기는…</h3>
+      <p class="muted center">예전 방식으로 올린 이야기라서 관리자만 삭제할 수 있어요.</p>
+      <div class="action-list">
+        <button class="btn btn-soft" id="pm-admin">관리자 삭제</button>
+        <button class="btn btn-ghost" id="pm-cancel">닫기</button>
+      </div>`);
+    $("#pm-admin").onclick = () => openAdminDelete(id);
+    $("#pm-cancel").onclick = closeSheet;
+    return;
+  }
+  openSheet(`<h3>내 이야기 열기</h3>
+    <p class="muted center">내 이야기라면 <b>생일 4자리</b>를 넣어 주세요.<br>다시 보기·수정·공개 바꾸기·삭제를 할 수 있어요.</p>
+    ${pinInputHTML("pm-pin")}
     <div class="action-list">
-      <button class="btn btn-soft" id="pm-edit">수정하기</button>
-      <button class="btn btn-danger" id="pm-del">삭제하기 (비밀번호 필요)</button>
-      <button class="btn btn-ghost" id="pm-cancel">취소</button>
-    </div>`);
+      <button class="btn btn-primary" id="pm-open">열기</button>
+      <button class="btn btn-ghost" id="pm-cancel">닫기</button>
+    </div>
+    <p class="center"><button type="button" class="link-btn" id="pm-admin">관리자 삭제</button></p>`);
+  const input = $("#pm-pin");
+  bindPinInput(input);
+  const tryOpen = async () => {
+    const pin = input.value;
+    if (pin.length !== 4) { toast("생일 4자리를 넣어 주세요 (예: 0828)"); input.focus(); return; }
+    if ((await hashPin(pin, p.pinSalt)) !== p.pinHash) { toast("생일 4자리가 맞지 않아요"); input.select(); return; }
+    openOwnerSheet(p.id);
+  };
+  $("#pm-open").onclick = tryOpen;
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") tryOpen(); });
   $("#pm-cancel").onclick = closeSheet;
-  $("#pm-edit").onclick = () => { closeSheet(); startEdit(id); };
-  $("#pm-del").onclick = async () => {
-    closeSheet();
-    const pw = prompt("🔐 삭제하려면 비밀번호를 입력하세요.");
-    if (pw === null || pw === "") return;
-    if (pw !== ADMIN_PW) { toast("🔐 비밀번호가 맞지 않아요"); return; }
-    try { await deleteDoc(doc(db, "posts", id)); toast("🗑️ 삭제했어요"); }
-    catch (err) { console.error(err); toast("😢 삭제하지 못했어요"); }
+  $("#pm-admin").onclick = () => openAdminDelete(id);
+  setTimeout(() => input.focus(), 50);
+}
+// 생일 4자리 확인을 마친 글쓴이만 여기까지 와요
+function openOwnerSheet(id) {
+  const p = allPosts.find((x) => x.id === id); if (!p) { closeSheet(); return; }
+  const m = (p.family || [])[0] || {};
+  const titles = qTitles(p);
+  const story = (m.answers || []).map((a, qi) => a ? `<div class="qa"><div class="ql">${esc(titles[qi])}</div><div class="qb">${esc(a)}</div></div>` : "").join("");
+  openSheet(`<h3>내 이야기</h3>
+    <p class="muted center">지금은 <b>${p.private ? "비공개" : "공개"}</b> 상태예요.</p>
+    <div class="my-story">${story || `<div class="no-ans">작성된 답변이 없어요</div>`}</div>
+    <div class="action-list">
+      <button class="btn btn-soft" id="ow-edit">수정하기</button>
+      <button class="btn btn-soft" id="ow-vis">${p.private ? "공개로 바꾸기" : "비공개로 바꾸기"}</button>
+      <button class="btn btn-danger" id="ow-del">삭제하기</button>
+      <button class="btn btn-ghost" id="ow-close">닫기</button>
+    </div>`);
+  $("#ow-close").onclick = closeSheet;
+  $("#ow-edit").onclick = () => { closeSheet(); startEdit(p); };
+  $("#ow-vis").onclick = async () => {
+    try {
+      await updateDoc(doc(db, "posts", id), { private: !p.private });
+      closeSheet(); toast(p.private ? "공개로 바꿨어요" : "비공개로 바꿨어요");
+    } catch (err) { console.error(err); toast("바꾸지 못했어요. 다시 해 주세요"); }
+  };
+  armDelete($("#ow-del"), id);
+}
+// 삭제는 두 번 눌러야 돼요 (실수 방지)
+function armDelete(btn, id) {
+  let armed = false;
+  btn.onclick = async () => {
+    if (!armed) { armed = true; btn.textContent = "정말 삭제할까요? 한 번 더 누르세요"; return; }
+    btn.disabled = true;
+    try { await deleteDoc(doc(db, "posts", id)); closeSheet(); toast("삭제했어요"); }
+    catch (err) { console.error(err); btn.disabled = false; toast("삭제하지 못했어요"); }
+  };
+}
+// 관리자: 삭제만 할 수 있어요 (내용 보기·수정·공개 바꾸기 없음)
+function openAdminDelete(id) {
+  openSheet(`<h3>관리자 삭제</h3>
+    <p class="muted center">관리자는 이야기를 <b>삭제만</b> 할 수 있어요.</p>
+    <input type="password" id="ad-pw" placeholder="관리자 비밀번호" autocomplete="off">
+    <div class="action-list">
+      <button class="btn btn-danger" id="ad-del">삭제하기</button>
+      <button class="btn btn-ghost" id="ad-cancel">닫기</button>
+    </div>`);
+  $("#ad-cancel").onclick = closeSheet;
+  const btn = $("#ad-del");
+  let armed = false;
+  btn.onclick = async () => {
+    if ($("#ad-pw").value !== ADMIN_PW) { toast("관리자 비밀번호가 맞지 않아요"); return; }
+    if (!armed) { armed = true; btn.textContent = "정말 삭제할까요? 한 번 더 누르세요"; return; }
+    btn.disabled = true;
+    try { await deleteDoc(doc(db, "posts", id)); closeSheet(); toast("삭제했어요"); }
+    catch (err) { console.error(err); btn.disabled = false; toast("삭제하지 못했어요"); }
   };
 }
 
-function startEdit(id) {
-  const p = allPosts.find((x) => x.id === id); if (!p) return;
-  editingPostId = id;
-  currentFamilyName = p.familyName || "";
-  members = (p.family || []).map((m) => ({
-    name: m.name || "", char: m.char, role: m.role || "", emoji: m.emoji || "",
-    typeIdx: typeIndex(m.type) >= 0 ? typeIndex(m.type) : null,
-    tempAnswers: [0, 1, 2, 3].map((k) => m.answers?.[k] || ""),
-    lang: m.lang || ""
-  }));
+function startEdit(p) {
+  const m = (p.family || [])[0] || {};
+  editingPostId = p.id; specStage = null;
+  me = {
+    name: m.name || "", avatar: normAv(m.avatar), pos: memberPos(m),
+    answers: [0, 1, 2, 3].map((k) => m.answers?.[k] || "")
+  };
   showTab("journey");
   goWrite();
-  toast("✏️ 고친 다음 아래 '수정 완료하기'를 눌러 주세요");
+  toast("고친 다음 아래 '수정한 이야기 올리기'를 눌러 주세요");
 }
 
-/* ============ 🔐 관리자 ============ */
+/* ============ 🔐 관리자 전체 삭제 ============ */
 $("#del-all").onclick = async () => {
-  if ($("#admin-pw").value !== ADMIN_PW) { toast("🔐 비밀번호가 맞지 않아요"); return; }
-  if (!confirm("⚠️ 모든 이야기를 지울까요? 되돌릴 수 없어요.")) return;
+  if ($("#admin-pw").value !== ADMIN_PW) { toast("관리자 비밀번호가 맞지 않아요"); return; }
+  if (!confirm("모든 이야기를 지울까요? 되돌릴 수 없어요.")) return;
   try {
     const s = await getDocs(postsCol);
     await Promise.all(s.docs.map((d) => deleteDoc(doc(db, "posts", d.id))));
     $("#admin-pw").value = "";
-    toast("🗑️ 전체 삭제를 마쳤어요");
-  } catch (err) { console.error(err); toast("😢 삭제 중 오류가 났어요"); }
+    toast("전체 삭제를 마쳤어요");
+  } catch (err) { console.error(err); toast("삭제 중 오류가 났어요"); }
 };
 
 /* ============ 📲 앱 설치 (PWA) ============ */
-// 서비스 워커를 바로 등록해요 (크롬은 이게 준비돼야 '설치 가능' 신호를 보내요)
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(console.error);
-// 크롬·엣지·삼성 인터넷은 버튼 한 번으로 설치할 수 있어요. 아이폰·사파리·파이어폭스는 안 돼요.
-// 예전 버전은 질문을 보여 주기만 해도 '물어봤음'으로 기록했어요. 새 이름으로 바꿔 모두에게 한 번 다시 물어요.
 const INSTALL_KEY = "install-asked-v2";
 const CAN_AUTO_INSTALL = "onbeforeinstallprompt" in window && !IS_IOS;
 window.addEventListener("beforeinstallprompt", (e) => {
@@ -950,7 +1082,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
 window.addEventListener("appinstalled", () => {
   deferredInstall = null;
   $("#install-btn").classList.add("hidden");
-  toast("📲 설치됐어요! 홈 화면의 ✈️ 아이콘으로 열어 주세요");
+  toast("설치됐어요! 홈 화면의 ✈️ 아이콘으로 열어 주세요");
 });
 async function runInstall() {
   if (!deferredInstall) return false;
@@ -959,14 +1091,14 @@ async function runInstall() {
   const { outcome } = await ev.userChoice;
   deferredInstall = null;
   $("#install-btn").classList.add("hidden");
-  if (outcome === "accepted") toast("📲 설치하고 있어요!");
+  if (outcome === "accepted") toast("설치하고 있어요!");
   return true;
 }
 $("#install-btn").onclick = runInstall;
 
 function manualInstallSheet(next) {
   openSheet(`
-    <div class="slide" style="min-height:0">
+    <div class="slide">
       <div class="big-emo">📲</div><h2>이렇게 설치해 주세요</h2>
       ${IS_IOS
         ? `<p>아이폰은 버튼 하나로 바로 설치할 수 없어서<br>아래 순서대로 눌러 주세요.</p>
@@ -987,10 +1119,10 @@ function manualInstallSheet(next) {
     </div>`, next);
   $("#mi-ok").onclick = closeSheet;
 }
-// 처음 들어왔을 때: "앱으로 설치할까요?" → 아니오: 그냥 넘어가요 / 예: 바로 설치해요
+// "앱으로 설치할까요?" → 아니오: 그냥 넘어가요 / 예: 바로 설치해요
 function askInstall(next) {
   openSheet(`
-    <div class="slide" style="min-height:0">
+    <div class="slide">
       <div class="big-emo">📲</div><h2>앱으로 설치할까요?</h2>
       <p>홈 화면(컴퓨터는 바탕화면)에 ✈️ 아이콘이 생겨서<br>다음부터 바로 열 수 있어요.</p>
       <div class="ask-btns">
@@ -1001,22 +1133,20 @@ function askInstall(next) {
   $("#ia-no").onclick = closeSheet;
   $("#ia-yes").onclick = () => {
     store.set(INSTALL_KEY, true);
-    // 설치 창은 '예'를 누른 그 순간에 바로 띄워야 해요 (기다리면 브라우저가 막아요)
     if (deferredInstall) { closeSheet(); runInstall(); }
     else if (CAN_AUTO_INSTALL) waitInstallSheet(next);
     else manualInstallSheet(next);
   };
 }
-// 크롬은 처음 온 사람이 화면을 한 번 누르고 30초쯤 머문 뒤에야 설치를 허락해요.
-// 그동안 진행 막대를 보여 주며 기다렸다가, 허락이 나면 '지금 설치하기' 버튼을 켜요.
+// 크롬은 처음 온 사람이 30초쯤 머문 뒤에야 설치를 허락해요. 그동안 진행 막대를 보여 줘요.
 const WAIT_MS = 32000;
 function waitInstallSheet(next) {
   openSheet(`
-    <div class="slide" style="min-height:0">
+    <div class="slide">
       <div class="big-emo">⏳</div><h2 id="iw-title">설치를 준비하고 있어요</h2>
       <p id="iw-text">크롬이 설치를 허락할 때까지 기다리는 중이에요.<br>처음 오셨다면 <b>30초쯤</b> 걸려요. 이 화면을 그대로 두세요.</p>
       <div class="iw-bar"><i id="iw-fill"></i></div>
-      <button class="btn btn-primary" id="iw-go" disabled>⏳ 준비 중…</button>
+      <button class="btn btn-primary" id="iw-go" disabled>준비 중…</button>
       <button class="link-btn hidden" id="iw-manual" type="button">설치가 안 되나요? 직접 설치하는 방법 보기</button>
     </div>`, next);
   const btn = $("#iw-go"), t0 = Date.now();
@@ -1037,11 +1167,9 @@ function waitInstallSheet(next) {
     btn.disabled = false; btn.textContent = "지금 설치하기";
     btn.onclick = () => { closeSheet(); runInstall(); };
   };
-  // 시간 제한 없이 기다려요 (늦게 허락이 나도 버튼이 켜져요)
   if (deferredInstall) ready();
   else window.addEventListener("beforeinstallprompt", () => setTimeout(ready), { once: true });
 }
-// 이미 설치돼 있는지 확인 (크롬은 설치된 앱에는 설치 허락을 보내지 않아요)
 async function isInstalled() {
   try {
     if (!navigator.getInstalledRelatedApps) return false;
@@ -1049,14 +1177,18 @@ async function isInstalled() {
     return apps.length > 0;
   } catch { return false; }
 }
+function maybeAskInstall() {
+  if (IS_STANDALONE || store.get(INSTALL_KEY)) return;
+  isInstalled().then((yes) => { if (!yes) askInstall(() => {}); });
+}
 
 /* ============ 🚀 시작 ============ */
 applyLangAttrs();
 renderTrSeg();
 $("#guide-lang-grid").outerHTML = langGridHTML();
 loadDraft();
-const startIntro = () => { if (!store.get("hide-guide-intro")) openGuide("intro"); };
-// 처음 들어오면 항상 바로 물어봐요 (설치한 앱으로 열었거나 이미 답했으면 안 물어요)
-if (IS_STANDALONE || store.get(INSTALL_KEY)) startIntro();
-else isInstalled().then((yes) => (yes ? startIntro() : askInstall(startIntro)));
+renderBuilder();
+// 처음 들어오면: ① 환영 + 편한 언어 고르기 → ② 앱으로 설치할까요?
+if (!store.get("hide-guide-intro-v2")) openGuide("intro", maybeAskInstall);
+else maybeAskInstall();
 if (uiLang !== "ko") translatePage();
