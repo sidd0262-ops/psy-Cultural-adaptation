@@ -656,23 +656,30 @@ const SPECTRUM_LIST = `<ul class="dot-list">
   </ul>`;
 const SPECTRUM_HTML = `<div class="info-box"><div class="info-title">💡 알아 두세요</div>${SPECTRUM_LIST}</div>`;
 
-// 💌 모두의 이야기 사용법: 왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명
-const BOARD_HOWTO_HTML = `<div class="howto">
-  <div class="howto-group">이야기 보기</div>
-  <div class="howto-row"><span class="ui-chip">◀ ▶</span><span>옆으로 밀거나 눌러서 이야기를 <b>한 장씩</b> 넘겨 봐요.</span></div>
-  <div class="howto-row"><span class="ui-chip">🍂 주변화 3</span><span>같은 단계의 이야기만 모아 봐요. 두 단계 사이에 있는 이야기는 양쪽 모두에 나와요.</span></div>
-  <div class="howto-row"><span class="ui-chip">한국어 · English</span><span>여러 나라 언어로 쓴 답변을 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요.</span></div>
-  <div class="howto-group">마음 나누기</div>
-  <div class="howto-row"><span class="ui-chip">🤍 공감</span><span>마음을 전해요. 이야기 하나에 한 번 누를 수 있어요.</span></div>
-  <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기를 <b>수정</b>해요. 공개 이야기는 쓴 휴대폰에서, 비공개 이야기는 <b>생일 4자리</b>로 열어요.</span></div>
-</div>
-<div class="info-box">
-  <div class="info-title">💡 알아 두세요</div>
-  <ul class="dot-list">
-    <li>비공개 이야기는 글이 흐리게 가려져 있어요. 쓴 사람만 생일 4자리로 볼 수 있어요.</li>
-    <li>관리자는 이야기를 <b>삭제만</b> 할 수 있어요.</li>
-  </ul>
-</div>`;
+// 💌 모두의 이야기 사용법: 인스타 사진처럼 한 장씩 넘겨 읽어요 (왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명)
+const BOARD_SLIDES = [
+  () => `<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
+    <p>참여한 모든 사람의 이야기가 이곳에 모여요.</p>
+    <p>다른 사람의 이야기는 <b>따뜻한 마음</b>으로 읽어 주세요.</p>`,
+  () => `<div class="big-emo">👀</div><h2>이야기 보기</h2>
+    <div class="howto">
+      <div class="howto-row"><span class="ui-chip">◀ ▶</span><span>옆으로 밀거나 눌러서 이야기를 <b>한 장씩</b> 넘겨 봐요.</span></div>
+      <div class="howto-row"><span class="ui-chip">🍂 주변화 3</span><span>같은 단계의 이야기만 모아 봐요. 두 단계 사이에 있는 이야기는 양쪽 모두에 나와요.</span></div>
+      <div class="howto-row"><span class="ui-chip">한국어 · English</span><span>여러 나라 언어로 쓴 답변을 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요.</span></div>
+    </div>`,
+  () => `<div class="big-emo">🤍</div><h2>마음 나누기</h2>
+    <div class="howto">
+      <div class="howto-row"><span class="ui-chip">🤍 공감</span><span>마음을 전해요. 이야기 하나에 한 번 누를 수 있어요.</span></div>
+      <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기를 <b>수정</b>해요. 공개 이야기는 쓴 휴대폰에서, 비공개 이야기는 <b>생일 4자리</b>로 열어요.</span></div>
+    </div>`,
+  () => `<div class="big-emo">💡</div><h2>알아 두세요</h2>
+    <div class="info-box">
+      <ul class="dot-list">
+        <li>비공개 이야기는 글이 흐리게 가려져 있어요. 쓴 사람만 생일 4자리로 볼 수 있어요.</li>
+        <li>관리자는 이야기를 <b>삭제만</b> 할 수 있어요.</li>
+      </ul>
+    </div>`
+];
 
 // ❓ Help 창: 참여 방법 · 4단계 설명 · 언어 · 관리자 메뉴 (아래 설명서 탭 대신)
 const HELP_HTML = () => `<div class="big-emo">🧭</div><h2>도움말</h2>
@@ -713,13 +720,7 @@ const GUIDES = {
     html: () => `<div class="big-emo"><span class="ln-ic big-ln notranslate" translate="no" aria-hidden="true">文A</span></div><h2>언어 고르기 <span class="notranslate muted" translate="no">· Language</span></h2>
        <p>편한 언어를 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`
   },
-  board: {
-    btn: "확인",
-    html: () => `<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
-       <p>참여한 모든 사람의 이야기가 이곳에 모여요.</p>
-       ${BOARD_HOWTO_HTML}
-       <p class="muted">다른 사람의 이야기는 따뜻한 마음으로 읽어 주세요.</p>`
-  },
+  board: { btn: "확인", slides: BOARD_SLIDES },
   help: { btn: "닫기", html: HELP_HTML }
 };
 
@@ -740,10 +741,43 @@ $("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.
 
 function openGuide(name, after = null) {
   const g = GUIDES[name];
+  if (g.slides) return openSlides(g.slides.map((f) => f()), g.btn, after);
   openSheet(`<div class="slide">${g.html()}</div>
     <div class="sheet-foot"><span></span><button class="btn btn-primary" id="g-next">${g.btn}</button></div>`, after);
   $("#g-next").onclick = closeSheet;
   if (name === "help") bindAdmin();
+}
+// 한 장씩 넘겨 읽는 안내창: 옆으로 밀거나 [◀ 이전] [다음 ▶], 마지막 장은 [확인]
+function openSlides(slides, lastBtn, after = null) {
+  let i = 0;
+  openSheet(`<div class="car"><div class="car-track">${slides.map((h) => `<section class="slide car-slide">${h}</section>`).join("")}</div></div>
+    <div class="car-foot">
+      <button type="button" class="btn btn-ghost" id="car-prev">◀ 이전</button>
+      <div class="car-dots" aria-hidden="true">${slides.map(() => "<i></i>").join("")}</div>
+      <button type="button" class="btn btn-primary" id="car-next"></button>
+    </div>`, after);
+  const last = slides.length - 1;
+  const go = (n) => {
+    i = Math.max(0, Math.min(last, n));
+    $(".car-track").style.transform = `translateX(${-100 * i}%)`;
+    $$(".car-slide").forEach((el, k) => el.setAttribute("aria-hidden", k !== i));
+    $$(".car-dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+    $("#car-prev").style.visibility = i ? "visible" : "hidden";
+    $("#car-next").textContent = i === last ? lastBtn : "다음 ▶";
+    $("#sheet-body").scrollTop = 0;
+  };
+  $("#car-prev").onclick = () => go(i - 1);
+  $("#car-next").onclick = () => (i === last ? closeSheet() : go(i + 1));
+  // 옆으로 밀기 (위아래 스크롤은 그대로)
+  const car = $(".car"); let x0 = null, y0 = 0;
+  car.addEventListener("pointerdown", (e) => { x0 = e.clientX; y0 = e.clientY; });
+  car.addEventListener("pointercancel", () => (x0 = null));
+  car.addEventListener("pointerup", (e) => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(i + (dx < 0 ? 1 : -1));
+  });
+  go(0);
 }
 $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.openGuide)));
 $("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "help" : "board");

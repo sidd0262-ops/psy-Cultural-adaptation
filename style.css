@@ -368,6 +368,21 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
 .sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; }
 .sheet-foot label { font-size: 0.86rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .sheet-foot .btn { width: auto; padding: 12px 22px; margin: 0; }
+/* 한 장씩 넘겨 읽는 안내창 */
+/* clear: 왼쪽 위 ✕(float) 옆으로 밀리지 않고 아래에서 전체 너비로 시작해요 */
+.car { clear: both; overflow: hidden; touch-action: pan-y; }
+.car-slide .big-emo { margin-top: 0; }
+.car-track { display: flex; align-items: flex-start; transition: transform .3s ease; }
+.car-slide { flex: 0 0 100%; min-width: 0; box-sizing: border-box; padding: 0 2px; }
+.car-slide h2 { margin-bottom: 14px; }
+.car-slide .info-box { margin-top: 0; }
+.car-foot { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-top: 18px; }
+.car-foot .btn { width: auto; padding: 12px 16px; margin: 0; white-space: nowrap; }
+#car-prev { justify-self: start; }
+#car-next { justify-self: end; }
+.car-dots { display: flex; gap: 6px; }
+.car-dots i { width: 8px; height: 8px; border-radius: 4px; background: #DADDE8; transition: width .2s, background .2s; }
+.car-dots i.on { width: 22px; background: var(--primary); }
 .ask-btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 18px; }
 .ask-btns .btn { margin: 0; }
 .action-list { display: grid; gap: 8px; margin-top: 12px; }
