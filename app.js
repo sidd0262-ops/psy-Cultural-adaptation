@@ -675,7 +675,7 @@ const BOARD_SLIDES = [
   () => chap("이야기 보기", bigChip(`<span class="ln-ic notranslate" translate="no">文A</span> 이야기 번역 ▾`), "한 언어로 바꿔 보기",
     "여러 나라 언어로 쓴 이야기를 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요."),
   () => chap("마음 나누기", bigChip("🤍 공감"), "공감 전하기",
-    "마음을 전해요. 이야기 하나에 한 번 누를 수 있어요."),
+    "마음을 전해요. 마음이 닿는 만큼 <b>여러 번</b> 누를 수 있어요."),
   () => chap("마음 나누기", bigChip("⋯"), "내 이야기 고치기",
     "공개 이야기는 쓴 휴대폰에서 고칠 수 있어요. 비공개 이야기는 <b>생일 4자리</b>로 열어요."),
   () => chap("알아 두세요", `<div class="big-emo">💡</div>`, "비공개 이야기",
@@ -1175,11 +1175,11 @@ $("#deck-next").onclick = () => goCard(1);
 $("#feed-list").addEventListener("click", async (e) => {
   const h = e.target.closest("[data-heart]");
   if (h) {
+    // 공감은 횟수 제한 없이 여러 번 누를 수 있어요 (한 번이라도 누른 이야기는 ❤️로 보여요)
     const id = h.dataset.heart, liked = store.get("liked", []);
-    if (liked.includes(id)) { toast("이미 공감했어요"); return; }
     try {
       await updateDoc(doc(db, "posts", id), { hearts: increment(1) });
-      store.set("liked", [...liked, id]);
+      if (!liked.includes(id)) store.set("liked", [...liked, id]);
       toast("마음을 전했어요");
     } catch (err) { console.error(err); toast("공감을 보내지 못했어요"); }
     return;
