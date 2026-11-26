@@ -709,7 +709,7 @@ const HELP_HTML = () => `<div class="big-emo">🧭</div><h2>도움말</h2>
     <button id="del-all" class="btn btn-danger">전체 삭제</button>
   </details>`;
 
-// 안내창들. 첫 팝업은 처음 한 번만 저절로 떠요 (체크 상자 없음, 닫기는 왼쪽 위 ✕)
+// 안내창들. 첫 팝업은 들어올 때마다 저절로 떠요 (체크 상자 없음, 닫기는 왼쪽 위 ✕)
 const GUIDES = {
   intro: {
     btn: "시작하기",
@@ -1346,7 +1346,9 @@ applyLangAttrs();
 renderTrSeg();
 loadDraft();
 renderBuilder();
-// 처음 들어왔을 때 한 번만: 환영 + 편한 언어 고르기
-// 뜨는 순간이 아니라 닫을 때(✕·시작하기·바깥 누르기) "봤음"으로 저장해요 → 닫기 전에 새로고침하거나 나가면 다음에 다시 떠요
-if (!store.get("seen-intro-v4")) openGuide("intro", () => store.set("seen-intro-v4", true));
+// 환영 + 편한 언어 고르기
+// 사이트(앱)에 들어올 때마다 떠요. 닫으면 이번 방문(탭) 동안만 다시 안 떠요 → 새로 열면 또 떠요
+const introKey = "intro-shown";
+const introShown = () => { try { return sessionStorage.getItem(introKey) === "1"; } catch { return false; } };
+if (!introShown()) openGuide("intro", () => { try { sessionStorage.setItem(introKey, "1"); } catch {} });
 if (uiLang !== "ko") translatePage();
