@@ -638,7 +638,7 @@ function showTab(name) {
   $(`#view-${name}`).classList.remove("hidden");
   $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   window.scrollTo({ top: 0, behavior: "smooth" });
-  // 모두의 이야기 사용법은 처음 한 번만 저절로 떠요 (다시 보려면 ❓ 또는 Help)
+  // 모두의 이야기 사용법은 처음 한 번만 저절로 떠요 (다시 보려면 Help)
   if (name === "board") { syncDeck(); if (!store.get("seen-guide-board-v3")) { store.set("seen-guide-board-v3", true); openGuide("board"); } }
 }
 $$(".tab").forEach((t) => (t.onclick = () => showTab(t.dataset.tab)));
