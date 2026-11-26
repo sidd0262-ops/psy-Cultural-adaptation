@@ -38,13 +38,13 @@ const isHalf = (p) => p % 1 !== 0;
 
 // 나의 이야기 질문 (2026-11 리뉴얼). 답은 순서(0~3)로 저장돼요.
 const QUESTIONS = [
-  { title: "한국행을 결심하던 날", q: "한국에 오기로 마음먹었을 때, 어떤 마음이었나요? 무엇을 기대했나요?",
+  { title: "한국행을 결심하던 날", q: "한국에 오기로 마음먹었을 때, 어떤 마음이었나요? 한국에서의 생활에 무엇을 기대했나요?",
     ph: "" },
-  { title: "나를 버티게 해준 것", q: "한국 생활이 지칠 때 나를 다시 일어서게 하는 것은 무엇인가요?",
+  { title: "나를 버티게 해준 것", q: "한국에서 생활하다 지칠 때, 나를 다시 일어서게 하는 것은 무엇인가요?",
     ph: "" },
-  { title: "내 마음에 남은 한마디", q: "누군가에게 들은 말 중에 가장 힘이 되었던 말은 무엇인가요?",
+  { title: "내 마음에 남은 한마디", q: "한국에서 지내며 누군가에게 들은 말 중에, 가장 힘이 되었던 말은 무엇인가요?",
     ph: "" },
-  { title: "가장 어려웠던 순간", q: "한국 생활에서 가장 어려웠던 순간은 언제였나요? 그때 나에게 가장 필요했던 것은 무엇이었나요?",
+  { title: "가장 어려웠던 순간", q: "한국에서 생활하며 가장 어려웠던 순간은 언제였나요? 그때 나에게 가장 필요했던 것은 무엇이었나요?",
     ph: "" }
 ];
 // 예전 버전(v1) 이야기는 그때 질문 제목으로 보여 줘요
@@ -747,9 +747,8 @@ function openGuide(name, after = null) {
 }
 $$("[data-open-guide]").forEach((b) => (b.onclick = () => openGuide(b.dataset.openGuide)));
 $("#help-top").onclick = () => openGuide($("#view-board").classList.contains("hidden") ? "help" : "board");
-// 2단계의 알아 두세요는 접어 둬요 (누르면 펼쳐져요)
-$("#spectrum-note").innerHTML = `<summary class="info-title">💡 알아 두세요</summary>${SPECTRUM_LIST}`;
-$("#spectrum-note").classList.add("info-box");
+// 2단계의 알아 두세요: 접지 않고 바로 보여 줘요
+$("#spectrum-note").innerHTML = `<div class="info-title">💡 알아 두세요</div>${SPECTRUM_LIST}`;
 
 /* ============ STEP 1: 아바타 만들기 (탭: 모양 | 색 | 표정 | 꾸미기) ============ */
 const AV_TABS = [["k", "모양"], ["c", "색"], ["f", "표정"], ["a", "꾸미기"]];
@@ -813,20 +812,21 @@ $("#back-pos").onclick = goPos;
 function renderWrite() {
   $("#me-row").innerHTML = `<div class="av-sm">${avatarSVG(me.avatar)}</div><b class="notranslate" translate="no">${esc(me.name)}</b>`;
   renderSpectrum();
-  $("#qa-write").innerHTML = QUESTIONS.map((q, qi) => `
+  // 이 질문들은 무엇을 살펴보나요? → 맨 위에, 접지 않고 바로 보여 줘요
+  $("#qa-write").innerHTML = `
+    <div class="q-about">
+      <div class="q-about-title">이 질문들은 무엇을 살펴보나요?</div>
+      <dl class="def-list">
+        <div><dt>이주 동기</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
+        <div><dt>심리적 자원</dt><dd>한국에서 살아가도록 나를 도와준 힘 (2·3번)</dd></div>
+        <div><dt>적응 스트레스</dt><dd>한국에서 가장 힘들었던 순간과 그때 필요했던 도움 (4번)</dd></div>
+      </dl>
+    </div>` + QUESTIONS.map((q, qi) => `
     <div class="qw">
       <div class="qw-h"><span class="qw-n">${qi + 1}</span><span class="qw-title">${q.title}</span></div>
       <p class="qw-q">${q.q}</p>
       <textarea data-qidx="${qi}" placeholder="${esc(q.ph)}">${esc(me.answers[qi] || "")}</textarea>
-    </div>`).join("") + `
-    <details class="q-about">
-      <summary>이 질문들은 무엇을 살펴보나요?</summary>
-      <dl class="def-list">
-        <div><dt>이주 동기</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
-        <div><dt>심리적 자원</dt><dd>다른 문화 속에서 살아가도록 나를 도와준 힘 (2·3번)</dd></div>
-        <div><dt>적응 스트레스</dt><dd>한국 생활에서 가장 힘들었던 순간과 그때 필요했던 도움 (4번)</dd></div>
-      </dl>
-    </details>`;
+    </div>`).join("");
   $("#share-btn").textContent = editingPostId ? "수정한 이야기 올리기" : "이야기 올리기";
 }
 $("#qa-write").addEventListener("input", (e) => {

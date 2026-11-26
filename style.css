@@ -216,8 +216,9 @@ details.note-fold[open] summary { margin-bottom: 6px; }
 .qw-n { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 0.82rem; font-weight: 800; line-height: 1; align-self: center; }
 .qw-title { font-weight: 800; font-size: 1.02rem; }
 .qw-q { margin: 4px 0 8px; color: var(--sub); font-size: 0.95rem; }
-.q-about { margin-top: 12px; background: #F6F8FF; border-radius: 14px; padding: 10px 14px; font-size: 0.9rem; }
-.q-about summary { cursor: pointer; font-weight: 700; color: #3D4AA8; }
+.note-open { margin-top: 18px; }
+.q-about { margin: 4px 0 16px; background: #F6F8FF; border-radius: 14px; padding: 10px 14px; font-size: 0.9rem; }
+.q-about-title { font-weight: 700; color: #3D4AA8; }
 .def-list { margin: 8px 0 0; display: grid; gap: 4px; }
 .def-list > div { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; align-items: baseline; }
 .def-list dt { font-weight: 700; color: #3D4AA8; }
