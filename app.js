@@ -346,8 +346,6 @@ function memberPos(m) {
   const i = typeIndex(m?.type);
   return i >= 0 ? i + 1 : null;
 }
-// 경계(.5)에 있으면 양쪽 단계 모두에 들어가요
-const inStage = (m, i) => { const p = memberPos(m); return p !== null && Math.abs(p - (i + 1)) <= 0.5; };
 function posBadge(p) {
   if (p === null) return "";
   if (!isHalf(p)) { const i = p - 1; return `<span class="pos-badge" style="${typeStyle(i)}">${TYPES[i].emoji} <span>${TYPES[i].key}</span></span>`; }
@@ -670,12 +668,12 @@ const BOARD_SLIDES = [
     "참여한 모든 사람의 이야기가 이곳에 모여요."),
   () => chap("이야기 보기", bigChip("◀ ▶"), "한 장씩 넘겨 보기",
     "옆으로 밀거나 버튼을 눌러서 이야기를 <b>한 장씩</b> 넘겨 봐요."),
-  () => chap("이야기 보기", bigChip("🍂 주변화 3"), "단계별로 모아 보기",
-    "같은 단계의 이야기만 모아 봐요. 두 단계 사이에 있는 이야기는 양쪽 모두에 나와요."),
+  () => chap("이야기 보기", `<div class="pf-demo"><span class="pf-stop full" style="${typeStyle(0)}">2</span><span class="pf-stop half">1</span><span class="pf-stop full on" style="${typeStyle(1)}">3</span></div>`, "자리별로 모아 보기",
+    "막대 위의 숫자를 누르면 그 자리의 이야기만 모아 봐요. 두 단계 <b>사이</b>에 있는 이야기도 따로 모여 있어요."),
   () => chap("이야기 보기", bigChip(`<span class="ln-ic notranslate" translate="no">文A</span> 이야기 번역 ▾`), "한 언어로 바꿔 보기",
     "여러 나라 언어로 쓴 이야기를 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요."),
   () => chap("마음 나누기", bigChip("🤍 공감"), "공감 전하기",
-    "마음을 전해요. 마음이 닿는 만큼 <b>여러 번</b> 누를 수 있어요."),
+    "마음을 전해요. 이야기 하나에 한 번 누를 수 있어요."),
   () => chap("마음 나누기", bigChip("⋯"), "내 이야기 고치기",
     "공개 이야기는 쓴 휴대폰에서 고칠 수 있어요. 비공개 이야기는 <b>생일 4자리</b>로 열어요."),
   () => chap("알아 두세요", `<div class="big-emo">💡</div>`, "비공개 이야기",
@@ -1080,19 +1078,39 @@ onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {
     : "이야기를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.";
 });
 
+// 자리별로 모아 보기: 이야기 카드의 막대와 같은 모양. 4단계 + 두 단계 사이 3곳 = 7자리, 자리마다 이야기 수
+const atPos = (post, x) => (post.family || []).some((m) => memberPos(m) === x);
 function renderFilters() {
-  const counts = TYPES.map((_, i) => allPosts.reduce((n, p) => n + (p.family || []).filter((m) => inStage(m, i)).length, 0));
   const people = peopleCount();
   $("#board-count").innerHTML = `지금까지 <b>${people}명</b>이 이야기를 나눴어요.`;
-  $("#filter-chips").innerHTML =
-    `<button class="f-chip ${filterType === "all" ? "active" : ""}" data-filter="all">전체 <b>${people}</b></button>` +
-    TYPES.map((t, i) => `<button class="f-chip ${filterType === String(i) ? "active" : ""}" data-filter="${i}">${t.emoji} <span>${t.key}</span> <b>${counts[i]}</b></button>`).join("");
+  if (filterType !== "all" && !POSITIONS.includes(+filterType)) filterType = "all";
+  const counts = POSITIONS.map((x) => allPosts.filter((p) => atPos(p, x)).length);
+  const sel = filterType === "all" ? null : +filterType;
+  const now = sel === null
+    ? `<span class="pf-hint">막대의 숫자를 누르면 그 자리의 이야기만 모아 봐요</span>`
+    : `${posBadge(sel)}<span class="pf-n"><b>${counts[POSITIONS.indexOf(sel)]}</b>개</span>`;
+  $("#filter-chips").innerHTML = `
+    <div class="pf-top">
+      <button type="button" class="f-chip ${sel === null ? "active" : ""}" data-filter="all">전체 <b>${allPosts.length}</b></button>
+      <div class="pf-now">${now}</div>
+    </div>
+    <div class="pf-bar">
+      <div class="pf-zones">${TYPES.map((_, i) => `<i style="${typeStyle(i)}"></i>`).join("")}</div>
+      ${POSITIONS.map((x, k) => {
+        const half = isHalf(x), n = counts[k];
+        const name = half ? `${TYPES[Math.floor(x) - 1].key}와 ${TYPES[Math.floor(x)].key} 사이` : TYPES[x - 1].key;
+        const st = `left:${posLeft(x)}%${half ? "" : `;${typeStyle(x - 1)}`}`;
+        return `<button type="button" class="pf-stop ${half ? "half" : "full"} ${sel === x ? "on" : ""} ${n ? "" : "zero"}"
+          data-filter="${x}" style="${st}" aria-label="${name} ${n}개" ${n ? "" : "disabled"}>${n}</button>`;
+      }).join("")}
+    </div>
+    <div class="pf-labels">${TYPES.map((t, i) => `<span style="${typeStyle(i)}">${t.emoji} ${t.key}</span>`).join("")}</div>`;
 }
 $("#filter-chips").onclick = (e) => {
   const b = e.target.closest("[data-filter]"); if (!b) return;
   filterType = b.dataset.filter; deckIdx = 0; renderFeed();
 };
-const filteredPosts = () => (filterType === "all" ? allPosts : allPosts.filter((p) => (p.family || []).some((m) => inStage(m, +filterType))));
+const filteredPosts = () => (filterType === "all" ? allPosts : allPosts.filter((p) => atPos(p, +filterType)));
 
 function postHTML(post, liked) {
   const titles = qTitles(post);
@@ -1132,7 +1150,7 @@ function renderFeed() {
   $("#deck-nav").classList.toggle("hidden", list.length < 2);
   if (!list.length) {
     deck.innerHTML = `<div class="card empty"><div class="big-emo">🌱</div>
-      <p>${filterType === "all" ? "아직 이야기가 없어요.<br>첫 번째 이야기를 들려주세요!" : "이 단계의 이야기는 아직 없어요."}</p></div>`;
+      <p>${filterType === "all" ? "아직 이야기가 없어요.<br>첫 번째 이야기를 들려주세요!" : "이 자리의 이야기는 아직 없어요."}</p></div>`;
     deckIdx = 0;
     return;
   }
@@ -1175,11 +1193,12 @@ $("#deck-next").onclick = () => goCard(1);
 $("#feed-list").addEventListener("click", async (e) => {
   const h = e.target.closest("[data-heart]");
   if (h) {
-    // 공감은 횟수 제한 없이 여러 번 누를 수 있어요 (한 번이라도 누른 이야기는 ❤️로 보여요)
+    // 공감은 이야기 하나에 한 번만 (이 휴대폰 기준)
     const id = h.dataset.heart, liked = store.get("liked", []);
+    if (liked.includes(id)) { toast("이미 공감했어요"); return; }
     try {
       await updateDoc(doc(db, "posts", id), { hearts: increment(1) });
-      if (!liked.includes(id)) store.set("liked", [...liked, id]);
+      store.set("liked", [...liked, id]);
       toast("마음을 전했어요");
     } catch (err) { console.error(err); toast("공감을 보내지 못했어요"); }
     return;

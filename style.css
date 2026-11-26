@@ -237,6 +237,32 @@ details.note-fold[open] summary { margin-bottom: 6px; }
 .f-chip { flex: none; border: 2px solid transparent; background: var(--soft); border-radius: 999px; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; color: var(--ink); white-space: nowrap; }
 .f-chip.active { background: var(--ink); color: #fff; }
 .f-chip b { margin-left: 2px; }
+/* 자리별로 모아 보기 (막대 + 7자리 숫자) */
+#filter-chips.filter-chips { display: block; overflow: visible; }
+.pf-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 40px; }
+.pf-now { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; font-size: 0.86rem; }
+.pf-now .pos-badge { margin: 0; }
+.pf-hint { color: var(--muted); font-size: 0.82rem; }
+.pf-n { color: var(--sub); }
+.pf-bar { position: relative; height: 44px; margin: 14px 0 2px; }
+.pf-zones { position: absolute; left: 0; right: 0; top: 50%; height: 14px; margin-top: -7px; display: grid; grid-template-columns: repeat(4, 1fr); border-radius: 7px; overflow: hidden; }
+.pf-zones i { background: var(--tbg); }
+.pf-stop { position: absolute; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; padding: 0;
+  border-radius: 50%; font-weight: 800; font-variant-numeric: tabular-nums; cursor: pointer; transition: transform .15s, background .15s; }
+.pf-stop.full { width: 38px; height: 38px; font-size: 0.95rem; background: #fff; color: var(--tc); border: 2.5px solid var(--tc); }
+.pf-stop.half { width: 30px; height: 30px; font-size: 0.82rem; background: #fff; color: var(--sub); border: 2px dashed #A9AEC4; }
+.pf-stop.on { background: var(--ink); color: #fff; border: 2.5px solid var(--ink); box-shadow: 0 0 0 3px #fff, 0 3px 8px rgba(0,0,0,0.2); }
+.pf-stop.zero { opacity: 0.4; cursor: default; }
+.pf-stop:not(.zero):active { transform: translate(-50%, -50%) scale(0.9); }
+.pf-labels { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; font-size: 0.78rem; font-weight: 700; }
+.pf-labels span { color: var(--tc); white-space: nowrap; }
+@media (max-width: 370px) {
+  .pf-stop.full { width: 30px; height: 30px; font-size: 0.85rem; border-width: 2px; }
+  .pf-stop.half { width: 24px; height: 24px; font-size: 0.74rem; }
+  .pf-labels { font-size: 0.7rem; }
+}
+.pf-demo { position: relative; display: flex; gap: 18px; align-items: center; justify-content: center; height: 48px; }
+.pf-demo .pf-stop { position: static; transform: none; }
 
 .deck-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 4px 0 10px; }
 .deck-arrow { width: 44px; height: 44px; border: 0; border-radius: 50%; background: #fff; box-shadow: var(--shadow); font-size: 1rem; color: var(--ink); cursor: pointer; }
