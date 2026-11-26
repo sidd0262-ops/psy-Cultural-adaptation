@@ -710,7 +710,7 @@ const GUIDES = {
   },
   lang: {
     btn: "확인",
-    html: () => `<div class="big-emo">🌐</div><h2>언어 고르기 <span class="notranslate muted" translate="no">· Language</span></h2>
+    html: () => `<div class="big-emo"><span class="ln-ic big-ln notranslate" translate="no" aria-hidden="true">文A</span></div><h2>언어 고르기 <span class="notranslate muted" translate="no">· Language</span></h2>
        <p>편한 언어를 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`
   },
   board: {
@@ -1288,5 +1288,6 @@ renderTrSeg();
 loadDraft();
 renderBuilder();
 // 처음 들어왔을 때 한 번만: 환영 + 편한 언어 고르기
-if (!store.get("seen-intro-v3")) { store.set("seen-intro-v3", true); openGuide("intro"); }
+// 뜨는 순간이 아니라 닫을 때(✕·시작하기·바깥 누르기) "봤음"으로 저장해요 → 닫기 전에 새로고침하거나 나가면 다음에 다시 떠요
+if (!store.get("seen-intro-v4")) openGuide("intro", () => store.set("seen-intro-v4", true));
 if (uiLang !== "ko") translatePage();

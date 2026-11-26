@@ -227,6 +227,8 @@ details.note-fold[open] summary { margin-bottom: 6px; }
 #step-done .av-big { margin: 6px auto 10px; animation: bounce 1.4s ease infinite; }
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 .big-emo { font-size: 4rem; line-height: 1.2; }
+/* 언어 고르기 창의 큰 文A (위 언어 버튼·이야기 번역 버튼과 같은 모양) */
+.big-emo .big-ln { height: 64px; padding: 0 14px; border-radius: 18px; font-size: 1.9rem; vertical-align: middle; }
 
 /* ============ 💌 모두의 이야기 (카드 한 장씩) ============ */
 .filter-chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 2px; scrollbar-width: none; margin-top: 6px; }
