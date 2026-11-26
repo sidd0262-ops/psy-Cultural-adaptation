@@ -694,10 +694,10 @@ const HELP_HTML = () => `<div class="big-emo">🧭</div><h2>도움말</h2>
       <li><b>이야기 올리기</b><br>공개로 올리거나, 생일 4자리를 넣고 비공개로 올려요.</li>
     </ol></div>
   <div class="help-sec"><h3>문화적응 4단계</h3>
-    <p>심리학자 <b>존 베리(John W. Berry)</b>의 문화적응 모델이에요. 두 가지 마음으로 나눠 봐요.</p>
+    <p>심리학자 <b>존 베리(John W. Berry)</b>는 새로운 나라에서 살아가는 사람의 마음을 <b>두 가지 질문</b>으로 살펴봤어요.</p>
     <div class="q-axis">
-      <div>❶ <b>고향 문화</b>(언어·음식·전통)를 지키고 싶나요?</div>
-      <div>❷ <b>한국 사람들, 한국 문화</b>와 어울리고 싶나요?</div>
+      <div>❶ <b>고향 문화</b>(언어·음식·전통)를 계속 지키고 싶나요?</div>
+      <div>❷ <b>한국 사람들</b>과 관계를 맺으며 살고 싶나요?</div>
     </div>
     ${typeListHTML()}${SPECTRUM_HTML}</div>
   <div class="help-sec"><h3>편한 언어 고르기</h3>
