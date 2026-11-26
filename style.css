@@ -383,6 +383,18 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
 .car-dots { display: flex; gap: 6px; }
 .car-dots i { width: 8px; height: 8px; border-radius: 4px; background: #DADDE8; transition: width .2s, background .2s; }
 .car-dots i.on { width: 22px; background: var(--primary); }
+.car-count { font-size: 0.9rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.car-count b { color: var(--primary); }
+/* 안내 책자 한 장 */
+.car-slide { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ch-part { font-size: 0.8rem; font-weight: 800; color: var(--primary); letter-spacing: 0.02em; margin-bottom: 10px; }
+.ch-visual { min-height: 8px; margin-bottom: 12px; }
+.ch-visual .big-emo { margin: 0; }
+.ch-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 1.15rem; padding: 10px 22px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+.ch-chip .ln-ic { height: 26px; }
+.ch-text { max-width: 22em; margin: 0 auto; font-size: 1rem; line-height: 1.65; }
+.ch-note { width: 100%; max-width: 24em; text-align: left; }
+.ch-note p { margin: 0; color: var(--ink); }
 .ask-btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 18px; }
 .ask-btns .btn { margin: 0; }
 .action-list { display: grid; gap: 8px; margin-top: 12px; }

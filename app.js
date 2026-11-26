@@ -656,29 +656,34 @@ const SPECTRUM_LIST = `<ul class="dot-list">
   </ul>`;
 const SPECTRUM_HTML = `<div class="info-box"><div class="info-title">💡 알아 두세요</div>${SPECTRUM_LIST}</div>`;
 
-// 💌 모두의 이야기 사용법: 인스타 사진처럼 한 장씩 넘겨 읽어요 (왼쪽 = 화면의 버튼 모양, 오른쪽 = 설명)
+// 💌 모두의 이야기 사용법: 작은 안내 책자처럼 "문단 하나 = 한 장"으로 넘겨 읽어요
+// 각 장: [작은 파트 이름] → 그림(화면의 버튼 모양) → 제목 → 설명 한 문단
+const chap = (part, visual, title, text) => `
+  ${part ? `<div class="ch-part">${part}</div>` : ""}
+  <div class="ch-visual">${visual}</div>
+  <h2>${title}</h2>
+  <p class="ch-text">${text}</p>`;
+const bigChip = (html) => `<span class="ui-chip ch-chip">${html}</span>`;
+const noteBox = (text) => `<div class="info-box ch-note"><p>${text}</p></div>`;
 const BOARD_SLIDES = [
-  () => `<div class="big-emo">💌</div><h2>모두의 이야기 사용법</h2>
-    <p>참여한 모든 사람의 이야기가 이곳에 모여요.</p>
-    <p>다른 사람의 이야기는 <b>따뜻한 마음</b>으로 읽어 주세요.</p>`,
-  () => `<div class="big-emo">👀</div><h2>이야기 보기</h2>
-    <div class="howto">
-      <div class="howto-row"><span class="ui-chip">◀ ▶</span><span>옆으로 밀거나 눌러서 이야기를 <b>한 장씩</b> 넘겨 봐요.</span></div>
-      <div class="howto-row"><span class="ui-chip">🍂 주변화 3</span><span>같은 단계의 이야기만 모아 봐요. 두 단계 사이에 있는 이야기는 양쪽 모두에 나와요.</span></div>
-      <div class="howto-row"><span class="ui-chip">한국어 · English</span><span>여러 나라 언어로 쓴 답변을 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요.</span></div>
-    </div>`,
-  () => `<div class="big-emo">🤍</div><h2>마음 나누기</h2>
-    <div class="howto">
-      <div class="howto-row"><span class="ui-chip">🤍 공감</span><span>마음을 전해요. 이야기 하나에 한 번 누를 수 있어요.</span></div>
-      <div class="howto-row"><span class="ui-chip">⋯</span><span>내 이야기를 <b>수정</b>해요. 공개 이야기는 쓴 휴대폰에서, 비공개 이야기는 <b>생일 4자리</b>로 열어요.</span></div>
-    </div>`,
-  () => `<div class="big-emo">💡</div><h2>알아 두세요</h2>
-    <div class="info-box">
-      <ul class="dot-list">
-        <li>비공개 이야기는 글이 흐리게 가려져 있어요. 쓴 사람만 생일 4자리로 볼 수 있어요.</li>
-        <li>관리자는 이야기를 <b>삭제만</b> 할 수 있어요.</li>
-      </ul>
-    </div>`
+  () => chap("", `<div class="big-emo">💌</div>`, "모두의 이야기",
+    "참여한 모든 사람의 이야기가 이곳에 모여요."),
+  () => chap("이야기 보기", bigChip("◀ ▶"), "한 장씩 넘겨 보기",
+    "옆으로 밀거나 버튼을 눌러서 이야기를 <b>한 장씩</b> 넘겨 봐요."),
+  () => chap("이야기 보기", bigChip("🍂 주변화 3"), "단계별로 모아 보기",
+    "같은 단계의 이야기만 모아 봐요. 두 단계 사이에 있는 이야기는 양쪽 모두에 나와요."),
+  () => chap("이야기 보기", bigChip(`<span class="ln-ic notranslate" translate="no">文A</span> 이야기 번역 ▾`), "한 언어로 바꿔 보기",
+    "여러 나라 언어로 쓴 이야기를 <b>한 언어로</b> 바꿔 봐요. 원문도 함께 보여요."),
+  () => chap("마음 나누기", bigChip("🤍 공감"), "공감 전하기",
+    "마음을 전해요. 이야기 하나에 한 번 누를 수 있어요."),
+  () => chap("마음 나누기", bigChip("⋯"), "내 이야기 고치기",
+    "공개 이야기는 쓴 휴대폰에서 고칠 수 있어요. 비공개 이야기는 <b>생일 4자리</b>로 열어요."),
+  () => chap("알아 두세요", `<div class="big-emo">💡</div>`, "비공개 이야기",
+    "") .replace('<p class="ch-text"></p>', noteBox("비공개 이야기는 글이 흐리게 가려져 있어요. 쓴 사람만 생일 4자리로 볼 수 있어요.")),
+  () => chap("알아 두세요", `<div class="big-emo">💡</div>`, "관리자는 삭제만",
+    "").replace('<p class="ch-text"></p>', noteBox("관리자는 이야기를 <b>삭제만</b> 할 수 있어요.")),
+  () => chap("", `<div class="big-emo">🤍</div>`, "이제 이야기를 만나 볼까요?",
+    "다른 사람의 이야기는 <b>따뜻한 마음</b>으로 읽어 주세요.")
 ];
 
 // ❓ Help 창: 참여 방법 · 4단계 설명 · 언어 · 관리자 메뉴 (아래 설명서 탭 대신)
@@ -720,7 +725,7 @@ const GUIDES = {
     html: () => `<div class="big-emo"><span class="ln-ic big-ln notranslate" translate="no" aria-hidden="true">文A</span></div><h2>언어 고르기 <span class="notranslate muted" translate="no">· Language</span></h2>
        <p>편한 언어를 골라 주세요. 화면이 바로 바뀌어요.</p>${langGridHTML()}`
   },
-  board: { btn: "확인", slides: BOARD_SLIDES },
+  board: { btn: "이야기 보러 가기", slides: BOARD_SLIDES },
   help: { btn: "닫기", html: HELP_HTML }
 };
 
@@ -753,7 +758,7 @@ function openSlides(slides, lastBtn, after = null) {
   openSheet(`<div class="car"><div class="car-track">${slides.map((h) => `<section class="slide car-slide">${h}</section>`).join("")}</div></div>
     <div class="car-foot">
       <button type="button" class="btn btn-ghost" id="car-prev">◀ 이전</button>
-      <div class="car-dots" aria-hidden="true">${slides.map(() => "<i></i>").join("")}</div>
+      <div class="car-count" aria-live="polite"></div>
       <button type="button" class="btn btn-primary" id="car-next"></button>
     </div>`, after);
   const last = slides.length - 1;
@@ -761,7 +766,7 @@ function openSlides(slides, lastBtn, after = null) {
     i = Math.max(0, Math.min(last, n));
     $(".car-track").style.transform = `translateX(${-100 * i}%)`;
     $$(".car-slide").forEach((el, k) => el.setAttribute("aria-hidden", k !== i));
-    $$(".car-dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+    $(".car-count").innerHTML = `<b>${i + 1}</b> / ${slides.length}`;
     $("#car-prev").style.visibility = i ? "visible" : "hidden";
     $("#car-next").textContent = i === last ? lastBtn : "다음 ▶";
     $("#sheet-body").scrollTop = 0;
@@ -1054,7 +1059,8 @@ function resetJourney() {
   renderBuilder(); goStep("#step-avatar");
 }
 $("#new-story").onclick = resetJourney;
-$("#go-board").onclick = () => { resetJourney(); showTab("board"); };
+// 완료 화면에서 "모두의 이야기 보러 가기" → 이야기보다 사용법 책자가 먼저 떠요 (매번)
+$("#go-board").onclick = () => { resetJourney(); store.set("seen-guide-board-v3", true); showTab("board"); openGuide("board"); };
 $("#ext-share").onclick = async () => {
   const data = { title: "문화적응 여정", text: "나의 문화적응 이야기를 나눴어요. 당신의 이야기도 들려주세요.", url: location.href.split("#")[0] };
   try {
