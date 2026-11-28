@@ -36,20 +36,20 @@ const posLeft = (p) => 12.5 + (p - 1) * 25;              // 막대에서의 가�
 const posStage = (p) => Math.min(3, Math.floor(p) - 1);  // 예전 방식 저장용 (경계면 앞 단계)
 const isHalf = (p) => p % 1 !== 0;
 
-// 나의 이야기 질문 (2026-11 리뉴얼). 답은 순서(0~3)로 저장돼요.
+// 나의 이야기 질문 (2026-11-28 7차: 이주 배경 · 지지 자원 · 차별 경험 · 내게 필요한 것).
+// 규칙: 질문마다 "한국" · 쉬운 한 문장 · 쉼표 없이 · 한 질문에 한 가지만. 답은 순서(0~3)로 저장돼요.
 const QUESTIONS = [
-  { title: "한국행을 결심하던 날", q: "한국에 오기로 결심했을 때 어떤 마음이었나요?",
-    ph: "" },
-  { title: "나를 버티게 해준 것", q: "한국에서 지칠 때 나에게 힘이 되는 것은 무엇인가요?",
-    ph: "" },
-  { title: "내 마음에 남은 한마디", q: "한국 생활 중에 가장 힘이 된 말은 무엇인가요?",
-    ph: "" },
-  { title: "가장 어려웠던 순간", q: "한국에서 가장 어려웠던 순간과 그때 필요했던 것은 무엇인가요?",
-    ph: "" }
+  { title: "한국행을 결심하던 날", q: "한국에 오기로 결심했을 때 어떤 마음이었나요?", ph: "" },
+  { title: "나를 버티게 해준 것", q: "한국에서 지칠 때 나에게 힘이 되는 것은 무엇인가요?", ph: "" },
+  { title: "차별을 느낀 순간", q: "한국에서 다르다는 이유로 차별을 느낀 적은 언제인가요?", ph: "",
+    hint: "없다면 '없어요'라고 써도 괜찮아요." },
+  { title: "지금 나에게 필요한 것", q: "한국에서 살아가는 나에게 지금 가장 필요한 것은 무엇인가요?", ph: "" }
 ];
-// 예전 버전(v1) 이야기는 그때 질문 제목으로 보여 줘요
-const OLD_TITLES = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 응원의 한마디", "그만두고 싶었던 순간"];
-const qTitles = (post) => (post.v >= 2 ? QUESTIONS.map((q) => q.title) : OLD_TITLES);
+const POST_V = 3;  // 지금 질문으로 쓴 이야기
+// 예전 질문으로 쓴 이야기는 그때 질문 제목으로 보여 줘요 (v1 · v2)
+const V1_TITLES = ["한국에 오게 된 이유", "나를 버티게 해준 것", "나에게 힘이 되는 응원의 한마디", "그만두고 싶었던 순간"];
+const V2_TITLES = ["한국행을 결심하던 날", "나를 버티게 해준 것", "내 마음에 남은 한마디", "가장 어려웠던 순간"];
+const qTitles = (post) => (post.v >= POST_V ? QUESTIONS.map((q) => q.title) : post.v === 2 ? V2_TITLES : V1_TITLES);
 
 /* ============ 🎨 아바타 (성별 없이 모양·색·표정·꾸미기로 만들어요) ============ */
 // 딱 보면 알 수 있게: 캐릭터마다 대표 색(def)과 대표 특징(판다 눈 무늬, 동물 코, 눈사람 모자…)을 가져요.
@@ -728,19 +728,21 @@ const GUIDES = {
 };
 
 // onClose: 창이 닫힐 때(✕·바깥 누르기·버튼) 한 번 실행할 일
-let sheetOnClose = null;
-function openSheet(html, onClose = null) {
-  $("#sheet-body").innerHTML = `<button type="button" class="sheet-x" aria-label="닫기">✕</button><div class="grabber"></div>${html}`;
+// locked: ✕가 없고 바깥을 눌러도 안 닫혀요 (이야기가 올라간 뒤 완료 창)
+let sheetOnClose = null, sheetLocked = false;
+function openSheet(html, onClose = null, { locked = false } = {}) {
+  // ✕와 손잡이는 흰 머리줄(.sheet-top)에 있어서, 창을 내려도 글자 위에 겹치지 않아요
+  $("#sheet-body").innerHTML = `<div class="sheet-top">${locked ? "" : `<button type="button" class="sheet-x" aria-label="닫기">✕</button>`}<div class="grabber"></div></div>${html}`;
   $("#sheet").classList.remove("hidden");
   $("#sheet-body").scrollTop = 0;
-  sheetOnClose = onClose;
+  sheetOnClose = onClose; sheetLocked = locked;
 }
 function closeSheet() {
   $("#sheet").classList.add("hidden");
   const f = sheetOnClose; sheetOnClose = null;
   if (f) f();
 }
-$("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.target.closest(".sheet-x")) closeSheet(); });
+$("#sheet").addEventListener("click", (e) => { if ((e.target.id === "sheet" && !sheetLocked) || e.target.closest(".sheet-x")) closeSheet(); });
 
 function openGuide(name, after = null) {
   const g = GUIDES[name];
@@ -833,7 +835,7 @@ $("#start-btn").onclick = () => {
 
 // 여정은 3단계: ① 아바타 → ② 내 위치 → ③ 나의 이야기 (+ 완료)
 function goStep(id) {
-  ["#step-avatar", "#step-pos", "#step-write", "#step-done"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  ["#step-avatar", "#step-pos", "#step-write"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
   $("#edit-banner").classList.toggle("hidden", !editingPostId || !["#step-pos", "#step-write"].includes(id));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -854,14 +856,15 @@ function renderWrite() {
     <div class="q-about">
       <div class="q-about-title">이 질문들은 무엇을 살펴보나요?</div>
       <dl class="def-list">
-        <div><dt>이주 동기</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
-        <div><dt>심리적 자원</dt><dd>한국에서 살아가도록 나를 도와준 힘 (2·3번)</dd></div>
-        <div><dt>적응 스트레스</dt><dd>한국에서 가장 힘들었던 순간과 그때 필요했던 도움 (4번)</dd></div>
+        <div><dt>이주 배경</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
+        <div><dt>지지 자원</dt><dd>한국에서 힘들 때 나를 붙잡아 준 사람·믿음·습관 (2번)</dd></div>
+        <div><dt>차별 경험</dt><dd>한국에서 다르다는 이유로 겪은 불편하고 억울한 일 (3번)</dd></div>
+        <div><dt>내게 필요한 것</dt><dd>한국에서 더 잘 지내기 위해 지금 필요한 도움 (4번)</dd></div>
       </dl>
     </div>` + QUESTIONS.map((q, qi) => `
     <div class="qw">
       <div class="qw-h"><span class="qw-n">${qi + 1}</span><span class="qw-title">${q.title}</span></div>
-      <p class="qw-q">${q.q}</p>
+      <p class="qw-q">${q.q}</p>${q.hint ? `<p class="qw-hint">${q.hint}</p>` : ""}
       <textarea data-qidx="${qi}" placeholder="${esc(q.ph)}">${esc(me.answers[qi] || "")}</textarea>
     </div>`).join("");
   $("#share-btn").textContent = editingPostId ? "수정한 이야기 올리기" : "이야기 올리기";
@@ -977,11 +980,11 @@ $("#share-btn").onclick = () => {
   }
   openShareSheet();
 };
-// 공개: 비밀번호 없이 바로 올라가요 (쓴 휴대폰에서 수정 가능)
-// 비공개: 고르면 그때 생일 4자리 칸이 열려요 (이미 생일 4자리가 있는 글을 수정할 때는 다시 묻지 않아요)
+// 공유 창 (7차): 큰 버튼 2개 — [공개로 올리기] 분홍 / [비공개로 올리기] 아이스 블루
+// 공개: 누르면 바로 올라가요 (쓴 휴대폰에서 수정 가능) → 완료 창
+// 비공개: 비밀번호(생일 4자리) 창 → 올라가면 완료 창 (이미 생일 4자리가 있는 글을 수정할 때는 다시 묻지 않아요)
 function openShareSheet() {
   const editing = !!editingPostId;
-  const needPin = !editingHasPin;
   openSheet(`<div class="share-sheet">
     <h2>${editing ? "수정한 이야기를 올릴까요?" : "나의 이야기를 함께 나눌까요?"}</h2>
     <div class="share-msg">
@@ -989,26 +992,34 @@ function openShareSheet() {
       <p>내 이야기가 누군가에게는 '나만 그런 게 아니구나' 하는 위로가 돼요.</p>
       <p>이름 대신 아바타와 별명으로만 보여요.</p>
     </div>
-    <button type="button" class="choice pub" id="sh-pub"><b>예, 공개할게요</b><span>모두가 읽고 🤍 공감을 보낼 수 있어요. 이 휴대폰에서 언제든 수정할 수 있어요.</span></button>
-    <button type="button" class="choice" id="sh-priv"><b>아니오, 비공개로 올릴게요</b><span>글은 흐리게 가려져서 다른 사람에게는 보이지 않아요. 아바타와 내 위치만 보여요.</span></button>
-    <div class="pin-field hidden" id="sh-pin-box">
-      <span class="field-label">비공개 비밀번호: 생일 4자리</span>
-      <small>예: 8월 28일이면 0828. 나중에 내 글을 다시 보거나, 수정하거나, 공개로 바꿀 때 써요.</small>
-      ${pinInputHTML("sh-pin")}
-      <button type="button" class="btn btn-primary" id="sh-priv-go">비공개로 올리기</button>
+    <div class="share-opt">
+      <button type="button" class="btn btn-primary" id="sh-pub">공개로 올리기</button>
+      <p class="share-note">모두가 읽고 🤍 공감을 보낼 수 있어요. 이 휴대폰에서 언제든 수정할 수 있어요.</p>
+    </div>
+    <div class="share-opt">
+      <button type="button" class="btn btn-ice" id="sh-priv">비공개로 올리기</button>
+      <p class="share-note">글은 흐리게 가려져서 다른 사람에게는 보이지 않아요. 아바타와 내 위치만 보여요.</p>
     </div>
     <button type="button" class="link-btn share-back" id="sh-back">◀ 다시 고치기</button>
   </div>`);
-  bindPinInput($("#sh-pin"));
   $("#sh-back").onclick = closeSheet;
   $("#sh-pub").onclick = () => submitStory(false);
-  $("#sh-priv").onclick = () => {
-    if (!needPin) { submitStory(true); return; }
-    $("#sh-priv").classList.add("on");
-    $("#sh-pin-box").classList.remove("hidden");
-    $("#sh-pin-box").scrollIntoView({ behavior: "smooth", block: "nearest" });
-    setTimeout(() => $("#sh-pin").focus(), 250);
-  };
+  $("#sh-priv").onclick = () => (editingHasPin ? submitStory(true) : openPinSheet());
+}
+// 비밀번호 정하기 창: ✕나 바깥을 누르면 공유 창으로 돌아가서 공개/비공개를 다시 고를 수 있어요
+function openPinSheet() {
+  openSheet(`<div class="share-sheet pin-sheet">
+    <h2>비밀번호 정하기</h2>
+    <p class="muted center">비공개 글은 이 비밀번호로 다시 보거나 수정하거나 공개로 바꿀 수 있어요.</p>
+    <div class="pin-field">
+      <span class="field-label">생일 4자리</span>
+      <small>예: 8월 28일이면 0828</small>
+      ${pinInputHTML("sh-pin")}
+      <button type="button" class="btn btn-ice" id="sh-priv-go">비공개로 올리기</button>
+    </div>
+  </div>`, openShareSheet);
+  bindPinInput($("#sh-pin"));
+  setTimeout(() => $("#sh-pin")?.focus(), 300);
   $("#sh-priv-go").onclick = () => {
     const pin = $("#sh-pin").value;
     if (!PIN_RE.test(pin)) { toast("생일 4자리를 넣어 주세요 (예: 0828)"); $("#sh-pin").focus(); return; }
@@ -1026,29 +1037,50 @@ async function submitStory(isPrivate, pin = "") {
     // 비공개로 올릴 때만 생일 4자리를 암호처럼 바꿔서 저장해요
     const pinData = pin ? await (async () => { const pinSalt = randomSalt(); return { pinSalt, pinHash: await hashPin(pin, pinSalt) }; })() : {};
     if (editing) {
-      await updateDoc(doc(db, "posts", editingPostId), { family: [member], private: isPrivate, v: 2, ...pinData });
+      await updateDoc(doc(db, "posts", editingPostId), { family: [member], private: isPrivate, v: POST_V, ...pinData });
     } else {
       const ref = await addDoc(postsCol, {
-        v: 2, familyName: "", family: [member], private: isPrivate, ...pinData, hearts: 0, timestamp: new Date()
+        v: POST_V, familyName: "", family: [member], private: isPrivate, ...pinData, hearts: 0, timestamp: new Date()
       });
       // 이 휴대폰에서 쓴 글로 기억해요 (공개 글은 이 휴대폰에서만 수정할 수 있어요)
       store.set("my-posts", [...store.get("my-posts", []), ref.id]);
     }
-    closeSheet();
-    $("#done-avatar").innerHTML = avatarSVG(member.avatar);
-    $("#done-title").textContent = editing ? "수정을 마쳤어요!" : isPrivate ? "비공개로 올라갔어요" : "이야기가 올라갔어요!";
-    $("#done-text").textContent = isPrivate
-      ? "글은 다른 사람에게 보이지 않고, 아바타와 내 위치만 함께 있어요. 생일 4자리로 언제든 다시 볼 수 있어요."
-      : "이 휴대폰에서 언제든 수정할 수 있어요. 모두의 이야기에서 다른 사람들의 이야기도 읽어 보세요.";
-    store.del("draft-v2");
-    me = freshMe(); editingPostId = null; editingHasPin = false; specStage = null;
+    resetJourney();
     deckIdx = 0;
-    goStep("#step-done");
+    openDoneSheet(member.avatar, editing, isPrivate);
   } catch (err) {
     console.error(err);
     $$(".share-sheet button").forEach((b) => (b.disabled = false));
     toast(err?.code === "permission-denied" ? "서버가 잠겨 있어 올릴 수 없어요. 관리자에게 알려 주세요" : "오류가 났어요. 인터넷 연결을 확인하고 다시 눌러 주세요");
   }
+}
+// 올라갔어요 창: 이미 올라간 뒤라 ✕ 없이, [모두의 이야기 보러 가기] 버튼으로 이어져요
+function openDoneSheet(avatar, editing, isPrivate) {
+  const title = editing ? "수정을 마쳤어요!" : isPrivate ? "비공개로 올라갔어요" : "이야기가 올라갔어요!";
+  const text = isPrivate
+    ? "글은 다른 사람에게 보이지 않고, 아바타와 내 위치만 함께 있어요. 생일 4자리로 언제든 다시 볼 수 있어요."
+    : "이 휴대폰에서 언제든 수정할 수 있어요. 모두의 이야기에서 다른 사람들의 이야기도 읽어 보세요.";
+  openSheet(`<div class="done-sheet center">
+    <div class="av-big">${avatarSVG(avatar)}</div>
+    <h2>${title}</h2>
+    <p class="muted">${text}</p>
+    <button type="button" class="btn btn-primary" id="go-board">모두의 이야기 보러 가기</button>
+    <div class="done-links">
+      <button type="button" id="ext-share" class="link-btn">친구에게 링크 보내기</button>
+      <span aria-hidden="true">·</span>
+      <button type="button" id="new-story" class="link-btn">새 이야기 쓰기</button>
+    </div>
+  </div>`, null, { locked: true });
+  // "모두의 이야기 보러 가기" → 이야기보다 사용법 책자가 먼저 떠요 (매번)
+  $("#go-board").onclick = () => { store.set("seen-guide-board-v3", true); showTab("board"); openGuide("board"); };
+  $("#new-story").onclick = closeSheet;
+  $("#ext-share").onclick = async () => {
+    const data = { title: "문화적응 여정", text: "나의 문화적응 이야기를 나눴어요. 당신의 이야기도 들려주세요.", url: location.href.split("#")[0] };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else { await navigator.clipboard.writeText(data.url); toast("링크를 복사했어요"); }
+    } catch {}
+  };
 }
 
 function resetJourney() {
@@ -1056,16 +1088,6 @@ function resetJourney() {
   store.del("draft-v2");
   renderBuilder(); goStep("#step-avatar");
 }
-$("#new-story").onclick = resetJourney;
-// 완료 화면에서 "모두의 이야기 보러 가기" → 이야기보다 사용법 책자가 먼저 떠요 (매번)
-$("#go-board").onclick = () => { resetJourney(); store.set("seen-guide-board-v3", true); showTab("board"); openGuide("board"); };
-$("#ext-share").onclick = async () => {
-  const data = { title: "문화적응 여정", text: "나의 문화적응 이야기를 나눴어요. 당신의 이야기도 들려주세요.", url: location.href.split("#")[0] };
-  try {
-    if (navigator.share) await navigator.share(data);
-    else { await navigator.clipboard.writeText(data.url); toast("링크를 복사했어요"); }
-  } catch {}
-};
 
 /* ============ 💌 모두의 이야기 (카드 한 장씩) ============ */
 onSnapshot(query(postsCol, orderBy("timestamp", "desc")), (snap) => {

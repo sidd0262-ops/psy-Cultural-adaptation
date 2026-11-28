@@ -224,8 +224,10 @@ details.note-fold[open] summary { margin-bottom: 6px; }
 .def-list dt { font-weight: 700; color: #3D4AA8; }
 .def-list dd { margin: 0; }
 
-/* ============ 🎉 완료 ============ */
-#step-done .av-big { margin: 6px auto 10px; animation: bounce 1.4s ease infinite; }
+/* ============ 🎉 완료 (팝업) ============ */
+.done-sheet { padding: 4px 0 6px; }
+.done-sheet h2 { text-align: center; }
+.done-sheet .av-big { margin: 6px auto 10px; animation: bounce 1.4s ease infinite; }
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 .big-emo { font-size: 4rem; line-height: 1.2; }
 /* 언어 고르기 창의 큰 文A (위 언어 버튼·이야기 번역 버튼과 같은 모양) */
@@ -376,14 +378,20 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
 @keyframes fade { from { opacity: 0; } }
 .sheet {
   width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
-  background: #fff; border-radius: 28px 28px 0 0; padding: 12px 20px calc(env(safe-area-inset-bottom) + 20px);
+  background: #fff; border-radius: 28px 28px 0 0; padding: 0 20px calc(env(safe-area-inset-bottom) + 20px);
   animation: up .28s cubic-bezier(.2,.9,.3,1.2);
 }
 @keyframes up { from { transform: translateY(40px); opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .grabber { width: 44px; height: 5px; border-radius: 3px; background: #DADDE8; margin: 0 auto 14px; }
+/* 머리줄: 창 위에 붙어 있고 흰 바탕이라, 아래 글이 ✕ 밑으로 지나가도 겹쳐 보이지 않아요 */
+.sheet-top {
+  position: sticky; top: 0; z-index: 3; background: #fff;
+  margin: 0 -20px 4px; padding: 12px 20px 6px; min-height: 56px;
+}
+.sheet-top .grabber { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); margin: 0; }
 .sheet-x {
-  position: sticky; top: 0; float: left; z-index: 2; margin: -2px 0 0 -6px;
+  position: relative; margin: 6px 0 0 -6px;
   width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink);
   font-size: 1rem; line-height: 1; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
@@ -445,6 +453,16 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
 .pin-field .field-label { margin-bottom: 4px; }
 .pin-field small { display: block; color: var(--muted); font-size: 0.84rem; margin-bottom: 8px; }
 .pin-input { font-size: 1.4rem !important; letter-spacing: 0.5em; text-align: center; font-weight: 700; max-width: 220px; display: block; margin: 0 auto; }
+.btn-ice {
+  background: linear-gradient(135deg, #7DBEF6, #4E9CE8); color: #fff; font-weight: 800;
+  text-shadow: 0 1px 2px rgba(25, 75, 140, 0.35); box-shadow: 0 6px 16px rgba(90, 167, 238, 0.32);
+}
+.share-opt { margin-top: 14px; }
+.share-opt .btn { margin-top: 0; padding: 16px; font-size: 1.1rem; }
+.share-opt .btn-primary { font-weight: 800; text-shadow: 0 1px 2px rgba(180, 40, 90, 0.3); }
+.share-note { margin: 6px 4px 0; color: var(--muted); font-size: 0.88rem; }
+.pin-sheet .pin-field { margin-top: 10px; }
+.qw-hint { margin: -4px 0 8px; color: var(--muted); font-size: 0.84rem; }
 .choice { display: block; width: 100%; text-align: left; border: 2px solid var(--line); background: #fff; border-radius: 18px; padding: 12px 16px; margin-top: 10px; cursor: pointer; color: var(--ink); }
 .choice b { display: block; font-size: 1.02rem; }
 .choice span { display: block; color: var(--muted); font-size: 0.9rem; }
@@ -484,5 +502,5 @@ p .ui-chip, li .ui-chip { display: inline-block; vertical-align: 1px; padding: 0
   .card { padding: 20px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .spec-avatar, #step-done .av-big, .deck { animation: none !important; transition: none !important; scroll-behavior: auto; }
+  .spec-avatar, .done-sheet .av-big, .deck { animation: none !important; transition: none !important; scroll-behavior: auto; }
 }
