@@ -858,7 +858,7 @@ function renderWrite() {
       <dl class="def-list">
         <div><dt>이주 배경</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
         <div><dt>지지 자원</dt><dd>한국에서 힘들 때 나에게 힘이 되어 준 것 (2번)</dd></div>
-        <div><dt>차별 경험</dt><dd>한국에서 다르다는 이유로 겪은 불편하고 억울한 일 (3번)</dd></div>
+        <div><dt>차별 경험</dt><dd>한국에서 다르다는 이유로 겪은 일 (3번)</dd></div>
         <div><dt>내게 필요한 것</dt><dd>한국에서 더 잘 지내기 위해 지금 필요한 도움 (4번)</dd></div>
       </dl>
     </div>` + QUESTIONS.map((q, qi) => `
