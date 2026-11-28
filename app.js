@@ -857,7 +857,7 @@ function renderWrite() {
       <div class="q-about-title">이 질문들은 무엇을 살펴보나요?</div>
       <dl class="def-list">
         <div><dt>이주 배경</dt><dd>한국에 오기로 결심한 이유와 그때의 마음 (1번)</dd></div>
-        <div><dt>지지 자원</dt><dd>한국에서 힘들 때 나를 붙잡아 준 사람·믿음·습관 (2번)</dd></div>
+        <div><dt>지지 자원</dt><dd>한국에서 힘들 때 나에게 힘이 되어 준 것 (2번)</dd></div>
         <div><dt>차별 경험</dt><dd>한국에서 다르다는 이유로 겪은 불편하고 억울한 일 (3번)</dd></div>
         <div><dt>내게 필요한 것</dt><dd>한국에서 더 잘 지내기 위해 지금 필요한 도움 (4번)</dd></div>
       </dl>
@@ -990,7 +990,6 @@ function openShareSheet() {
     <div class="share-msg">
       <p class="sm-strong">지금 ${peopleCount()}명의 이야기가 모여 있어요.</p>
       <p>내 이야기가 누군가에게는 '나만 그런 게 아니구나' 하는 위로가 돼요.</p>
-      <p>이름 대신 아바타와 별명으로만 보여요.</p>
     </div>
     <div class="share-opt">
       <button type="button" class="btn btn-primary" id="sh-pub">공개로 올리기</button>
